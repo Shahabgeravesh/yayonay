@@ -6,6 +6,15 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		BAE90E602D869B810067F715 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = BAE90E5F2D869B810067F715 /* FirebaseAuth */; };
+		BAE90E622D869B810067F715 /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = BAE90E612D869B810067F715 /* FirebaseFirestore */; };
+		BAE90E642D869B810067F715 /* FirebaseStorage in Frameworks */ = {isa = PBXBuildFile; productRef = BAE90E632D869B810067F715 /* FirebaseStorage */; };
+		BAE90EF72D88DC790067F715 /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = BAE90EF62D88DC790067F715 /* GoogleSignIn */; };
+		BAE90EF92D88DC790067F715 /* GoogleSignInSwift in Frameworks */ = {isa = PBXBuildFile; productRef = BAE90EF82D88DC790067F715 /* GoogleSignInSwift */; };
+		BAE90F332D893CF80067F715 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = BAE90F322D893CF80067F715 /* GoogleService-Info.plist */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		BAE90E332D8699550067F715 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -27,11 +36,25 @@
 		BAE90E212D8699540067F715 /* YayoNay.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = YayoNay.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		BAE90E322D8699550067F715 /* YayoNayTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = YayoNayTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		BAE90E3C2D8699550067F715 /* YayoNayUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = YayoNayUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		BAE90F322D893CF80067F715 /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		BAE90F412D894DDA0067F715 /* Exceptions for "YayoNay" folder in "YayoNay" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = BAE90E202D8699540067F715 /* YayoNay */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		BAE90E232D8699540067F715 /* YayoNay */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				BAE90F412D894DDA0067F715 /* Exceptions for "YayoNay" folder in "YayoNay" target */,
+			);
 			path = YayoNay;
 			sourceTree = "<group>";
 		};
@@ -52,6 +75,11 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				BAE90EF92D88DC790067F715 /* GoogleSignInSwift in Frameworks */,
+				BAE90E602D869B810067F715 /* FirebaseAuth in Frameworks */,
+				BAE90EF72D88DC790067F715 /* GoogleSignIn in Frameworks */,
+				BAE90E622D869B810067F715 /* FirebaseFirestore in Frameworks */,
+				BAE90E642D869B810067F715 /* FirebaseStorage in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -79,6 +107,7 @@
 				BAE90E352D8699550067F715 /* YayoNayTests */,
 				BAE90E3F2D8699550067F715 /* YayoNayUITests */,
 				BAE90E222D8699540067F715 /* Products */,
+				BAE90F322D893CF80067F715 /* GoogleService-Info.plist */,
 			);
 			sourceTree = "<group>";
 		};
@@ -112,6 +141,11 @@
 			);
 			name = YayoNay;
 			packageProductDependencies = (
+				BAE90E5F2D869B810067F715 /* FirebaseAuth */,
+				BAE90E612D869B810067F715 /* FirebaseFirestore */,
+				BAE90E632D869B810067F715 /* FirebaseStorage */,
+				BAE90EF62D88DC790067F715 /* GoogleSignIn */,
+				BAE90EF82D88DC790067F715 /* GoogleSignInSwift */,
 			);
 			productName = YayoNay;
 			productReference = BAE90E212D8699540067F715 /* YayoNay.app */;
@@ -195,6 +229,10 @@
 			);
 			mainGroup = BAE90E182D8699540067F715;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				BAE90E5E2D869B810067F715 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
+				BAE90EF52D88DC790067F715 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = BAE90E222D8699540067F715 /* Products */;
 			projectDirPath = "";
@@ -212,6 +250,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				BAE90F332D893CF80067F715 /* GoogleService-Info.plist in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -389,11 +428,15 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = YayoNay/YayoNay.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"YayoNay/Preview Content\"";
+				DEVELOPMENT_TEAM = K8ZK9C85FY;
 				ENABLE_PREVIEWS = YES;
-				GENERATE_INFOPLIST_FILE = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				GIDClientID = "1057578166868-ohp6sae00m9a6md9iscit36r25nog88c";
+				INFOPLIST_FILE = YayoNay/Info.plist;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
@@ -411,6 +454,7 @@
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = YayoNay.YayoNay;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SDKROOT = auto;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -426,11 +470,15 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = YayoNay/YayoNay.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"YayoNay/Preview Content\"";
+				DEVELOPMENT_TEAM = K8ZK9C85FY;
 				ENABLE_PREVIEWS = YES;
-				GENERATE_INFOPLIST_FILE = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				GIDClientID = "1057578166868-ohp6sae00m9a6md9iscit36r25nog88c";
+				INFOPLIST_FILE = YayoNay/Info.plist;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
@@ -448,6 +496,7 @@
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = YayoNay.YayoNay;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SDKROOT = auto;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -583,6 +632,53 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		BAE90E5E2D869B810067F715 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/firebase/firebase-ios-sdk.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 11.9.0;
+			};
+		};
+		BAE90EF52D88DC790067F715 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/google/GoogleSignIn-iOS";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 8.0.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		BAE90E5F2D869B810067F715 /* FirebaseAuth */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = BAE90E5E2D869B810067F715 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAuth;
+		};
+		BAE90E612D869B810067F715 /* FirebaseFirestore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = BAE90E5E2D869B810067F715 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseFirestore;
+		};
+		BAE90E632D869B810067F715 /* FirebaseStorage */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = BAE90E5E2D869B810067F715 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseStorage;
+		};
+		BAE90EF62D88DC790067F715 /* GoogleSignIn */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = BAE90EF52D88DC790067F715 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */;
+			productName = GoogleSignIn;
+		};
+		BAE90EF82D88DC790067F715 /* GoogleSignInSwift */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = BAE90EF52D88DC790067F715 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */;
+			productName = GoogleSignInSwift;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = BAE90E192D8699540067F715 /* Project object */;
 }

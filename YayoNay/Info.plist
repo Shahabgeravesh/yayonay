@@ -13,6 +13,14 @@
                 <string>com.googleusercontent.apps.1057578166868-ohp6sae00m9a6md9iscit36r25nog88c</string>
             </array>
         </dict>
+        <dict>
+            <key>CFBundleURLSchemes</key>
+            <array>
+                <string>yayonay</string>
+            </array>
+            <key>CFBundleURLName</key>
+            <string>com.yourdomain.yayonay</string>
+        </dict>
     </array>
     
     <key>CFBundleDevelopmentRegion</key>
@@ -43,6 +51,11 @@
     <key>UISupportedInterfaceOrientations</key>
     <array>
         <string>UIInterfaceOrientationPortrait</string>
+    </array>
+    <key>LSApplicationQueriesSchemes</key>
+    <array>
+        <string>sms</string>
+        <string>message</string>
     </array>
 </dict>
 </plist> 
