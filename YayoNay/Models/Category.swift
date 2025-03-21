@@ -8,19 +8,25 @@ struct Category: Identifiable, Codable {
     var isTopCategory: Bool // For the top grid items that are white cards
     var order: Int // To maintain custom ordering
     var description: String  // Add this property
+    var featured: Bool
+    var votesCount: Int
     
     init(id: String = UUID().uuidString,
          name: String,
          imageURL: String? = nil,
          isTopCategory: Bool = false,
          order: Int = 0,
-         description: String = "") {
+         description: String = "",
+         featured: Bool = false,
+         votesCount: Int = 0) {
         self.id = id
         self.name = name
         self.imageURL = imageURL
         self.isTopCategory = isTopCategory
         self.order = order
         self.description = description
+        self.featured = featured
+        self.votesCount = votesCount
     }
     
     init?(document: QueryDocumentSnapshot) {
@@ -33,6 +39,8 @@ struct Category: Identifiable, Codable {
         self.imageURL = data["imageURL"] as? String
         self.isTopCategory = data["isTopCategory"] as? Bool ?? false
         self.order = data["order"] as? Int ?? 0
+        self.featured = data["featured"] as? Bool ?? false
+        self.votesCount = data["votesCount"] as? Int ?? 0
         
         // Set description after initializing name
         let defaultDescription = Category.getDefaultDescription(for: name)
@@ -45,7 +53,9 @@ struct Category: Identifiable, Codable {
             "imageURL": imageURL ?? "",
             "isTopCategory": isTopCategory,
             "order": order,
-            "description": description
+            "description": description,
+            "featured": featured,
+            "votesCount": votesCount
         ]
     }
     

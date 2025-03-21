@@ -73,10 +73,7 @@ class SubCategoryStatsViewModel: ObservableObject {
         }
     }
     
-    func setupCommentsListener() {
-        // Remove existing listener if any
-        commentsListener?.remove()
-        
+    private func setupCommentsListener() {
         let commentsRef = db.collection("comments")
             .whereField("subCategoryId", isEqualTo: currentSubCategory.id)
             .order(by: "date", descending: true)
@@ -111,6 +108,7 @@ class SubCategoryStatsViewModel: ObservableObject {
                 )
             }
             
+            // Organize comments into threads
             DispatchQueue.main.async {
                 // First, get all top-level comments (no parentId)
                 self?.comments = allComments.filter { $0.parentId == nil }

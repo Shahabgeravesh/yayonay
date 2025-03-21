@@ -37,11 +37,6 @@ struct SubCategoryStatsView: View {
         totalVotes > 0 ? Double(statsViewModel.currentSubCategory.nayCount) / Double(totalVotes) * 100 : 0
     }
     
-    private func submitComment() {
-        statsViewModel.addComment(newComment)
-        newComment = "" // Clear the input field after submitting
-    }
-    
     var body: some View {
         ScrollView {
             VStack(spacing: 20) {
@@ -109,7 +104,6 @@ struct SubCategoryStatsView: View {
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {
             categoryViewModel.fetchCategories()
-            statsViewModel.setupCommentsListener() // Make sure comments listener is set up
         }
     }
     
@@ -129,6 +123,12 @@ struct SubCategoryStatsView: View {
                 .font(.title)
                 .fontWeight(.bold)
         }
+    }
+    
+    private func submitComment() {
+        guard !newComment.isEmpty else { return }
+        statsViewModel.addComment(newComment)
+        newComment = ""
     }
     
     private func share(on platform: SocialPlatform) {

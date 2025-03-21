@@ -6,32 +6,35 @@ struct ContentView: View {
     
     var body: some View {
         TabView(selection: $selectedTab) {
-            // Hot Votes Tab (moved to first position)
+            ExploreView()
+                .tabItem {
+                    Label("Explore", systemImage: "square.grid.2x2")
+                }
+                .tag(0)
+            
             HotVotesView()
                 .tabItem {
                     Label("Hot", systemImage: "flame")
                 }
-                .tag(0)
+                .tag(1)
             
-            // Topics Tab (moved to second position)
             TopicBoxView()
                 .tabItem {
                     Label("Topics", systemImage: "list.bullet")
                 }
-                .tag(1)
+                .tag(2)
             
-            // Other tabs remain in the same order
             VotesView()
                 .tabItem {
                     Label("Votes", systemImage: "checkmark.circle")
                 }
-                .tag(2)
+                .tag(3)
             
             ProfileView()
                 .tabItem {
                     Label("Profile", systemImage: "person")
                 }
-                .tag(3)
+                .tag(4)
         }
         .environmentObject(userManager)
     }

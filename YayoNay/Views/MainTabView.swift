@@ -10,25 +10,46 @@ struct MainTabView: View {
                     Label("Explore", systemImage: "square.grid.2x2")
                 }
             
-            VotesView()
-                .tabItem {
-                    Label("Votes", systemImage: "list.bullet")
-                }
-            
             HotVotesView()
                 .tabItem {
-                    Label("Hot", systemImage: "flame")
+                    VStack {
+                        Image(systemName: "flame.fill")
+                            .foregroundColor(.blue)
+                        Text("Hot")
+                            .foregroundColor(.blue)
+                    }
                 }
             
             TopicBoxView()
                 .tabItem {
-                    Label("Topics", systemImage: "square.text.square")
+                    VStack {
+                        Image(systemName: "list.bullet")
+                            .foregroundColor(.gray)
+                        Text("Topics")
+                            .foregroundColor(.gray)
+                    }
+                }
+            
+            VotesView()
+                .tabItem {
+                    VStack {
+                        Image(systemName: "checkmark.circle.fill")
+                            .foregroundColor(.gray)
+                        Text("Votes")
+                            .foregroundColor(.gray)
+                    }
                 }
             
             ProfileView()
                 .tabItem {
-                    Label("Profile", systemImage: "person.fill")
+                    VStack {
+                        Image(systemName: "person.fill")
+                            .foregroundColor(.gray)
+                        Text("Profile")
+                            .foregroundColor(.gray)
+                    }
                 }
         }
+        .tint(.blue) // This sets the active tab color
     }
 } 
