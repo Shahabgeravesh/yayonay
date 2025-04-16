@@ -10,6 +10,8 @@ struct ProfileView: View {
     @State private var selectedImage: UIImage?
     @State private var showSignOutAlert = false
     @State private var imageSelection: PhotosPickerItem? = nil
+    @State private var showingEditProfile = false
+    @State private var showingShareSheet = false
     
     var body: some View {
         NavigationStack {
@@ -66,6 +68,14 @@ struct ProfileView: View {
             }
             .sheet(isPresented: $showEditProfile) {
                 EditProfileView(userManager: userManager)
+            }
+            .sheet(isPresented: $showingShareSheet) {
+                if let inviteLink = createInviteLink() {
+                    ShareSheet(activityItems: [
+                        "\(userManager.currentUser?.username ?? "Someone") is inviting you to vote on YayoNay!",
+                        inviteLink
+                    ])
+                }
             }
             .onChange(of: imageSelection) { newItem in
                 Task {
@@ -136,7 +146,27 @@ struct ProfileView: View {
                         .padding(.horizontal)
                 }
             }
+            
+            // Action Buttons
+            HStack(spacing: 20) {
+                Button(action: { showEditProfile = true }) {
+                    Label("Edit Profile", systemImage: "pencil")
+                        .font(.subheadline)
+                        .foregroundColor(.blue)
+                }
+                
+                Button(action: { showingShareSheet = true }) {
+                    Label("Invite Others", systemImage: "person.badge.plus")
+                        .font(.subheadline)
+                        .foregroundColor(.blue)
+                }
+            }
+            .padding(.top, 8)
         }
+        .padding()
+        .background(Color(.systemBackground))
+        .cornerRadius(15)
+        .shadow(radius: 2)
     }
     
     private var profileImage: some View {
@@ -167,25 +197,29 @@ struct ProfileView: View {
     }
     
     private var statsSection: some View {
-        HStack(spacing: 0) {
-            StatItem(
-                value: userManager.currentUser?.votesCount ?? 0,
-                label: "Votes"
-            )
+        HStack(spacing: 30) {
+            VStack {
+                Text("\(userManager.currentUser?.votesCount ?? 0)")
+                    .font(.title2)
+                    .bold()
+                Text("Votes")
+                    .font(.caption)
+                    .foregroundColor(.gray)
+            }
             
-            Divider()
-                .frame(height: 40)
-                .padding(.horizontal)
-            
-            StatItem(
-                value: userManager.currentUser?.topInterests.count ?? 0,
-                label: "Interests"
-            )
+            VStack {
+                Text("\(userManager.currentUser?.recentActivity.count ?? 0)")
+                    .font(.title2)
+                    .bold()
+                Text("Activity")
+                    .font(.caption)
+                    .foregroundColor(.gray)
+            }
         }
-        .padding(.vertical, 20)
-        .glassmorphic()
-        .clipShape(RoundedRectangle(cornerRadius: 20))
-        .appShadow()
+        .padding()
+        .background(Color(.systemBackground))
+        .cornerRadius(15)
+        .shadow(radius: 2)
     }
     
     private func interestsSection(interests: [String]) -> some View {
@@ -250,6 +284,19 @@ struct ProfileView: View {
         .glassmorphic()
         .clipShape(RoundedRectangle(cornerRadius: 20))
         .appShadow()
+    }
+    
+    private func createInviteLink() -> URL? {
+        guard let userId = userManager.currentUser?.id,
+              let username = userManager.currentUser?.username else { return nil }
+        
+        // Create a simple invite link with the user's ID and message
+        let baseURL = "https://yayonay.app/invite"
+        let inviteMessage = "\(username) is inviting you to vote on YayoNay!"
+        let encodedMessage = inviteMessage.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
+        let inviteURL = "\(baseURL)?ref=\(userId)&message=\(encodedMessage)"
+        
+        return URL(string: inviteURL)
     }
 }
 

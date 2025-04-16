@@ -167,11 +167,7 @@ class UserManager: NSObject, ObservableObject {
     private func updateUserData(userId: String, username: String, imageData: String?, bio: String?, interests: [String]?) {
         var userData: [String: Any] = [
             "username": username,
-            "lastUpdated": Timestamp(date: Date()),
-            "joinDate": Timestamp(date: Date()),
-            "votesCount": 0,
-            "lastVoteDate": Timestamp(date: Date()),
-            "socialLinks": [:] as [String: String]
+            "lastUpdated": Timestamp(date: Date())
         ]
         
         if let imageData = imageData {
@@ -206,12 +202,17 @@ class UserManager: NSObject, ObservableObject {
                         if let error = error {
                             self?.error = error
                         }
-                        // No need to manually fetch the profile anymore
                     }
                 }
             } else {
-                // Create new document
-                docRef.setData(userData) { [weak self] error in
+                // Create new document with default values
+                var newUserData = userData
+                newUserData["joinDate"] = Timestamp(date: Date())
+                newUserData["votesCount"] = 0
+                newUserData["lastVoteDate"] = Timestamp(date: Date())
+                newUserData["socialLinks"] = [:] as [String: String]
+                
+                docRef.setData(newUserData) { [weak self] error in
                     DispatchQueue.main.async {
                         self?.isLoading = false
                         if let error = error {
@@ -219,7 +220,6 @@ class UserManager: NSObject, ObservableObject {
                         } else {
                             self?.needsOnboarding = false
                         }
-                        // No need to manually fetch the profile anymore
                     }
                 }
             }

@@ -79,6 +79,8 @@ struct TopicRow: View {
     let onShare: () -> Void
     let onShareViaMessage: () -> Void
     
+    @State private var showingShareSheet = false
+    
     private let dateFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.dateStyle = .medium
@@ -168,11 +170,7 @@ struct TopicRow: View {
                     }
                     
                     // General share button
-                    Button(action: onShare) {
-                        Image(systemName: "square.and.arrow.up")
-                            .font(.system(size: 16))
-                            .foregroundStyle(AppColor.secondaryText)
-                    }
+                    shareButton
                 }
             }
         }
@@ -180,16 +178,24 @@ struct TopicRow: View {
         .background(AppColor.secondaryBackground.opacity(0.5))
         .cornerRadius(12)
     }
-}
-
-struct ShareSheet: UIViewControllerRepresentable {
-    let items: [Any]
     
-    func makeUIViewController(context: Context) -> UIActivityViewController {
-        UIActivityViewController(activityItems: items, applicationActivities: nil)
+    private var shareButton: some View {
+        Button(action: {
+            showingShareSheet = true
+        }) {
+            Image(systemName: "square.and.arrow.up")
+                .font(.system(size: 16, weight: .medium))
+                .foregroundColor(.gray)
+                .frame(width: 32, height: 32)
+                .background(AppColor.secondaryBackground.opacity(0.5))
+                .cornerRadius(12)
+        }
+        .sheet(isPresented: $showingShareSheet) {
+            if let url = URL(string: "https://yayonay.app/topic/\(topic.id)") {
+                ShareSheet(activityItems: [url])
+            }
+        }
     }
-    
-    func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
 }
 
 #Preview {
