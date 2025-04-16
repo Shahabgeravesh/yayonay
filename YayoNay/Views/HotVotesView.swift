@@ -77,6 +77,7 @@ class HotVotesViewModel: ObservableObject {
         fetchHotVotes()
         fetchTopCategories()
         fetchTodaysTopVotes()
+        createCategoriesIfNeeded()
     }
     
     private func fetchHotVotes() {
@@ -113,44 +114,53 @@ class HotVotesViewModel: ObservableObject {
     }
     
     func fetchTopCategories() {
-        // First get all votes to count by category
-        db.collection("votes")
-            .getDocuments { [weak self] snapshot, error in
+        print("DEBUG: Fetching top categories")
+        
+        // Get categories with isTopCategory=true
+        db.collection("categories")
+            .whereField("isTopCategory", isEqualTo: true)
+            .order(by: "order")
+            .addSnapshotListener { [weak self] snapshot, error in
                 if let error = error {
-                    print("Error fetching top categories: \(error)")
+                    print("DEBUG: Error fetching categories: \(error.localizedDescription)")
                     return
                 }
                 
-                // Count votes per category
-                var categoryVotes: [String: (name: String, votes: Int)] = [:]
-                
-                snapshot?.documents.forEach { doc in
-                    let data = doc.data()
-                    if let categoryId = data["categoryId"] as? String,
-                       let categoryName = data["categoryName"] as? String {
-                        let current = categoryVotes[categoryId]?.votes ?? 0
-                        categoryVotes[categoryId] = (categoryName, current + 1)
-                    }
+                guard let documents = snapshot?.documents else {
+                    print("DEBUG: No category documents found")
+                    return
                 }
                 
-                // Get categories and combine with vote counts
-                self?.db.collection("categories").getDocuments { snapshot, error in
-                    guard let documents = snapshot?.documents else { return }
+                print("DEBUG: Found \(documents.count) category documents")
+                
+                let topCategories = documents.compactMap { doc -> TopCategory? in
+                    let id = doc.documentID
+                    let data = doc.data()
                     
-                    self?.topCategories = documents.compactMap { doc -> TopCategory? in
-                        let id = doc.documentID
-                        guard let name = doc["name"] as? String else { return nil }
-                        let votes = categoryVotes[id]?.votes ?? 0
-                        
-                        return TopCategory(
-                            id: id,
-                            name: name,
-                            totalVotes: votes
-                        )
+                    print("DEBUG: Processing category document: \(data)")
+                    
+                    guard let name = data["name"] as? String else {
+                        print("DEBUG: Category \(id) missing name")
+                        return nil
                     }
-                    .sorted { $0.totalVotes > $1.totalVotes }
-                    .prefix(5)
-                    .map { $0 }
+                    
+                    let votes = data["votesCount"] as? Int ?? 0
+                    print("DEBUG: Category \(name) has \(votes) votes")
+                    
+                    return TopCategory(
+                        id: id,
+                        name: name,
+                        totalVotes: votes
+                    )
+                }
+                .sorted { $0.totalVotes > $1.totalVotes }
+                .prefix(5)
+                .map { $0 }
+                
+                print("DEBUG: Top categories: \(topCategories.map { "\($0.name): \($0.totalVotes) votes" })")
+                
+                DispatchQueue.main.async {
+                    self?.topCategories = topCategories
                 }
             }
     }
@@ -212,10 +222,124 @@ class HotVotesViewModel: ObservableObject {
                     .map { $0 }
             }
     }
+    
+    func createCategoriesIfNeeded() {
+        print("DEBUG: Checking if categories exist and creating if needed")
+        
+        // Define categories
+        let categories = [
+            [
+                "name": "Food",
+                "description": "Discover delicious dishes",
+                "isTopCategory": true,
+                "order": 1,
+                "featured": true,
+                "votesCount": 0
+            ],
+            [
+                "name": "Drinks",
+                "description": "Refreshing beverages",
+                "isTopCategory": true,
+                "order": 2,
+                "featured": true,
+                "votesCount": 0
+            ],
+            [
+                "name": "Dessert",
+                "description": "Sweet treats and delights",
+                "isTopCategory": true,
+                "order": 3,
+                "featured": true,
+                "votesCount": 0
+            ],
+            [
+                "name": "Sports",
+                "description": "Game on!",
+                "isTopCategory": true,
+                "order": 4,
+                "featured": true,
+                "votesCount": 0
+            ],
+            [
+                "name": "Travel",
+                "description": "Explore destinations",
+                "isTopCategory": true,
+                "order": 5,
+                "featured": true,
+                "votesCount": 0
+            ],
+            [
+                "name": "Art",
+                "description": "Creative expressions",
+                "isTopCategory": true,
+                "order": 6,
+                "featured": true,
+                "votesCount": 0
+            ],
+            [
+                "name": "Music",
+                "description": "Rhythm and melodies",
+                "isTopCategory": true,
+                "order": 7,
+                "featured": true,
+                "votesCount": 0
+            ],
+            [
+                "name": "Movies",
+                "description": "Cinematic experiences",
+                "isTopCategory": true,
+                "order": 8,
+                "featured": true,
+                "votesCount": 0
+            ],
+            [
+                "name": "Books",
+                "description": "Literary adventures",
+                "isTopCategory": true,
+                "order": 9,
+                "featured": true,
+                "votesCount": 0
+            ],
+            [
+                "name": "Technology",
+                "description": "Innovation and gadgets",
+                "isTopCategory": true,
+                "order": 10,
+                "featured": true,
+                "votesCount": 0
+            ]
+        ]
+        
+        // Check if categories collection exists and has documents
+        db.collection("categories").getDocuments { [weak self] snapshot, error in
+            if let error = error {
+                print("DEBUG: Error checking categories: \(error.localizedDescription)")
+                return
+            }
+            
+            // If there are no categories, create them
+            if snapshot?.documents.isEmpty ?? true {
+                print("DEBUG: No categories found, creating default categories")
+                
+                for category in categories {
+                    self?.db.collection("categories").addDocument(data: category) { error in
+                        if let error = error {
+                            print("DEBUG: Error adding category \(category["name"] ?? "unknown"): \(error.localizedDescription)")
+                        } else {
+                            print("DEBUG: Successfully added category: \(category["name"] ?? "unknown")")
+                        }
+                    }
+                }
+            } else {
+                print("DEBUG: Categories already exist, count: \(snapshot?.documents.count ?? 0)")
+            }
+        }
+    }
 }
 
 struct HotVotesView: View {
     @StateObject private var viewModel = HotVotesViewModel()
+    @State private var isLoading = true
     
     var body: some View {
         NavigationStack {
@@ -225,8 +349,19 @@ struct HotVotesView: View {
                     VStack(alignment: .leading, spacing: 16) {
                         SectionHeader(title: "Top Categories", subtitle: "Most voted categories")
                         
-                        ForEach(Array(viewModel.topCategories.enumerated()), id: \.element.id) { index, category in
-                            TopCategoryRow(index: index + 1, category: category)
+                        if viewModel.topCategories.isEmpty {
+                            Text("No categories with votes yet")
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                                .padding()
+                                .frame(maxWidth: .infinity, alignment: .center)
+                                .background(Color(.systemBackground))
+                                .clipShape(RoundedRectangle(cornerRadius: 16))
+                                .shadow(color: Color.black.opacity(0.1), radius: 5, y: 2)
+                        } else {
+                            ForEach(Array(viewModel.topCategories.enumerated()), id: \.element.id) { index, category in
+                                TopCategoryRow(index: index + 1, category: category)
+                            }
                         }
                     }
                     
@@ -234,8 +369,19 @@ struct HotVotesView: View {
                     VStack(alignment: .leading, spacing: 16) {
                         SectionHeader(title: "Today's Trending", subtitle: "Most popular in the last 24 hours")
                         
-                        ForEach(Array(viewModel.todaysTopVotes.enumerated()), id: \.element.id) { index, item in
-                            HotVoteCard(index: index + 1, item: item)
+                        if viewModel.todaysTopVotes.isEmpty {
+                            Text("No votes today yet")
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                                .padding()
+                                .frame(maxWidth: .infinity, alignment: .center)
+                                .background(Color(.systemBackground))
+                                .clipShape(RoundedRectangle(cornerRadius: 16))
+                                .shadow(color: Color.black.opacity(0.1), radius: 5, y: 2)
+                        } else {
+                            ForEach(Array(viewModel.todaysTopVotes.enumerated()), id: \.element.id) { index, item in
+                                HotVoteCard(index: index + 1, item: item)
+                            }
                         }
                     }
                     
@@ -243,8 +389,19 @@ struct HotVotesView: View {
                     VStack(alignment: .leading, spacing: 16) {
                         SectionHeader(title: "All-Time Best", subtitle: "Highest rated items ever")
                         
-                        ForEach(Array(viewModel.hotVotes.enumerated()), id: \.element.id) { index, item in
-                            HotVoteCard(index: index + 1, item: item)
+                        if viewModel.hotVotes.isEmpty {
+                            Text("No votes yet")
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                                .padding()
+                                .frame(maxWidth: .infinity, alignment: .center)
+                                .background(Color(.systemBackground))
+                                .clipShape(RoundedRectangle(cornerRadius: 16))
+                                .shadow(color: Color.black.opacity(0.1), radius: 5, y: 2)
+                        } else {
+                            ForEach(Array(viewModel.hotVotes.enumerated()), id: \.element.id) { index, item in
+                                HotVoteCard(index: index + 1, item: item)
+                            }
                         }
                     }
                 }
@@ -253,9 +410,24 @@ struct HotVotesView: View {
             }
             .background(Color(.systemGroupedBackground))
             .navigationTitle("Hot Votes")
+            .overlay {
+                if isLoading {
+                    ProgressView()
+                        .scaleEffect(1.5)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .background(Color.black.opacity(0.1))
+                }
+            }
         }
         .onAppear {
+            print("DEBUG: HotVotesView appeared")
+            isLoading = true
             viewModel.fetchData()
+            
+            // Set a timer to hide the loading indicator after a reasonable time
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                isLoading = false
+            }
         }
     }
 }
@@ -265,12 +437,17 @@ struct TopCategoryRow: View {
     let category: TopCategory
     
     var body: some View {
-        NavigationLink(destination: CategoryDetailView(category: Category(
-            id: category.id,
-            name: category.name,
-            isTopCategory: true,
-            order: index
-        ))) {
+        NavigationLink {
+            CategoryDetailView(category: Category(
+                id: category.id,
+                name: category.name,
+                isTopCategory: true,
+                order: index
+            ))
+            .onAppear {
+                print("DEBUG: Navigating to CategoryDetailView for category: \(category.name) (ID: \(category.id))")
+            }
+        } label: {
             HStack(spacing: 16) {
                 // Rank Circle
                 ZStack {
