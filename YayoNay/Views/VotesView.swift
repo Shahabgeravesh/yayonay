@@ -290,7 +290,7 @@ struct VotesView: View {
                     // Votes List
                     List {
                         ForEach(viewModel.sortedAndFilteredVotes(searchText: searchText)) { vote in
-                            VoteCard(vote: vote)
+                            VoteCard(vote: vote, isClickable: true)
                                 .listRowInsets(EdgeInsets())
                                 .listRowSeparator(.hidden)
                                 .padding(.vertical, 4)
@@ -345,7 +345,7 @@ struct CommentsView: View {
         NavigationStack {
             VStack {
                 // Vote Summary
-                VoteCard(vote: vote)
+                VoteCard(vote: vote, isClickable: false)
                     .padding()
                 
                 // Comments List
@@ -472,60 +472,78 @@ struct EmptyStateView: View {
 
 struct VoteCard: View {
     let vote: Vote
+    let isClickable: Bool
+    
+    init(vote: Vote, isClickable: Bool = true) {
+        self.vote = vote
+        self.isClickable = isClickable
+    }
     
     var body: some View {
-        NavigationLink {
-            SubCategoryStatsView(subCategory: SubCategory(
-                id: vote.subCategoryId,
-                name: vote.itemName,
-                imageURL: vote.imageURL,
-                categoryId: vote.categoryId,
-                order: 0,
-                yayCount: 0,
-                nayCount: 0
-            ))
-        } label: {
-            HStack(spacing: 12) {
-                // Image
-                AsyncImage(url: URL(string: vote.imageURL)) { image in
-                    image
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
-                } placeholder: {
-                    Color.gray.opacity(0.2)
+        Group {
+            if isClickable {
+                NavigationLink {
+                    SubCategoryStatsView(subCategory: SubCategory(
+                        id: vote.subCategoryId,
+                        name: vote.itemName,
+                        imageURL: vote.imageURL,
+                        categoryId: vote.categoryId,
+                        order: 0,
+                        yayCount: 0,
+                        nayCount: 0
+                    ))
+                } label: {
+                    voteContent
                 }
-                .frame(width: 50, height: 50)
-                .clipShape(RoundedRectangle(cornerRadius: 8))
-                
-                // Content
-                VStack(alignment: .leading, spacing: 4) {
-                    HStack {
-                        Text(vote.itemName)
-                            .font(.headline)
-                        
-                        Text(vote.isYay ? "Yay!" : "Nay!")
-                            .font(.subheadline)
-                            .foregroundColor(vote.isYay ? .green : .red)
-                    }
+                .buttonStyle(.plain)
+            } else {
+                voteContent
+            }
+        }
+    }
+    
+    private var voteContent: some View {
+        HStack(spacing: 12) {
+            // Image
+            AsyncImage(url: URL(string: vote.imageURL)) { image in
+                image
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+            } placeholder: {
+                Color.gray.opacity(0.2)
+            }
+            .frame(width: 50, height: 50)
+            .clipShape(RoundedRectangle(cornerRadius: 8))
+            
+            // Content
+            VStack(alignment: .leading, spacing: 4) {
+                HStack {
+                    Text(vote.itemName)
+                        .font(.headline)
                     
-                    Text(formatDate(vote.date))
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                    Text(vote.isYay ? "Yay!" : "Nay!")
+                        .font(.subheadline)
+                        .foregroundColor(vote.isYay ? .green : .red)
                 }
                 
-                Spacer()
-                
-                // Only one chevron
+                Text(formatDate(vote.date))
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+            
+            Spacer()
+            
+            // Only show chevron if clickable
+            if isClickable {
                 Image(systemName: "chevron.forward")
                     .foregroundStyle(.secondary)
                     .font(.system(size: 14))
             }
-            .padding()
-            .background(Color(.systemBackground))
-            .clipShape(RoundedRectangle(cornerRadius: 16))
-            .shadow(color: Color.black.opacity(0.1), radius: 5, y: 2)
         }
-        .buttonStyle(.plain)
+        .padding()
+        .background(Color(.systemBackground))
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .shadow(color: Color.black.opacity(0.1), radius: 5, y: 2)
     }
     
     private func formatDate(_ date: Date) -> String {
