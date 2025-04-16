@@ -19,9 +19,10 @@ struct CommentRow: View {
     }
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 12) {
             // Comment Header
-            HStack {
+            HStack(spacing: 12) {
+                // User Avatar
                 AsyncImage(url: URL(string: comment.userImage)) { image in
                     image
                         .resizable()
@@ -29,16 +30,19 @@ struct CommentRow: View {
                 } placeholder: {
                     Color.gray.opacity(0.3)
                 }
-                .frame(width: 32, height: 32)
+                .frame(width: 40, height: 40)
                 .clipShape(Circle())
+                .overlay(
+                    Circle()
+                        .stroke(Color.gray.opacity(0.2), lineWidth: 1)
+                )
                 
-                VStack(alignment: .leading) {
+                VStack(alignment: .leading, spacing: 4) {
                     Text(comment.username)
-                        .font(.subheadline)
-                        .fontWeight(.semibold)
+                        .font(.system(size: 16, weight: .semibold))
                     
                     Text(comment.date, style: .relative)
-                        .font(.caption)
+                        .font(.system(size: 13))
                         .foregroundColor(.secondary)
                 }
                 
@@ -49,67 +53,109 @@ struct CommentRow: View {
                         onDelete()
                     } label: {
                         Image(systemName: "trash")
+                            .font(.system(size: 14))
                             .foregroundColor(.red)
+                            .padding(8)
+                            .background(Color.red.opacity(0.1))
+                            .clipShape(Circle())
                     }
                 }
             }
             
             // Comment Text
             Text(comment.text)
-                .font(.body)
+                .font(.system(size: 16))
+                .lineSpacing(4)
+                .padding(.leading, 4)
             
-            // Like Button
-            Button {
-                onLike()
-            } label: {
-                HStack {
-                    Image(systemName: comment.isLiked ? "heart.fill" : "heart")
-                        .foregroundColor(comment.isLiked ? .red : .gray)
-                    
-                    Text("\(comment.likes)")
-                        .font(.caption)
+            // Action Buttons
+            HStack(spacing: 16) {
+                // Like Button
+                Button {
+                    onLike()
+                } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: comment.isLiked ? "heart.fill" : "heart")
+                            .font(.system(size: 14))
+                            .foregroundColor(comment.isLiked ? .red : .gray)
+                        
+                        Text("\(comment.likes)")
+                            .font(.system(size: 13))
+                            .foregroundColor(.secondary)
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(Color.gray.opacity(0.1))
+                    .clipShape(Capsule())
+                }
+                
+                // Reply Button
+                if let onReply = onReply {
+                    Button {
+                        isReplying.toggle()
+                    } label: {
+                        HStack(spacing: 6) {
+                            Image(systemName: "arrowshape.turn.up.left")
+                                .font(.system(size: 14))
+                            Text("Reply")
+                                .font(.system(size: 13))
+                        }
+                        .foregroundColor(.blue)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(Color.blue.opacity(0.1))
+                        .clipShape(Capsule())
+                    }
+                }
+                
+                // Show Replies Button
+                if !comment.replies.isEmpty {
+                    Button {
+                        showingReplies.toggle()
+                    } label: {
+                        HStack(spacing: 6) {
+                            Image(systemName: showingReplies ? "chevron.up" : "chevron.down")
+                                .font(.system(size: 14))
+                            Text("\(comment.replies.count) replies")
+                                .font(.system(size: 13))
+                        }
                         .foregroundColor(.secondary)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(Color.gray.opacity(0.1))
+                        .clipShape(Capsule())
+                    }
                 }
             }
             
-            // Reply Button (only show if onReply is provided)
-            if let onReply = onReply {
-                Button {
-                    isReplying.toggle()
-                } label: {
-                    Label("Reply", systemImage: "arrowshape.turn.up.left")
-                        .font(.caption)
-                        .foregroundColor(.blue)
-                }
-                
-                // Reply Input Field
-                if isReplying {
-                    HStack {
-                        TextField("Write a reply...", text: $replyText)
-                            .textFieldStyle(RoundedBorderTextFieldStyle())
-                        
-                        Button("Post") {
-                            onReply(replyText)
-                            replyText = ""
-                            isReplying = false
-                        }
-                        .disabled(replyText.isEmpty)
+            // Reply Input Field
+            if isReplying, let onReply = onReply {
+                HStack(spacing: 12) {
+                    TextField("Write a reply...", text: $replyText)
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                        .font(.system(size: 15))
+                    
+                    Button {
+                        onReply(replyText)
+                        replyText = ""
+                        isReplying = false
+                    } label: {
+                        Text("Post")
+                            .font(.system(size: 15, weight: .medium))
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 8)
+                            .background(replyText.isEmpty ? Color.blue.opacity(0.5) : Color.blue)
+                            .clipShape(Capsule())
                     }
-                    .padding(.top, 8)
+                    .disabled(replyText.isEmpty)
                 }
+                .padding(.top, 4)
             }
             
             // Replies
-            if !comment.replies.isEmpty {
-                Button {
-                    showingReplies.toggle()
-                } label: {
-                    Text("\(comment.replies.count) replies")
-                        .font(.caption)
-                        .foregroundColor(.blue)
-                }
-                
-                if showingReplies {
+            if showingReplies {
+                VStack(spacing: 16) {
                     ForEach(comment.replies) { reply in
                         CommentRow(
                             comment: reply,
@@ -117,14 +163,15 @@ struct CommentRow: View {
                             onDelete: onDelete,
                             onReply: onReply
                         )
-                        .padding(.leading)
+                        .padding(.leading, 20)
                     }
                 }
+                .padding(.top, 8)
             }
         }
-        .padding()
+        .padding(16)
         .background(Color(.systemBackground))
-        .cornerRadius(12)
-        .shadow(radius: 2)
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .shadow(color: Color.black.opacity(0.05), radius: 8, y: 4)
     }
 } 
