@@ -1,0 +1,24 @@
+{
+  "name": "yayonay",
+  "version": "1.0.0",
+  "main": "add_categories.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Shahabgeravesh/yayonay.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Shahabgeravesh/yayonay/issues"
+  },
+  "homepage": "https://github.com/Shahabgeravesh/yayonay#readme",
+  "description": "",
+  "dependencies": {
+    "firebase": "^11.6.0",
+    "firebase-admin": "^13.2.0"
+  }
+}
