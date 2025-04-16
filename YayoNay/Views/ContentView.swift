@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct ContentView: View {
-    @StateObject private var userManager = UserManager()
+    @EnvironmentObject var userManager: UserManager
     @State private var selectedTab = 0
     
     var body: some View {
@@ -36,7 +36,6 @@ struct ContentView: View {
                 }
                 .tag(4)
         }
-        .environmentObject(userManager)
     }
 }
 

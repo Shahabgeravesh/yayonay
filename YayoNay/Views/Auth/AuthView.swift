@@ -2,35 +2,11 @@ import SwiftUI
 import AuthenticationServices
 
 struct AuthView: View {
-    @StateObject private var userManager = UserManager()
+    @EnvironmentObject var userManager: UserManager
     @Environment(\.colorScheme) private var colorScheme
     @State private var showSignUp = false
     @State private var showSignIn = false
-    
-    private var googleSignInButton: some View {
-        Button(action: { userManager.signInWithGoogle() }) {
-            HStack(spacing: 24) {
-                Image("google_signin", bundle: nil)
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 18, height: 18)
-                
-                Text("Sign in with Google")
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundStyle(.black)
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 10)
-            .background(Color.white)
-            .cornerRadius(4)
-            .overlay(
-                RoundedRectangle(cornerRadius: 4)
-                    .stroke(Color(.systemGray4), lineWidth: 1)
-            )
-            .shadow(color: .black.opacity(0.05), radius: 1, y: 1)
-        }
-        .buttonStyle(.plain)
-    }
+    @State private var showDatabaseCleanup = false
     
     var body: some View {
         NavigationStack {
@@ -60,7 +36,7 @@ struct AuthView: View {
                 VStack(spacing: 16) {
                     // Social Sign In
                     VStack(spacing: 12) {
-                        googleSignInButton
+                        GoogleSignInButton(action: { userManager.signInWithGoogle() })
                         
                         SignInWithAppleButton { request in
                             request.requestedScopes = [.fullName, .email]
@@ -137,6 +113,16 @@ struct AuthView: View {
                             .tint(AppColor.accent)
                     }
                 }
+                
+                // Developer Tools (only visible in DEBUG)
+                #if DEBUG
+                Button(action: { showDatabaseCleanup = true }) {
+                    Text("Database Cleanup")
+                        .font(.caption)
+                        .foregroundColor(.red)
+                        .padding(.top, 8)
+                }
+                #endif
             }
             .padding(.vertical, 40)
             .sheet(isPresented: $showSignUp) {
@@ -144,6 +130,9 @@ struct AuthView: View {
             }
             .sheet(isPresented: $showSignIn) {
                 SignInView(userManager: userManager)
+            }
+            .sheet(isPresented: $showDatabaseCleanup) {
+                DatabaseCleanupView()
             }
             .overlay {
                 if userManager.isLoading {

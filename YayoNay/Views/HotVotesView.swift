@@ -81,6 +81,7 @@ class HotVotesViewModel: ObservableObject {
     
     private func fetchHotVotes() {
         db.collection("subCategories")
+            .whereField("yayCount", isGreaterThan: 0)  // Only get items with votes
             .order(by: "yayCount", descending: true)
             .limit(to: 50)
             .addSnapshotListener { [weak self] snapshot, error in
@@ -94,7 +95,8 @@ class HotVotesViewModel: ObservableObject {
                     guard let name = data["name"] as? String,
                           let imageURL = data["imageURL"] as? String,
                           let yayCount = data["yayCount"] as? Int,
-                          let nayCount = data["nayCount"] as? Int
+                          let nayCount = data["nayCount"] as? Int,
+                          yayCount + nayCount > 0  // Double check total votes
                     else { return nil }
                     
                     return HotVoteItem(

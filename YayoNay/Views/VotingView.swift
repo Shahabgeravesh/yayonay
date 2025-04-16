@@ -151,17 +151,46 @@ class VotingViewModel: ObservableObject {
             "timestamp": Timestamp(date: Date())
         ]
         
+        // First, add the vote document
         db.collection("votes").addDocument(data: voteData) { [weak self] error in
             guard let self = self else { return }
             
-            DispatchQueue.main.async {
-                self.isLoading = false
-                
-                if let error = error {
+            if let error = error {
+                DispatchQueue.main.async {
                     self.error = error
+                    self.isLoading = false
                     completion(false)
-                } else {
-                    completion(true)
+                }
+                return
+            }
+            
+            // Then update the topic's vote counts
+            let topicRef = self.db.collection("topics").document(self.topic.id)
+            
+            // Determine if this is a yay or nay vote
+            let isYay = choice == self.topic.optionA
+            
+            // Update the appropriate vote count
+            let updateData: [String: Any] = isYay ? 
+                ["upvotes": FieldValue.increment(Int64(1))] : 
+                ["downvotes": FieldValue.increment(Int64(1))]
+            
+            topicRef.updateData(updateData) { error in
+                DispatchQueue.main.async {
+                    self.isLoading = false
+                    
+                    if let error = error {
+                        self.error = error
+                        completion(false)
+                    } else {
+                        // Update the local topic object
+                        if isYay {
+                            self.topic.upvotes += 1
+                        } else {
+                            self.topic.downvotes += 1
+                        }
+                        completion(true)
+                    }
                 }
             }
         }

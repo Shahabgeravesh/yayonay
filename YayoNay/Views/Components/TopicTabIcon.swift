@@ -7,10 +7,15 @@ struct TopicTabIcon: View {
             Image(systemName: "cube.fill")
                 .font(.system(size: 24))
             
-            // Question mark overlay
-            Image(systemName: "questionmark")
-                .font(.system(size: 14, weight: .bold))
-                .offset(y: -2)
+            // Question marks on each side
+            HStack(spacing: 0) {
+                Text("?")
+                    .font(.system(size: 12, weight: .bold))
+                    .offset(x: -8)
+                Text("?")
+                    .font(.system(size: 12, weight: .bold))
+                    .offset(x: 8)
+            }
         }
     }
 }

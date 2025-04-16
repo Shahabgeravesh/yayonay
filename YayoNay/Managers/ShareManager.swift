@@ -87,6 +87,67 @@ class ShareManager: NSObject, MFMessageComposeViewControllerDelegate {
         }
     }
     
+    func shareViaMessage(for topic: Topic) {
+        guard MFMessageComposeViewController.canSendText() else {
+            // Show alert that messaging is not available
+            DispatchQueue.main.async {
+                if let topVC = UIApplication.shared.windows.first?.rootViewController?.topMostViewController() {
+                    let alert = UIAlertController(
+                        title: "Cannot Send Message",
+                        message: "Your device is not configured to send text messages.",
+                        preferredStyle: .alert
+                    )
+                    alert.addAction(UIAlertAction(title: "OK", style: .default))
+                    topVC.present(alert, animated: true)
+                }
+            }
+            return
+        }
+        
+        guard let url = createShareURL(for: topic),
+              let userId = Auth.auth().currentUser?.uid else { return }
+        
+        // Get the user's profile from Firestore
+        db.collection("users").document(userId).getDocument { [weak self] snapshot, error in
+            guard let self = self,
+                  let data = snapshot?.data(),
+                  let username = data["username"] as? String else {
+                // Fallback to display name if profile not found
+                self?.presentMessageComposer(for: topic, with: Auth.auth().currentUser?.displayName ?? "Someone", url: url)
+                return
+            }
+            
+            self.presentMessageComposer(for: topic, with: username, url: url)
+        }
+    }
+    
+    private func presentMessageComposer(for topic: Topic, with username: String, url: URL) {
+        let messageVC = MFMessageComposeViewController()
+        messageVC.messageComposeDelegate = self
+        
+        let messageText = """
+        \(username) wants you to vote on YayoNay on:
+        
+        \(topic.title)
+        
+        Vote now: \(url.absoluteString)
+        """
+        
+        messageVC.body = messageText
+        
+        // Present the message composer
+        DispatchQueue.main.async {
+            if let topVC = UIApplication.shared.windows.first?.rootViewController?.topMostViewController() {
+                topVC.present(messageVC, animated: true)
+            }
+        }
+    }
+    
+    // MARK: - MFMessageComposeViewControllerDelegate
+    func messageComposeViewController(_ controller: MFMessageComposeViewController, didFinishWith result: MessageComposeResult) {
+        controller.dismiss(animated: true)
+    }
+    
     private func createShareImage(for topic: Topic, username: String) -> UIImage {
         let renderer = UIGraphicsImageRenderer(size: CGSize(width: 600, height: 300))
         
@@ -120,11 +181,6 @@ class ShareManager: NSObject, MFMessageComposeViewControllerDelegate {
         }
         
         return image
-    }
-    
-    // MARK: - MFMessageComposeViewControllerDelegate
-    func messageComposeViewController(_ controller: MFMessageComposeViewController, didFinishWith result: MessageComposeResult) {
-        controller.dismiss(animated: true)
     }
 }
 

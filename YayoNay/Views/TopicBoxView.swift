@@ -53,6 +53,9 @@ struct TopicBoxView: View {
                             },
                             onShare: {
                                 viewModel.shareTopic(topic)
+                            },
+                            onShareViaMessage: {
+                                viewModel.shareViaMessage(topic)
                             }
                         )
                     }
@@ -74,6 +77,7 @@ struct TopicRow: View {
     let topic: Topic
     let onVote: (Bool) -> Void
     let onShare: () -> Void
+    let onShareViaMessage: () -> Void
     
     private let dateFormatter: DateFormatter = {
         let formatter = DateFormatter()
@@ -154,11 +158,21 @@ struct TopicRow: View {
                 
                 Spacer()
                 
-                // Share button
-                Button(action: onShare) {
-                    Image(systemName: "square.and.arrow.up")
-                        .font(.system(size: 16))
-                        .foregroundStyle(AppColor.secondaryText)
+                // Share buttons
+                HStack(spacing: 12) {
+                    // Text message share button
+                    Button(action: onShareViaMessage) {
+                        Image(systemName: "message")
+                            .font(.system(size: 16))
+                            .foregroundStyle(AppColor.secondaryText)
+                    }
+                    
+                    // General share button
+                    Button(action: onShare) {
+                        Image(systemName: "square.and.arrow.up")
+                            .font(.system(size: 16))
+                            .foregroundStyle(AppColor.secondaryText)
+                    }
                 }
             }
         }

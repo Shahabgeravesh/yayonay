@@ -145,6 +145,10 @@ class TopicBoxViewModel: ObservableObject {
         ShareManager.shared.shareContent(for: topic)
     }
     
+    func shareViaMessage(_ topic: Topic) {
+        ShareManager.shared.shareViaMessage(for: topic)
+    }
+    
     deinit {
         listener?.remove()
     }

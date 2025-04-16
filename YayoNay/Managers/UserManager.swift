@@ -39,17 +39,51 @@ class UserManager: NSObject, ObservableObject {
                 if let user = user {
                     // User is signed in
                     self.isAuthenticated = true
-                    self.fetchUserProfile(userId: user.uid)
+                    self.setupUserProfileListener(userId: user.uid)
                 } else {
                     // User is signed out
                     self.isAuthenticated = false
                     self.currentUser = nil
                     self.needsOnboarding = false
+                    self.listener?.remove()
+                    self.listener = nil
                 }
             }
         }
     }
     
+    private func setupUserProfileListener(userId: String) {
+        // Remove any existing listener
+        listener?.remove()
+        
+        // Set up a new real-time listener
+        listener = db.collection("users").document(userId).addSnapshotListener { [weak self] snapshot, error in
+            guard let self = self else { return }
+            
+            DispatchQueue.main.async {
+                if let error = error {
+                    self.error = error
+                    return
+                }
+                
+                if let snapshot = snapshot, snapshot.exists {
+                    // User has a profile
+                    self.currentUser = UserProfile(document: snapshot)
+                    self.needsOnboarding = false
+                    
+                    // Print debug information
+                    print("Profile updated via listener:")
+                    print("Votes count: \(self.currentUser?.votesCount ?? 0)")
+                    print("Recent activity count: \(self.currentUser?.recentActivity.count ?? 0)")
+                } else {
+                    // User needs to create a profile
+                    self.needsOnboarding = true
+                }
+            }
+        }
+    }
+    
+    // This method is now only used for initial profile creation
     private func fetchUserProfile(userId: String) {
         db.collection("users").document(userId).getDocument { [weak self] snapshot, error in
             guard let self = self else { return }
@@ -166,9 +200,8 @@ class UserManager: NSObject, ObservableObject {
                         self?.isLoading = false
                         if let error = error {
                             self?.error = error
-                        } else {
-                            self?.fetchUserProfile(userId: userId)
                         }
+                        // No need to manually fetch the profile anymore
                     }
                 }
             } else {
@@ -179,9 +212,9 @@ class UserManager: NSObject, ObservableObject {
                         if let error = error {
                             self?.error = error
                         } else {
-                            self?.fetchUserProfile(userId: userId)
                             self?.needsOnboarding = false
                         }
+                        // No need to manually fetch the profile anymore
                     }
                 }
             }
@@ -434,8 +467,9 @@ class UserManager: NSObject, ObservableObject {
         ]) { [weak self] error in
             if let error = error {
                 print("Error updating vote count: \(error.localizedDescription)")
-            } else {
-                self?.fetchUserProfile(userId: userId)
+                DispatchQueue.main.async {
+                    self?.error = error
+                }
             }
         }
     }
@@ -443,20 +477,68 @@ class UserManager: NSObject, ObservableObject {
     func addRecentActivity(type: String, itemId: String) {
         guard let userId = auth.currentUser?.uid else { return }
         
-        let activity = [
-            "type": type,
-            "itemId": itemId,
-            "timestamp": Timestamp(date: Date())
-        ] as [String: Any]
-        
-        let docRef = db.collection("users").document(userId)
-        docRef.updateData([
-            "recentActivity": FieldValue.arrayUnion([activity])
-        ]) { [weak self] error in
+        // Get the topic details to include in the activity
+        db.collection("topics").document(itemId).getDocument { [weak self] snapshot, error in
+            guard let self = self else { return }
+            
             if let error = error {
-                print("Error updating recent activity: \(error.localizedDescription)")
-            } else {
-                self?.fetchUserProfile(userId: userId)
+                print("Error fetching topic for activity: \(error.localizedDescription)")
+                return
+            }
+            
+            guard let data = snapshot?.data(),
+                  let title = data["title"] as? String else {
+                return
+            }
+            
+            // Create a more detailed activity object
+            let activity = [
+                "type": type,
+                "itemId": itemId,
+                "title": title,
+                "timestamp": Timestamp(date: Date())
+            ] as [String: Any]
+            
+            let docRef = db.collection("users").document(userId)
+            
+            // First check if the document exists
+            docRef.getDocument { [weak self] snapshot, error in
+                guard let self = self else { return }
+                
+                if let error = error {
+                    print("Error checking user document: \(error.localizedDescription)")
+                    return
+                }
+                
+                if snapshot?.exists == true {
+                    // Update existing document
+                    docRef.updateData([
+                        "recentActivity": FieldValue.arrayUnion([activity])
+                    ]) { error in
+                        if let error = error {
+                            print("Error updating recent activity: \(error.localizedDescription)")
+                            DispatchQueue.main.async {
+                                self.error = error
+                            }
+                        }
+                    }
+                } else {
+                    // Create new document with initial activity
+                    let userData: [String: Any] = [
+                        "recentActivity": [activity],
+                        "votesCount": 1,
+                        "lastVoteDate": Timestamp(date: Date())
+                    ]
+                    
+                    docRef.setData(userData) { error in
+                        if let error = error {
+                            print("Error creating user document: \(error.localizedDescription)")
+                            DispatchQueue.main.async {
+                                self.error = error
+                            }
+                        }
+                    }
+                }
             }
         }
     }
@@ -474,7 +556,7 @@ class UserManager: NSObject, ObservableObject {
             
             // After successful profile creation/update
             DispatchQueue.main.async {
-                self?.currentUser = profile
+                // The real-time listener will update the currentUser
                 self?.isAuthenticated = true
             }
         }

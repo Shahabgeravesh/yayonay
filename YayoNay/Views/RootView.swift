@@ -1,20 +1,18 @@
 import SwiftUI
 
 struct RootView: View {
-    @StateObject private var userManager = UserManager()
+    @EnvironmentObject var userManager: UserManager
     
     var body: some View {
         Group {
             if userManager.isAuthenticated {
                 if userManager.needsOnboarding {
-                    OnboardingView(userManager: userManager)
+                    OnboardingView()
                 } else {
                     MainTabView()
-                        .environmentObject(userManager)
                 }
             } else {
                 AuthView()
-                    .environmentObject(userManager)
             }
         }
     }

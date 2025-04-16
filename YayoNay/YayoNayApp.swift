@@ -64,7 +64,7 @@ struct YayoNayApp: App {
     
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            RootView()
                 .environmentObject(userManager)
                 .onOpenURL { url in
                     handleDeepLink(url)

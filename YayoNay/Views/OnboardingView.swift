@@ -3,7 +3,7 @@ import PhotosUI
 
 struct OnboardingView: View {
     @Environment(\.dismiss) private var dismiss
-    @ObservedObject var userManager: UserManager
+    @EnvironmentObject var userManager: UserManager
     @State private var username = ""
     @State private var bio = ""
     @State private var selectedImage: UIImage?

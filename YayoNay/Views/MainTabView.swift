@@ -7,47 +7,27 @@ struct MainTabView: View {
         TabView {
             ExploreView()
                 .tabItem {
-                    Label("Explore", systemImage: "square.grid.2x2")
-                }
-            
-            HotVotesView()
-                .tabItem {
-                    VStack {
-                        Image(systemName: "flame.fill")
-                            .foregroundColor(.blue)
-                        Text("Hot")
-                            .foregroundColor(.blue)
-                    }
-                }
-            
-            TopicBoxView()
-                .tabItem {
-                    VStack {
-                        Image(systemName: "list.bullet")
-                            .foregroundColor(.gray)
-                        Text("Topics")
-                            .foregroundColor(.gray)
-                    }
+                    Image(systemName: "square.grid.2x2")
                 }
             
             VotesView()
                 .tabItem {
-                    VStack {
-                        Image(systemName: "checkmark.circle.fill")
-                            .foregroundColor(.gray)
-                        Text("Votes")
-                            .foregroundColor(.gray)
-                    }
+                    Image(systemName: "checkmark.circle.fill")
+                }
+            
+            HotVotesView()
+                .tabItem {
+                    Image(systemName: "chart.line.uptrend.xyaxis")
+                }
+            
+            TopicBoxView()
+                .tabItem {
+                    TopicTabIcon()
                 }
             
             ProfileView()
                 .tabItem {
-                    VStack {
-                        Image(systemName: "person.fill")
-                            .foregroundColor(.gray)
-                        Text("Profile")
-                            .foregroundColor(.gray)
-                    }
+                    Image(systemName: "person.fill")
                 }
         }
         .tint(.blue) // This sets the active tab color
