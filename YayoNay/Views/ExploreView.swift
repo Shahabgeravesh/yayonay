@@ -15,32 +15,10 @@ struct ExploreView: View {
                 VStack(spacing: 24) {
                     // Main Categories Grid
                     LazyVGrid(columns: columns, spacing: 16) {
-                        NavigationLink(destination: CategoryDetailView(category: Category(id: "fruits", name: "Fruit", imageURL: nil))) {
-                            CategoryCard(title: "Fruit", icon: "apple.logo")
-                        }
-                        
-                        NavigationLink(destination: CategoryDetailView(category: Category(id: "food", name: "Food", imageURL: nil))) {
-                            CategoryCard(title: "Food", icon: "fork.knife")
-                        }
-                        
-                        NavigationLink(destination: CategoryDetailView(category: Category(id: "drink", name: "Drink", imageURL: nil))) {
-                            CategoryCard(title: "Drink", icon: "wineglass")
-                        }
-                        
-                        NavigationLink(destination: CategoryDetailView(category: Category(id: "dessert", name: "Dessert", imageURL: nil))) {
-                            CategoryCard(title: "Dessert", icon: "birthday.cake")
-                        }
-                        
-                        NavigationLink(destination: CategoryDetailView(category: Category(id: "sports", name: "Sports", imageURL: nil))) {
-                            CategoryCard(title: "Sports", icon: "sportscourt")
-                        }
-                        
-                        NavigationLink(destination: CategoryDetailView(category: Category(id: "hike", name: "Hike", imageURL: nil))) {
-                            CategoryCard(title: "Hike", icon: "figure.hiking")
-                        }
-                        
-                        NavigationLink(destination: CategoryDetailView(category: Category(id: "travel", name: "Travel", imageURL: nil))) {
-                            CategoryCard(title: "Travel", icon: "airplane")
+                        ForEach(viewModel.categories) { category in
+                            NavigationLink(destination: CategoryDetailView(category: category)) {
+                                CategoryCard(title: category.name, icon: category.iconName)
+                            }
                         }
                     }
                     .padding(.horizontal)
@@ -49,6 +27,9 @@ struct ExploreView: View {
             }
             .background(Color(.systemGroupedBackground))
             .navigationTitle("Explore")
+        }
+        .onAppear {
+            viewModel.fetchCategories()
         }
     }
 }
@@ -82,10 +63,22 @@ struct CategoryCard: View {
 }
 
 class ExploreViewModel: ObservableObject {
+    @Published var categories: [Category] = []
     private let db = Firestore.firestore()
     
-    init() {
-        // Initialize any necessary data
+    func fetchCategories() {
+        db.collection("categories")
+            .order(by: "order")
+            .addSnapshotListener { [weak self] snapshot, error in
+                if let error = error {
+                    print("Error fetching categories: \(error)")
+                    return
+                }
+                
+                self?.categories = snapshot?.documents.compactMap { document in
+                    Category(document: document)
+                } ?? []
+            }
     }
 }
 
