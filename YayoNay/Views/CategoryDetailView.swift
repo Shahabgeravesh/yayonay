@@ -1,5 +1,6 @@
 import SwiftUI
 import FirebaseFirestore
+import FirebaseAuth
 
 struct CategoryDetailView: View {
     let category: Category
@@ -125,8 +126,19 @@ struct CategoryDetailView: View {
     }
     
     private func saveVote(for subCategory: SubCategory, isYay: Bool) {
+        guard let userId = Auth.auth().currentUser?.uid else {
+            print("❌ No user ID available for vote submission")
+            return
+        }
+        
+        print("📝 Starting vote submission process")
+        print("User ID: \(userId)")
+        print("SubCategory ID: \(subCategory.id)")
+        print("Is Yay: \(isYay)")
+        
         let db = Firestore.firestore()
         
+        // Create vote document
         let voteData: [String: Any] = [
             "itemName": subCategory.name,
             "imageURL": subCategory.imageURL,
@@ -134,14 +146,56 @@ struct CategoryDetailView: View {
             "date": Timestamp(date: Date()),
             "categoryName": category.name,
             "categoryId": category.id,
-            "subCategoryId": subCategory.id
+            "subCategoryId": subCategory.id,
+            "userId": userId
         ]
         
-        db.collection("votes").addDocument(data: voteData) { error in
+        print("📄 Created vote data: \(voteData)")
+        
+        // Create a batch write
+        let batch = db.batch()
+        print("🔄 Created batch write operation")
+        
+        // Add vote document
+        let voteRef = db.collection("votes").document()
+        batch.setData(voteData, forDocument: voteRef)
+        print("📝 Added vote document to batch")
+        
+        // Update subcategory's vote counts
+        let subCategoryRef = db.collection("subCategories").document(subCategory.id)
+        let updateData: [String: Any] = isYay ? 
+            ["yayCount": FieldValue.increment(Int64(1))] : 
+            ["nayCount": FieldValue.increment(Int64(1))]
+        batch.updateData(updateData, forDocument: subCategoryRef)
+        print("📊 Added subcategory vote count update to batch: \(updateData)")
+        
+        // Update user profile
+        let userRef = db.collection("users").document(userId)
+        batch.updateData([
+            "votesCount": FieldValue.increment(Int64(1)),
+            "lastVoteDate": Timestamp(date: Date())
+        ], forDocument: userRef)
+        print("👤 Added user profile update to batch")
+        
+        // Add recent activity
+        let activity = [
+            "type": "vote",
+            "itemId": subCategory.id,
+            "title": subCategory.name,
+            "timestamp": Timestamp(date: Date())
+        ] as [String: Any]
+        batch.updateData([
+            "recentActivity": FieldValue.arrayUnion([activity])
+        ], forDocument: userRef)
+        print("📝 Added recent activity to batch: \(activity)")
+        
+        // Commit the batch
+        print("🚀 Committing batch write...")
+        batch.commit { error in
             if let error = error {
-                print("❌ Error saving vote: \(error.localizedDescription)")
+                print("❌ Batch write failed: \(error.localizedDescription)")
             } else {
-                print("✅ Vote saved successfully")
+                print("✅ Batch write completed successfully")
             }
         }
     }

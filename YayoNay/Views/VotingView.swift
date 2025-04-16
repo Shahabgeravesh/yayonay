@@ -60,14 +60,18 @@ struct VotingView: View {
     }
     
     private func handleVote(choice: String) {
+        print("🎯 Starting vote submission for choice: \(choice)")
         viewModel.submitVote(choice: choice) { success in
             if success {
-                // After successful vote
-                userManager.incrementVoteCount()
-                userManager.addRecentActivity(
-                    type: "vote",
-                    itemId: viewModel.topic.id
-                )
+                print("✅ Vote submission completed successfully")
+                // Remove redundant calls since we're handling these in the batch write
+                // userManager.incrementVoteCount()
+                // userManager.addRecentActivity(
+                //     type: "vote",
+                //     itemId: viewModel.topic.id
+                // )
+            } else {
+                print("❌ Vote submission failed")
             }
         }
     }
@@ -137,9 +141,15 @@ class VotingViewModel: ObservableObject {
     
     func submitVote(choice: String, completion: @escaping (Bool) -> Void) {
         guard let userId = Auth.auth().currentUser?.uid else {
+            print("❌ No user ID available for vote submission")
             completion(false)
             return
         }
+        
+        print("📝 Starting vote submission process")
+        print("User ID: \(userId)")
+        print("Topic ID: \(topic.id)")
+        print("Choice: \(choice)")
         
         isLoading = true
         
@@ -151,46 +161,68 @@ class VotingViewModel: ObservableObject {
             "timestamp": Timestamp(date: Date())
         ]
         
-        // First, add the vote document
-        db.collection("votes").addDocument(data: voteData) { [weak self] error in
+        print("📄 Created vote data: \(voteData)")
+        
+        // Create a batch write
+        let batch = db.batch()
+        print("🔄 Created batch write operation")
+        
+        // Add vote document
+        let voteRef = db.collection("votes").document()
+        batch.setData(voteData, forDocument: voteRef)
+        print("📝 Added vote document to batch")
+        
+        // Update topic's vote counts
+        let topicRef = db.collection("topics").document(topic.id)
+        let isYay = choice == topic.optionA
+        let updateData: [String: Any] = isYay ? 
+            ["upvotes": FieldValue.increment(Int64(1))] : 
+            ["downvotes": FieldValue.increment(Int64(1))]
+        batch.updateData(updateData, forDocument: topicRef)
+        print("📊 Added topic vote count update to batch: \(updateData)")
+        
+        // Update user profile
+        let userRef = db.collection("users").document(userId)
+        batch.updateData([
+            "votesCount": FieldValue.increment(Int64(1)),
+            "lastVoteDate": Timestamp(date: Date())
+        ], forDocument: userRef)
+        print("👤 Added user profile update to batch")
+        
+        // Add recent activity
+        let activity = [
+            "type": "vote",
+            "itemId": topic.id,
+            "title": topic.title,
+            "timestamp": Timestamp(date: Date())
+        ] as [String: Any]
+        batch.updateData([
+            "recentActivity": FieldValue.arrayUnion([activity])
+        ], forDocument: userRef)
+        print("📝 Added recent activity to batch: \(activity)")
+        
+        // Commit the batch
+        print("🚀 Committing batch write...")
+        batch.commit { [weak self] error in
             guard let self = self else { return }
             
-            if let error = error {
-                DispatchQueue.main.async {
+            DispatchQueue.main.async {
+                self.isLoading = false
+                
+                if let error = error {
+                    print("❌ Batch write failed: \(error.localizedDescription)")
                     self.error = error
-                    self.isLoading = false
                     completion(false)
-                }
-                return
-            }
-            
-            // Then update the topic's vote counts
-            let topicRef = self.db.collection("topics").document(self.topic.id)
-            
-            // Determine if this is a yay or nay vote
-            let isYay = choice == self.topic.optionA
-            
-            // Update the appropriate vote count
-            let updateData: [String: Any] = isYay ? 
-                ["upvotes": FieldValue.increment(Int64(1))] : 
-                ["downvotes": FieldValue.increment(Int64(1))]
-            
-            topicRef.updateData(updateData) { error in
-                DispatchQueue.main.async {
-                    self.isLoading = false
-                    
-                    if let error = error {
-                        self.error = error
-                        completion(false)
+                } else {
+                    print("✅ Batch write completed successfully")
+                    // Update the local topic object
+                    if isYay {
+                        self.topic.upvotes += 1
                     } else {
-                        // Update the local topic object
-                        if isYay {
-                            self.topic.upvotes += 1
-                        } else {
-                            self.topic.downvotes += 1
-                        }
-                        completion(true)
+                        self.topic.downvotes += 1
                     }
+                    print("📊 Updated local topic counts - Upvotes: \(self.topic.upvotes), Downvotes: \(self.topic.downvotes)")
+                    completion(true)
                 }
             }
         }

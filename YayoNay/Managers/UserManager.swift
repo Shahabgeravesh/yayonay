@@ -53,6 +53,8 @@ class UserManager: NSObject, ObservableObject {
     }
     
     private func setupUserProfileListener(userId: String) {
+        print("🎯 Setting up profile listener for user: \(userId)")
+        
         // Remove any existing listener
         listener?.remove()
         
@@ -62,11 +64,13 @@ class UserManager: NSObject, ObservableObject {
             
             DispatchQueue.main.async {
                 if let error = error {
+                    print("❌ Profile listener error: \(error.localizedDescription)")
                     self.error = error
                     return
                 }
                 
                 if let snapshot = snapshot, snapshot.exists {
+                    print("📥 Received profile update from Firestore")
                     // User has a profile
                     self.currentUser = UserProfile(document: snapshot)
                     self.needsOnboarding = false
@@ -76,6 +80,7 @@ class UserManager: NSObject, ObservableObject {
                     print("Votes count: \(self.currentUser?.votesCount ?? 0)")
                     print("Recent activity count: \(self.currentUser?.recentActivity.count ?? 0)")
                 } else {
+                    print("⚠️ No profile document found for user: \(userId)")
                     // User needs to create a profile
                     self.needsOnboarding = true
                 }
@@ -468,18 +473,44 @@ class UserManager: NSObject, ObservableObject {
     }
     
     func incrementVoteCount() {
-        guard let userId = auth.currentUser?.uid else { return }
+        guard let userId = auth.currentUser?.uid else { 
+            print("❌ Failed to increment vote count: No user ID available")
+            return 
+        }
+        
+        print("📝 Starting vote count increment for user: \(userId)")
+        print("Current vote count: \(currentUser?.votesCount ?? 0)")
+        
+        // Update local state immediately
+        if var user = currentUser {
+            user.votesCount += 1
+            user.lastVoteDate = Date()
+            currentUser = user
+            print("✅ Updated local vote count to: \(user.votesCount)")
+        } else {
+            print("⚠️ No current user found for local update")
+        }
         
         let docRef = db.collection("users").document(userId)
+        print("🔄 Updating Firestore document: users/\(userId)")
+        
         docRef.updateData([
             "votesCount": FieldValue.increment(Int64(1)),
             "lastVoteDate": Timestamp(date: Date())
         ]) { [weak self] error in
             if let error = error {
-                print("Error updating vote count: \(error.localizedDescription)")
+                print("❌ Error updating vote count in Firestore: \(error.localizedDescription)")
                 DispatchQueue.main.async {
                     self?.error = error
+                    // Revert local state if Firestore update fails
+                    if var user = self?.currentUser {
+                        user.votesCount -= 1
+                        self?.currentUser = user
+                        print("↩️ Reverted local vote count to: \(user.votesCount)")
+                    }
                 }
+            } else {
+                print("✅ Successfully updated vote count in Firestore")
             }
         }
     }
