@@ -1,11 +1,14 @@
 import SwiftUI
 import FirebaseFirestore
+import FirebaseAuth
 
 class VotesViewModel: ObservableObject {
     @Published var votes: [Vote] = []
     @Published var sortOption: SortOption = .date
     @Published var filterOption: FilterOption = .all
+    @Published var comments: [Comment] = []
     private let db = Firestore.firestore()
+    private var commentsListener: ListenerRegistration?
     
     enum SortOption: String, CaseIterable {
         case date = "Date"
@@ -75,11 +78,179 @@ class VotesViewModel: ObservableObject {
             }
         }
     }
+    
+    func setupCommentsListener(forVoteId voteId: String) {
+        print("DEBUG: Setting up comments listener for voteId: \(voteId)")
+        
+        // Remove existing listener if any
+        commentsListener?.remove()
+        
+        let commentsRef = db.collection("comments")
+            .whereField("voteId", isEqualTo: voteId)
+            .order(by: "date", descending: true)
+        
+        commentsListener = commentsRef.addSnapshotListener { [weak self] snapshot, error in
+            if let error = error {
+                print("DEBUG: Error fetching comments: \(error.localizedDescription)")
+                return
+            }
+            
+            guard let documents = snapshot?.documents else {
+                print("DEBUG: No documents in snapshot")
+                return
+            }
+            
+            print("DEBUG: Fetched \(documents.count) comments from Firestore")
+            
+            let allComments = documents.compactMap { document -> Comment? in
+                let data = document.data()
+                print("DEBUG: Comment data: \(data)")
+                
+                guard let userId = data["userId"] as? String,
+                      let username = data["username"] as? String,
+                      let userImage = data["userImage"] as? String,
+                      let text = data["text"] as? String,
+                      let timestamp = data["date"] as? Timestamp else {
+                    print("DEBUG: Failed to parse comment data: \(data)")
+                    return nil
+                }
+                
+                return Comment(
+                    id: document.documentID,
+                    userId: userId,
+                    username: username,
+                    userImage: userImage,
+                    text: text,
+                    date: timestamp.dateValue(),
+                    likes: data["likes"] as? Int ?? 0,
+                    isLiked: (data["likedBy"] as? [String: Bool])?[Auth.auth().currentUser?.uid ?? ""] ?? false,
+                    parentId: data["parentId"] as? String
+                )
+            }
+            
+            print("DEBUG: Successfully parsed \(allComments.count) comments")
+            
+            DispatchQueue.main.async {
+                // First, get all top-level comments (no parentId)
+                self?.comments = allComments.filter { $0.parentId == nil }
+                print("DEBUG: Top-level comments: \(self?.comments.count ?? 0)")
+                
+                // Then, for each top-level comment, attach its replies
+                self?.comments = self?.comments.map { comment in
+                    var updatedComment = comment
+                    updatedComment.replies = allComments.filter { $0.parentId == comment.id }
+                    return updatedComment
+                } ?? []
+                
+                print("DEBUG: Final comments with replies: \(self?.comments.count ?? 0)")
+            }
+        }
+    }
+    
+    func addComment(_ text: String, voteId: String, parentId: String? = nil) {
+        print("DEBUG: Attempting to add comment: '\(text)' for voteId: \(voteId) with parentId: \(parentId ?? "nil")")
+        
+        guard let userId = Auth.auth().currentUser?.uid else {
+            print("DEBUG: Failed to add comment - No authenticated user")
+            return
+        }
+        
+        print("DEBUG: User ID: \(userId)")
+        
+        db.collection("users").document(userId).getDocument { [weak self] snapshot, error in
+            if let error = error {
+                print("DEBUG: Error fetching user data: \(error.localizedDescription)")
+                return
+            }
+            
+            guard let self = self,
+                  let data = snapshot?.data() else {
+                print("DEBUG: Failed to get user data")
+                return
+            }
+            
+            print("DEBUG: User data: \(data)")
+            
+            // Extract username and userImage with fallbacks
+            let username = data["username"] as? String ?? "Anonymous User"
+            let userImage = data["imageURL"] as? String ?? "https://firebasestorage.googleapis.com/v0/b/yayonay-e7f58.appspot.com/o/default_profile.png?alt=media"
+            
+            print("DEBUG: Username: \(username), UserImage: \(userImage)")
+            
+            let commentId = UUID().uuidString
+            print("DEBUG: Generated comment ID: \(commentId)")
+            
+            let comment = Comment(
+                id: commentId,
+                userId: userId,
+                username: username,
+                userImage: userImage,
+                text: text,
+                parentId: parentId
+            )
+            
+            var commentData = comment.dictionary
+            commentData["voteId"] = voteId
+            
+            print("DEBUG: Comment data to save: \(commentData)")
+            print("DEBUG: Vote ID: \(voteId)")
+            
+            self.db.collection("comments")
+                .document(commentId)
+                .setData(commentData) { error in
+                    if let error = error {
+                        print("DEBUG: Error adding comment: \(error.localizedDescription)")
+                    } else {
+                        print("DEBUG: Comment successfully added to Firestore")
+                    }
+                }
+        }
+    }
+    
+    func likeComment(_ comment: Comment) {
+        guard let userId = Auth.auth().currentUser?.uid else { return }
+        
+        let docRef = db.collection("comments").document(comment.id)
+        
+        if comment.isLiked {
+            // Unlike
+            docRef.updateData([
+                "likes": FieldValue.increment(Int64(-1)),
+                "likedBy.\(userId)": FieldValue.delete()
+            ])
+        } else {
+            // Like
+            docRef.updateData([
+                "likes": FieldValue.increment(Int64(1)),
+                "likedBy.\(userId)": true
+            ])
+        }
+    }
+    
+    func deleteComment(_ comment: Comment) {
+        guard let userId = Auth.auth().currentUser?.uid,
+              comment.userId == userId else { return }
+        
+        db.collection("comments").document(comment.id).delete { [weak self] error in
+            if error == nil {
+                DispatchQueue.main.async {
+                    self?.comments.removeAll { $0.id == comment.id }
+                }
+            }
+        }
+    }
+    
+    deinit {
+        commentsListener?.remove()
+    }
 }
 
 struct VotesView: View {
     @StateObject private var viewModel = VotesViewModel()
     @State private var searchText = ""
+    @State private var selectedVote: Vote?
+    @State private var showingComments = false
+    @State private var newCommentText = ""
     
     var body: some View {
         NavigationStack {
@@ -123,16 +294,105 @@ struct VotesView: View {
                                 .listRowInsets(EdgeInsets())
                                 .listRowSeparator(.hidden)
                                 .padding(.vertical, 4)
+                                .onTapGesture {
+                                    selectedVote = vote
+                                    viewModel.setupCommentsListener(forVoteId: vote.id)
+                                    showingComments = true
+                                }
                         }
                     }
                     .listStyle(.plain)
                 }
             }
-            .navigationTitle("Your Votes")
-            .searchable(text: $searchText, prompt: "Search votes")
+            .navigationTitle("My Votes")
+            .searchable(text: $searchText, prompt: "Search votes...")
+            .sheet(isPresented: $showingComments) {
+                if let vote = selectedVote {
+                    CommentsView(
+                        vote: vote,
+                        comments: viewModel.comments,
+                        onAddComment: { text in
+                            viewModel.addComment(text, voteId: vote.id)
+                            newCommentText = ""
+                        },
+                        onLikeComment: { comment in
+                            viewModel.likeComment(comment)
+                        },
+                        onDeleteComment: { comment in
+                            viewModel.deleteComment(comment)
+                        }
+                    )
+                }
+            }
         }
         .onAppear {
             viewModel.fetchVotes()
+        }
+    }
+}
+
+struct CommentsView: View {
+    let vote: Vote
+    let comments: [Comment]
+    let onAddComment: (String) -> Void
+    let onLikeComment: (Comment) -> Void
+    let onDeleteComment: (Comment) -> Void
+    
+    @State private var newCommentText = ""
+    @Environment(\.dismiss) private var dismiss
+    
+    var body: some View {
+        NavigationStack {
+            VStack {
+                // Vote Summary
+                VoteCard(vote: vote)
+                    .padding()
+                
+                // Comments List
+                ScrollView {
+                    LazyVStack(spacing: 16) {
+                        ForEach(comments) { comment in
+                            CommentRow(
+                                comment: comment,
+                                onLike: { onLikeComment(comment) },
+                                onDelete: { onDeleteComment(comment) },
+                                onReply: { text in
+                                    // Handle reply submission
+                                    // This would need to be implemented in the view model
+                                }
+                            )
+                        }
+                    }
+                    .padding()
+                }
+                
+                // Comment Input
+                HStack {
+                    TextField("Add a comment...", text: $newCommentText)
+                        .textFieldStyle(.roundedBorder)
+                    
+                    Button {
+                        guard !newCommentText.isEmpty else { return }
+                        onAddComment(newCommentText)
+                        newCommentText = ""
+                    } label: {
+                        Image(systemName: "arrow.up.circle.fill")
+                            .font(.title2)
+                            .foregroundColor(.blue)
+                    }
+                    .disabled(newCommentText.isEmpty)
+                }
+                .padding()
+            }
+            .navigationTitle("Comments")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Done") {
+                        dismiss()
+                    }
+                }
+            }
         }
     }
 }

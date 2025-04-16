@@ -74,24 +74,35 @@ class SubCategoryStatsViewModel: ObservableObject {
     }
     
     private func setupCommentsListener() {
+        print("DEBUG: Setting up comments listener for subCategoryId: \(currentSubCategory.id)")
+        
         let commentsRef = db.collection("comments")
             .whereField("subCategoryId", isEqualTo: currentSubCategory.id)
             .order(by: "date", descending: true)
         
         commentsListener = commentsRef.addSnapshotListener { [weak self] snapshot, error in
-            guard let documents = snapshot?.documents else {
-                print("Error fetching comments: \(error?.localizedDescription ?? "Unknown error")")
+            if let error = error {
+                print("DEBUG: Error fetching comments: \(error.localizedDescription)")
                 return
             }
             
+            guard let documents = snapshot?.documents else {
+                print("DEBUG: No documents in snapshot")
+                return
+            }
+            
+            print("DEBUG: Fetched \(documents.count) comments from Firestore")
+            
             let allComments = documents.compactMap { document -> Comment? in
                 let data = document.data()
+                print("DEBUG: Comment data: \(data)")
                 
                 guard let userId = data["userId"] as? String,
                       let username = data["username"] as? String,
                       let userImage = data["userImage"] as? String,
                       let text = data["text"] as? String,
                       let timestamp = data["date"] as? Timestamp else {
+                    print("DEBUG: Failed to parse comment data: \(data)")
                     return nil
                 }
                 
@@ -108,10 +119,13 @@ class SubCategoryStatsViewModel: ObservableObject {
                 )
             }
             
+            print("DEBUG: Successfully parsed \(allComments.count) comments")
+            
             // Organize comments into threads
             DispatchQueue.main.async {
                 // First, get all top-level comments (no parentId)
                 self?.comments = allComments.filter { $0.parentId == nil }
+                print("DEBUG: Top-level comments: \(self?.comments.count ?? 0)")
                 
                 // Then, for each top-level comment, attach its replies
                 self?.comments = self?.comments.map { comment in
@@ -119,6 +133,8 @@ class SubCategoryStatsViewModel: ObservableObject {
                     updatedComment.replies = allComments.filter { $0.parentId == comment.id }
                     return updatedComment
                 } ?? []
+                
+                print("DEBUG: Final comments with replies: \(self?.comments.count ?? 0)")
             }
         }
     }
@@ -156,15 +172,38 @@ class SubCategoryStatsViewModel: ObservableObject {
     }
     
     func addComment(_ text: String, parentId: String? = nil) {
-        guard let userId = Auth.auth().currentUser?.uid else { return }
+        print("DEBUG: Attempting to add comment: '\(text)' with parentId: \(parentId ?? "nil")")
+        
+        guard let userId = Auth.auth().currentUser?.uid else {
+            print("DEBUG: Failed to add comment - No authenticated user")
+            return
+        }
+        
+        print("DEBUG: User ID: \(userId)")
         
         db.collection("users").document(userId).getDocument { [weak self] snapshot, error in
+            if let error = error {
+                print("DEBUG: Error fetching user data: \(error.localizedDescription)")
+                return
+            }
+            
             guard let self = self,
-                  let data = snapshot?.data(),
-                  let username = data["username"] as? String,
-                  let userImage = data["imageURL"] as? String else { return }
+                  let data = snapshot?.data() else {
+                print("DEBUG: Failed to get user data")
+                return
+            }
+            
+            print("DEBUG: User data: \(data)")
+            
+            // Extract username and userImage with fallbacks
+            let username = data["username"] as? String ?? "Anonymous User"
+            let userImage = data["imageURL"] as? String ?? "https://firebasestorage.googleapis.com/v0/b/yayonay-e7f58.appspot.com/o/default_profile.png?alt=media"
+            
+            print("DEBUG: Username: \(username), UserImage: \(userImage)")
             
             let commentId = UUID().uuidString
+            print("DEBUG: Generated comment ID: \(commentId)")
+            
             let comment = Comment(
                 id: commentId,
                 userId: userId,
@@ -177,11 +216,16 @@ class SubCategoryStatsViewModel: ObservableObject {
             var commentData = comment.dictionary
             commentData["subCategoryId"] = self.currentSubCategory.id
             
+            print("DEBUG: Comment data to save: \(commentData)")
+            print("DEBUG: SubCategory ID: \(self.currentSubCategory.id)")
+            
             self.db.collection("comments")
                 .document(commentId)
                 .setData(commentData) { error in
                     if let error = error {
-                        print("Error adding comment: \(error.localizedDescription)")
+                        print("DEBUG: Error adding comment: \(error.localizedDescription)")
+                    } else {
+                        print("DEBUG: Comment successfully added to Firestore")
                     }
                 }
         }

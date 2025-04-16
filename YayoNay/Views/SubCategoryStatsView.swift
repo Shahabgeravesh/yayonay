@@ -1,5 +1,6 @@
 import SwiftUI
 import FirebaseFirestore
+import FirebaseAuth
 
 struct AttributeVotes: Codable, Equatable {
     var yayCount: Int = 0
@@ -82,16 +83,14 @@ struct SubCategoryStatsView: View {
                     
                     // Comments List
                     ForEach(statsViewModel.comments) { comment in
-                        CommentRow(comment: comment) { action in
-                            switch action {
-                            case .like:
-                                statsViewModel.likeComment(comment)
-                            case .delete:
-                                statsViewModel.deleteComment(comment)
-                            case .reply(let text):
+                        CommentRow(
+                            comment: comment,
+                            onLike: { statsViewModel.likeComment(comment) },
+                            onDelete: { statsViewModel.deleteComment(comment) },
+                            onReply: { text in
                                 statsViewModel.addComment(text, parentId: comment.id)
                             }
-                        }
+                        )
                     }
                 }
                 .padding()
@@ -238,81 +237,6 @@ struct AttributeRow: View {
         .padding()
         .background(Color(.systemBackground))
         .cornerRadius(16)
-    }
-}
-
-struct CommentRow: View {
-    let comment: Comment
-    let onAction: (CommentAction) -> Void
-    @State private var isReplying = false
-    @State private var replyText = ""
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            // Main comment content
-            HStack(alignment: .top) {
-                AsyncImage(url: URL(string: comment.userImage)) { image in
-                    image.resizable()
-                } placeholder: {
-                    Image(systemName: "person.circle.fill")
-                        .resizable()
-                }
-                .frame(width: 40, height: 40)
-                .clipShape(Circle())
-                
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(comment.username)
-                        .font(.headline)
-                    Text(comment.text)
-                        .font(.body)
-                    
-                    // Action buttons
-                    HStack(spacing: 16) {
-                        Button(action: { onAction(.like) }) {
-                            HStack {
-                                Image(systemName: comment.isLiked ? "heart.fill" : "heart")
-                                Text("\(comment.likes)")
-                            }
-                            .foregroundColor(comment.isLiked ? .red : .gray)
-                        }
-                        
-                        Button(action: { isReplying.toggle() }) {
-                            Label("Reply", systemImage: "arrowshape.turn.up.left")
-                                .foregroundColor(.gray)
-                        }
-                        
-                        Text(comment.date.timeAgo())
-                            .foregroundStyle(.secondary)
-                    }
-                    .font(.caption)
-                    
-                    // Reply input field
-                    if isReplying {
-                        HStack {
-                            TextField("Write a reply...", text: $replyText)
-                                .textFieldStyle(RoundedBorderTextFieldStyle())
-                            
-                            Button("Post") {
-                                onAction(.reply(replyText))
-                                replyText = ""
-                                isReplying = false
-                            }
-                            .disabled(replyText.isEmpty)
-                        }
-                        .padding(.top, 8)
-                    }
-                    
-                    // Nested replies
-                    if !comment.replies.isEmpty {
-                        ForEach(comment.replies) { reply in
-                            CommentRow(comment: reply, onAction: onAction)
-                                .padding(.leading, 20)
-                        }
-                    }
-                }
-            }
-        }
-        .padding(.vertical, 8)
     }
 }
 
