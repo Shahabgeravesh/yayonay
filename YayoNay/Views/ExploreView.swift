@@ -15,92 +15,41 @@ struct ExploreView: View {
                 VStack(spacing: 24) {
                     // Main Categories Grid
                     LazyVGrid(columns: columns, spacing: 16) {
-                        ForEach(viewModel.categories) { category in
-                            NavigationLink(destination: CategoryDetailView(category: category)) {
-                                CategoryCard(title: category.name, icon: category.iconName)
-                            }
+                        NavigationLink(destination: CategoryDetailView(category: Category(id: "fruits", name: "Fruit", imageURL: nil))) {
+                            CategoryCard(title: "Fruit", icon: "apple.logo")
+                        }
+                        
+                        NavigationLink(destination: CategoryDetailView(category: Category(id: "food", name: "Food", imageURL: nil))) {
+                            CategoryCard(title: "Food", icon: "fork.knife")
+                        }
+                        
+                        NavigationLink(destination: CategoryDetailView(category: Category(id: "drink", name: "Drink", imageURL: nil))) {
+                            CategoryCard(title: "Drink", icon: "wineglass")
+                        }
+                        
+                        NavigationLink(destination: CategoryDetailView(category: Category(id: "dessert", name: "Dessert", imageURL: nil))) {
+                            CategoryCard(title: "Dessert", icon: "birthday.cake")
+                        }
+                        
+                        NavigationLink(destination: CategoryDetailView(category: Category(id: "sports", name: "Sports", imageURL: nil))) {
+                            CategoryCard(title: "Sports", icon: "sportscourt")
+                        }
+                        
+                        NavigationLink(destination: CategoryDetailView(category: Category(id: "hike", name: "Hike", imageURL: nil))) {
+                            CategoryCard(title: "Hike", icon: "figure.hiking")
+                        }
+                        
+                        NavigationLink(destination: CategoryDetailView(category: Category(id: "travel", name: "Travel", imageURL: nil))) {
+                            CategoryCard(title: "Travel", icon: "airplane")
                         }
                     }
                     .padding(.horizontal)
                 }
-                .padding(.vertical, 24)
+                .padding(.vertical)
             }
             .background(Color(.systemGroupedBackground))
             .navigationTitle("Explore")
-            .overlay {
-                if viewModel.isLoading {
-                    ProgressView()
-                        .scaleEffect(1.5)
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        .background(Color.black.opacity(0.1))
-                }
-            }
         }
-        .onAppear {
-            viewModel.fetchCategories()
-        }
-    }
-}
-
-class ExploreViewModel: ObservableObject {
-    @Published var categories: [Category] = []
-    @Published var isLoading = true
-    private let db = Firestore.firestore()
-    private var listener: ListenerRegistration?
-    
-    deinit {
-        listener?.remove()
-    }
-    
-    func fetchCategories() {
-        print("DEBUG: Fetching categories for ExploreView")
-        isLoading = true
-        
-        listener?.remove()
-        
-        listener = db.collection("categories")
-            .whereField("isTopCategory", isEqualTo: true)
-            .order(by: "order")
-            .addSnapshotListener { [weak self] snapshot, error in
-                guard let self = self else { return }
-                
-                if let error = error {
-                    print("DEBUG: Error fetching categories: \(error.localizedDescription)")
-                    self.isLoading = false
-                    return
-                }
-                
-                guard let documents = snapshot?.documents else {
-                    print("DEBUG: No category documents found")
-                    self.isLoading = false
-                    return
-                }
-                
-                print("DEBUG: Found \(documents.count) category documents")
-                
-                self.categories = documents.compactMap { doc -> Category? in
-                    let data = doc.data()
-                    print("DEBUG: Processing category document: \(data)")
-                    
-                    guard let name = data["name"] as? String else {
-                        print("DEBUG: Category \(doc.documentID) missing name")
-                        return nil
-                    }
-                    
-                    return Category(
-                        id: doc.documentID,
-                        name: name,
-                        isTopCategory: data["isTopCategory"] as? Bool ?? false,
-                        order: data["order"] as? Int ?? 0,
-                        description: data["description"] as? String ?? "",
-                        featured: data["featured"] as? Bool ?? false,
-                        votesCount: data["votesCount"] as? Int ?? 0
-                    )
-                }
-                
-                print("DEBUG: Loaded \(self.categories.count) categories")
-                self.isLoading = false
-            }
     }
 }
 
@@ -110,23 +59,33 @@ struct CategoryCard: View {
     
     var body: some View {
         VStack {
-            Image(systemName: icon)
-                .font(.system(size: 30))
-                .foregroundColor(.blue)
-                .frame(width: 60, height: 60)
-                .background(Color(.systemBackground))
-                .clipShape(Circle())
-                .shadow(color: Color.black.opacity(0.1), radius: 5, y: 2)
-            
-            Text(title)
-                .font(.headline)
-                .foregroundColor(.primary)
+            ZStack {
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(Color.blue.opacity(0.1))
+                
+                VStack(spacing: 12) {
+                    Image(systemName: icon)
+                        .font(.system(size: 30))
+                        .foregroundColor(.blue)
+                    
+                    Text(title)
+                        .font(.headline)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.primary)
+                }
+                .padding()
+            }
+            .frame(height: 120)
         }
-        .frame(maxWidth: .infinity)
-        .padding()
-        .background(Color(.systemBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 16))
-        .shadow(color: Color.black.opacity(0.1), radius: 5, y: 2)
+        .shadow(color: Color.black.opacity(0.05), radius: 8, y: 4)
+    }
+}
+
+class ExploreViewModel: ObservableObject {
+    private let db = Firestore.firestore()
+    
+    init() {
+        // Initialize any necessary data
     }
 }
 
