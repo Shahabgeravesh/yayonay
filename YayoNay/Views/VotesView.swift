@@ -248,9 +248,6 @@ class VotesViewModel: ObservableObject {
 struct VotesView: View {
     @StateObject private var viewModel = VotesViewModel()
     @State private var searchText = ""
-    @State private var selectedVote: Vote?
-    @State private var showingComments = false
-    @State private var newCommentText = ""
     
     var body: some View {
         NavigationStack {
@@ -290,15 +287,29 @@ struct VotesView: View {
                     // Votes List
                     List {
                         ForEach(viewModel.sortedAndFilteredVotes(searchText: searchText)) { vote in
-                            VoteCard(vote: vote, isClickable: true)
-                                .listRowInsets(EdgeInsets())
-                                .listRowSeparator(.hidden)
-                                .padding(.vertical, 4)
-                                .onTapGesture {
-                                    selectedVote = vote
+                            NavigationLink {
+                                CommentsView(
+                                    vote: vote,
+                                    comments: viewModel.comments,
+                                    onAddComment: { text in
+                                        viewModel.addComment(text, voteId: vote.id)
+                                    },
+                                    onLikeComment: { comment in
+                                        viewModel.likeComment(comment)
+                                    },
+                                    onDeleteComment: { comment in
+                                        viewModel.deleteComment(comment)
+                                    }
+                                )
+                                .onAppear {
                                     viewModel.setupCommentsListener(forVoteId: vote.id)
-                                    showingComments = true
                                 }
+                            } label: {
+                                VoteCard(vote: vote, isClickable: false)
+                            }
+                            .listRowInsets(EdgeInsets())
+                            .listRowSeparator(.hidden)
+                            .padding(.vertical, 4)
                         }
                     }
                     .listStyle(.plain)
@@ -306,24 +317,6 @@ struct VotesView: View {
             }
             .navigationTitle("My Votes")
             .searchable(text: $searchText, prompt: "Search votes...")
-            .sheet(isPresented: $showingComments) {
-                if let vote = selectedVote {
-                    CommentsView(
-                        vote: vote,
-                        comments: viewModel.comments,
-                        onAddComment: { text in
-                            viewModel.addComment(text, voteId: vote.id)
-                            newCommentText = ""
-                        },
-                        onLikeComment: { comment in
-                            viewModel.likeComment(comment)
-                        },
-                        onDeleteComment: { comment in
-                            viewModel.deleteComment(comment)
-                        }
-                    )
-                }
-            }
         }
         .onAppear {
             viewModel.fetchVotes()
@@ -342,58 +335,49 @@ struct CommentsView: View {
     @Environment(\.dismiss) private var dismiss
     
     var body: some View {
-        NavigationStack {
-            VStack {
-                // Vote Summary
-                VoteCard(vote: vote, isClickable: false)
-                    .padding()
-                
-                // Comments List
-                ScrollView {
-                    LazyVStack(spacing: 16) {
-                        ForEach(comments) { comment in
-                            CommentRow(
-                                comment: comment,
-                                onLike: { onLikeComment(comment) },
-                                onDelete: { onDeleteComment(comment) },
-                                onReply: { text in
-                                    // Handle reply submission
-                                    // This would need to be implemented in the view model
-                                }
-                            )
-                        }
+        VStack {
+            // Vote Summary
+            VoteCard(vote: vote, isClickable: false)
+                .padding()
+            
+            // Comments List
+            ScrollView {
+                LazyVStack(spacing: 16) {
+                    ForEach(comments) { comment in
+                        CommentRow(
+                            comment: comment,
+                            onLike: { onLikeComment(comment) },
+                            onDelete: { onDeleteComment(comment) },
+                            onReply: { text in
+                                // Handle reply submission
+                                // This would need to be implemented in the view model
+                            }
+                        )
                     }
-                    .padding()
-                }
-                
-                // Comment Input
-                HStack {
-                    TextField("Add a comment...", text: $newCommentText)
-                        .textFieldStyle(.roundedBorder)
-                    
-                    Button {
-                        guard !newCommentText.isEmpty else { return }
-                        onAddComment(newCommentText)
-                        newCommentText = ""
-                    } label: {
-                        Image(systemName: "arrow.up.circle.fill")
-                            .font(.title2)
-                            .foregroundColor(.blue)
-                    }
-                    .disabled(newCommentText.isEmpty)
                 }
                 .padding()
             }
-            .navigationTitle("Comments")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Done") {
-                        dismiss()
-                    }
+            
+            // Comment Input
+            HStack {
+                TextField("Add a comment...", text: $newCommentText)
+                    .textFieldStyle(.roundedBorder)
+                
+                Button {
+                    guard !newCommentText.isEmpty else { return }
+                    onAddComment(newCommentText)
+                    newCommentText = ""
+                } label: {
+                    Image(systemName: "arrow.up.circle.fill")
+                        .font(.title2)
+                        .foregroundColor(.blue)
                 }
+                .disabled(newCommentText.isEmpty)
             }
+            .padding()
         }
+        .navigationTitle("Comments")
+        .navigationBarTitleDisplayMode(.inline)
     }
 }
 
