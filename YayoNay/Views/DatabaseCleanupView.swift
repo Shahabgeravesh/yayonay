@@ -17,7 +17,7 @@ struct DatabaseCleanupView: View {
         "topicsBox", "topicBox", "topicComments", "bestTopics",
         "popularTopics", "trendingTopics", "recentTopics",
         "attributeVotes", "attributes", "attributeTopics",
-        "subCategories", "categories"
+        "subCategories"
     ]
     
     var body: some View {

@@ -291,8 +291,8 @@ struct VotesView: View {
                                 CommentsView(
                                     vote: vote,
                                     comments: viewModel.comments,
-                                    onAddComment: { text in
-                                        viewModel.addComment(text, voteId: vote.id)
+                                    onAddComment: { text, parentId in
+                                        viewModel.addComment(text, voteId: vote.id, parentId: parentId)
                                     },
                                     onLikeComment: { comment in
                                         viewModel.likeComment(comment)
@@ -327,7 +327,7 @@ struct VotesView: View {
 struct CommentsView: View {
     let vote: Vote
     let comments: [Comment]
-    let onAddComment: (String) -> Void
+    let onAddComment: (String, String?) -> Void
     let onLikeComment: (Comment) -> Void
     let onDeleteComment: (Comment) -> Void
     
@@ -349,8 +349,7 @@ struct CommentsView: View {
                             onLike: { onLikeComment(comment) },
                             onDelete: { onDeleteComment(comment) },
                             onReply: { text in
-                                // Handle reply submission
-                                // This would need to be implemented in the view model
+                                onAddComment(text, comment.id)
                             }
                         )
                     }
@@ -365,7 +364,7 @@ struct CommentsView: View {
                 
                 Button {
                     guard !newCommentText.isEmpty else { return }
-                    onAddComment(newCommentText)
+                    onAddComment(newCommentText, nil)
                     newCommentText = ""
                 } label: {
                     Image(systemName: "arrow.up.circle.fill")
