@@ -48,10 +48,10 @@ struct CategoryCard: View {
                     Image(systemName: icon)
                         .font(.system(size: 30))
                         .foregroundColor(.blue)
+                        .accessibilityHidden(true)
                     
                     Text(title)
-                        .font(.headline)
-                        .fontWeight(.semibold)
+                        .font(.system(size: 17, weight: .semibold))
                         .foregroundColor(.primary)
                 }
                 .padding()
@@ -59,6 +59,9 @@ struct CategoryCard: View {
             .frame(height: 120)
         }
         .shadow(color: Color.black.opacity(0.05), radius: 8, y: 4)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(title) category")
+        .accessibilityHint("Double tap to view \(title) items")
     }
 }
 

@@ -279,25 +279,27 @@ struct TopCategoryRow: View {
                         .frame(width: 32, height: 32)
                     
                     Text("\(index)")
-                        .font(.headline)
+                        .font(.system(size: 17, weight: .semibold))
                         .foregroundColor(.white)
                 }
+                .accessibilityHidden(true) // Hide from VoiceOver since we include it in the label
                 
                 // Category Icon and Name
                 HStack {
                     Image(systemName: category.iconName)
-                        .font(.title3)
+                        .font(.system(size: 20))
                         .foregroundStyle(category.accentColor)
+                        .accessibilityHidden(true) // Hide from VoiceOver since we describe it in the label
                     
                     Text(category.name)
-                        .font(.headline)
+                        .font(.system(size: 17, weight: .semibold))
                 }
                 
                 Spacer()
                 
                 // Vote Count
                 Text("\(category.totalVotes) votes")
-                    .font(.subheadline)
+                    .font(.system(size: 15))
                     .foregroundStyle(.secondary)
             }
             .padding()
@@ -306,6 +308,9 @@ struct TopCategoryRow: View {
             .shadow(color: Color.black.opacity(0.1), radius: 5, y: 2)
         }
         .buttonStyle(PlainButtonStyle())
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(index). \(category.name), \(category.totalVotes) votes")
+        .accessibilityHint("Double tap to view \(category.name) items")
     }
     
     private func getRankColor(_ rank: Int) -> Color {
@@ -336,11 +341,11 @@ struct HotVoteCard: View {
                     }
                     .frame(width: 80, height: 80)
                     .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .accessibilityHidden(true) // Hide from VoiceOver since we describe it in the label
                     
                     // Rank Badge
                     Text("\(index)")
-                        .font(.caption)
-                        .fontWeight(.bold)
+                        .font(.system(size: 13, weight: .bold))
                         .foregroundColor(.white)
                         .frame(width: 24, height: 24)
                         .background(
@@ -349,18 +354,19 @@ struct HotVoteCard: View {
                                 .shadow(radius: 2)
                         )
                         .offset(x: -8, y: -8)
+                        .accessibilityHidden(true) // Hide from VoiceOver since we include it in the label
                 }
                 
                 VStack(alignment: .leading, spacing: 8) {
                     Text(item.name)
-                        .font(.headline)
+                        .font(.system(size: 17, weight: .semibold))
                     
                     HStack {
                         Text("\(item.yayCount) yays")
+                            .font(.system(size: 15, weight: .medium))
                             .foregroundStyle(.green)
-                            .fontWeight(.medium)
                         Text("(\(item.totalVotes) total)")
-                            .font(.caption)
+                            .font(.system(size: 13))
                             .foregroundStyle(.secondary)
                     }
                 }
@@ -384,6 +390,7 @@ struct HotVoteCard: View {
                     }
                 }
                 .frame(height: 16)
+                .accessibilityHidden(true) // Hide from VoiceOver since we describe it in the label
                 
                 // Vote Stats
                 HStack {
@@ -401,14 +408,17 @@ struct HotVoteCard: View {
                     }
                     .foregroundStyle(.green)
                 }
-                .font(.caption)
-                .fontWeight(.medium)
+                .font(.system(size: 13, weight: .medium))
             }
         }
         .padding()
         .background(Color(.systemBackground))
         .clipShape(RoundedRectangle(cornerRadius: 16))
         .shadow(color: Color.black.opacity(0.05), radius: 8, y: 4)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(index). \(item.name)")
+        .accessibilityValue("\(item.yayCount) yays, \(item.nayCount) nays. \(Int(item.yayPercentage))% positive")
+        .accessibilityHint("Double tap to view details")
     }
 }
 
