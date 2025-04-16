@@ -93,7 +93,8 @@ class SubCategoryStatsViewModel: ObservableObject {
             
             print("DEBUG: Fetched \(documents.count) comments from Firestore")
             
-            let allComments = documents.compactMap { document -> Comment? in
+            let allComments = documents.compactMap { [weak self] document -> Comment? in
+                guard let self = self else { return nil }
                 let data = document.data()
                 print("DEBUG: Comment data: \(data)")
                 
@@ -115,7 +116,8 @@ class SubCategoryStatsViewModel: ObservableObject {
                     date: timestamp.dateValue(),
                     likes: data["likes"] as? Int ?? 0,
                     isLiked: (data["likedBy"] as? [String: Bool])?[Auth.auth().currentUser?.uid ?? ""] ?? false,
-                    parentId: data["parentId"] as? String
+                    parentId: data["parentId"] as? String,
+                    voteId: data["subCategoryId"] as? String ?? self.currentSubCategory.id
                 )
             }
             
@@ -210,7 +212,8 @@ class SubCategoryStatsViewModel: ObservableObject {
                 username: username,
                 userImage: userImage,
                 text: text,
-                parentId: parentId
+                parentId: parentId,
+                voteId: currentSubCategory.id
             )
             
             var commentData = comment.dictionary

@@ -124,7 +124,8 @@ class VotesViewModel: ObservableObject {
                     date: timestamp.dateValue(),
                     likes: data["likes"] as? Int ?? 0,
                     isLiked: (data["likedBy"] as? [String: Bool])?[Auth.auth().currentUser?.uid ?? ""] ?? false,
-                    parentId: data["parentId"] as? String
+                    parentId: data["parentId"] as? String,
+                    voteId: data["voteId"] as? String ?? voteId
                 )
             }
             
@@ -186,7 +187,8 @@ class VotesViewModel: ObservableObject {
                 username: username,
                 userImage: userImage,
                 text: text,
-                parentId: parentId
+                parentId: parentId,
+                voteId: voteId
             )
             
             var commentData = comment.dictionary
