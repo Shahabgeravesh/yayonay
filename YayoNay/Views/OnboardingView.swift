@@ -1,5 +1,6 @@
 import SwiftUI
 import PhotosUI
+import FirebaseAuth
 
 struct OnboardingView: View {
     @Environment(\.dismiss) private var dismiss
@@ -26,7 +27,7 @@ struct OnboardingView: View {
                         .font(.title2)
                         .fontWeight(.bold)
                     
-                    Text("Choose a profile picture and username")
+                    Text("Choose a profile picture")
                         .foregroundStyle(.secondary)
                     
                     // Profile Image Button
@@ -64,12 +65,18 @@ struct OnboardingView: View {
                         alignment: .bottomTrailing
                     )
                     
-                    TextField("Username", text: $username)
-                        .textContentType(.username)
-                        .autocapitalization(.none)
-                        .padding()
-                        .background(Color(.systemGray6))
-                        .cornerRadius(12)
+                    // Username display (read-only)
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Username")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                        
+                        Text(username.isEmpty ? "Loading..." : username)
+                            .padding()
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .background(Color(.systemGray6))
+                            .cornerRadius(12)
+                    }
                     
                     Spacer()
                     
@@ -79,10 +86,33 @@ struct OnboardingView: View {
                         }
                     }
                     .buttonStyle(.primary)
-                    .disabled(username.isEmpty)
                 }
                 .padding()
                 .tag(0)
+                .onAppear {
+                    // Set username from auth provider
+                    if let displayName = userManager.currentUser?.username, !displayName.isEmpty {
+                        username = displayName
+                    } else if let email = userManager.currentUser?.email {
+                        // Use email username part if no display name
+                        let emailParts = email.split(separator: "@")
+                        if !emailParts.isEmpty {
+                            username = String(emailParts[0])
+                        }
+                    }
+                    
+                    // If still empty, try to get from auth user directly
+                    if username.isEmpty, let authUser = Auth.auth().currentUser {
+                        if let displayName = authUser.displayName, !displayName.isEmpty {
+                            username = displayName
+                        } else if let email = authUser.email {
+                            let emailParts = email.split(separator: "@")
+                            if !emailParts.isEmpty {
+                                username = String(emailParts[0])
+                            }
+                        }
+                    }
+                }
                 
                 // Step 2: Bio
                 VStack(spacing: 24) {

@@ -329,10 +329,20 @@ class UserManager: NSObject, ObservableObject {
                     return
                 }
                 
+                // Get username from display name or email
+                var username = user.displayName ?? ""
+                if username.isEmpty, let email = user.email {
+                    // Use email username part if no display name
+                    let emailParts = email.split(separator: "@")
+                    if !emailParts.isEmpty {
+                        username = String(emailParts[0])
+                    }
+                }
+                
                 // Create/Update user profile
                 let userProfile = UserProfile(
                     id: user.uid,
-                    username: user.displayName ?? "",
+                    username: username,
                     imageData: nil,  // This needs to come before email
                     email: user.email,
                     bio: "",
