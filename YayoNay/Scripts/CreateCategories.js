@@ -3,12 +3,12 @@ const { getFirestore, collection, addDoc, getDocs } = require('firebase/firestor
 
 // Your Firebase configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyDXSbgxpk5oLMl4YmCtjEJy1AbMKgb4G1o",
+  apiKey: process.env.FIREBASE_API_KEY,
   authDomain: "yayonay-e7f58.firebaseapp.com",
   projectId: "yayonay-e7f58",
   storageBucket: "yayonay-e7f58.appspot.com",
-  messagingSenderId: "1057578166868",
-  appId: "1:1057578166868:ios:e408362668983cf45a9bc1"
+  messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.FIREBASE_APP_ID
 };
 
 // Initialize Firebase
