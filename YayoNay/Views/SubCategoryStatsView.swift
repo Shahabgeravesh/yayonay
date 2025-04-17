@@ -23,26 +23,34 @@ struct SubCategoryStatsView: View {
     @State private var showShareSheet = false
     
     init(subCategory: SubCategory) {
-        print("DEBUG: Initializing SubCategoryStatsView with subCategory: \(subCategory.name)")
-        print("DEBUG: Initial yayCount: \(subCategory.yayCount), nayCount: \(subCategory.nayCount)")
+        print("🔍 DEBUG: Initializing SubCategoryStatsView")
+        print("📊 DEBUG: Initial subcategory data:")
+        print("   - Name: \(subCategory.name)")
+        print("   - ID: \(subCategory.id)")
+        print("   - Yay Count: \(subCategory.yayCount)")
+        print("   - Nay Count: \(subCategory.nayCount)")
+        print("   - Category ID: \(subCategory.categoryId)")
         _statsViewModel = StateObject(wrappedValue: SubCategoryStatsViewModel(subCategory: subCategory))
     }
     
     private var totalVotes: Int {
         let total = statsViewModel.currentSubCategory.yayCount + statsViewModel.currentSubCategory.nayCount
-        print("DEBUG: Calculating total votes: \(total)")
+        print("📈 DEBUG: Calculating total votes")
+        print("   - Current Yay: \(statsViewModel.currentSubCategory.yayCount)")
+        print("   - Current Nay: \(statsViewModel.currentSubCategory.nayCount)")
+        print("   - Total: \(total)")
         return total
     }
     
     private var yayPercentage: Double {
         let percentage = totalVotes > 0 ? Double(statsViewModel.currentSubCategory.yayCount) / Double(totalVotes) * 100 : 0
-        print("DEBUG: Calculating yay percentage: \(percentage)%")
+        print("🟢 DEBUG: Calculating Yay percentage: \(percentage)%")
         return percentage
     }
     
     private var nayPercentage: Double {
         let percentage = totalVotes > 0 ? Double(statsViewModel.currentSubCategory.nayCount) / Double(totalVotes) * 100 : 0
-        print("DEBUG: Calculating nay percentage: \(percentage)%")
+        print("🔴 DEBUG: Calculating Nay percentage: \(percentage)%")
         return percentage
     }
     
@@ -59,6 +67,9 @@ struct SubCategoryStatsView: View {
                 }
                 .frame(height: 200)
                 .clipShape(RoundedRectangle(cornerRadius: 20))
+                .onAppear {
+                    print("🖼️ DEBUG: Loading image from URL: \(statsViewModel.currentSubCategory.imageURL)")
+                }
                 
                 Text(statsViewModel.currentSubCategory.name)
                     .font(.title2)
@@ -66,10 +77,55 @@ struct SubCategoryStatsView: View {
                 
                 // Overall Vote Stats
                 VStack(spacing: 16) {
-                    // Total Votes
-                    Text("Total Votes: \(totalVotes)")
-                        .font(.headline)
-                        .foregroundColor(.primary)
+                    // Total Votes Card
+                    VStack(spacing: 8) {
+                        Text("Total Votes")
+                            .font(.headline)
+                            .foregroundColor(.secondary)
+                        
+                        Text("\(totalVotes)")
+                            .font(.system(size: 36, weight: .bold))
+                            .foregroundColor(.primary)
+                            .onAppear {
+                                print("📊 DEBUG: Displaying total votes in UI: \(totalVotes)")
+                            }
+                        
+                        HStack(spacing: 24) {
+                            // Yay Count
+                            VStack(spacing: 4) {
+                                let yayCount = statsViewModel.currentSubCategory.yayCount
+                                Text("\(yayCount)")
+                                    .font(.title3)
+                                    .foregroundColor(.green)
+                                    .onAppear {
+                                        print("✅ DEBUG: Displaying Yay count: \(yayCount)")
+                                    }
+                                Text("Yay")
+                                    .font(.caption)
+                                    .foregroundColor(.green)
+                            }
+                            
+                            // Nay Count
+                            VStack(spacing: 4) {
+                                let nayCount = statsViewModel.currentSubCategory.nayCount
+                                Text("\(nayCount)")
+                                    .font(.title3)
+                                    .foregroundColor(.red)
+                                    .onAppear {
+                                        print("❌ DEBUG: Displaying Nay count: \(nayCount)")
+                                    }
+                                Text("Nay")
+                                    .font(.caption)
+                                    .foregroundColor(.red)
+                            }
+                        }
+                        .padding(.top, 4)
+                    }
+                    .padding()
+                    .frame(maxWidth: .infinity)
+                    .background(Color(.systemBackground))
+                    .cornerRadius(12)
+                    .shadow(color: .black.opacity(0.1), radius: 5, y: 2)
                     
                     // Vote Percentages
                     HStack(spacing: 20) {
@@ -78,6 +134,9 @@ struct SubCategoryStatsView: View {
                             Text("\(Int(yayPercentage))%")
                                 .font(.title)
                                 .foregroundColor(.green)
+                                .onAppear {
+                                    print("📊 DEBUG: Displaying Yay percentage: \(Int(yayPercentage))%")
+                                }
                             Text("Yay")
                                 .font(.subheadline)
                                 .foregroundColor(.green)
@@ -94,6 +153,9 @@ struct SubCategoryStatsView: View {
                             Text("\(Int(nayPercentage))%")
                                 .font(.title)
                                 .foregroundColor(.red)
+                                .onAppear {
+                                    print("📊 DEBUG: Displaying Nay percentage: \(Int(nayPercentage))%")
+                                }
                             Text("Nay")
                                 .font(.subheadline)
                                 .foregroundColor(.red)
@@ -127,7 +189,7 @@ struct SubCategoryStatsView: View {
                 // Voting Buttons
                 HStack(spacing: 20) {
                     Button(action: {
-                        print("DEBUG: Voting Yay")
+                        print("👍 DEBUG: User tapped Yay button")
                         statsViewModel.voteForAttribute(name: statsViewModel.currentSubCategory.name, isYay: true)
                     }) {
                         Text("Yay!")
@@ -140,7 +202,7 @@ struct SubCategoryStatsView: View {
                     }
                     
                     Button(action: {
-                        print("DEBUG: Voting Nay")
+                        print("👎 DEBUG: User tapped Nay button")
                         statsViewModel.voteForAttribute(name: statsViewModel.currentSubCategory.name, isYay: false)
                     }) {
                         Text("Nay!")
@@ -168,9 +230,16 @@ struct SubCategoryStatsView: View {
                         ForEach(statsViewModel.comments) { comment in
                             CommentRow(
                                 comment: comment,
-                                onLike: { statsViewModel.likeComment(comment) },
-                                onDelete: { statsViewModel.deleteComment(comment) },
+                                onLike: { 
+                                    print("❤️ DEBUG: User liked comment: \(comment.id)")
+                                    statsViewModel.likeComment(comment) 
+                                },
+                                onDelete: { 
+                                    print("🗑️ DEBUG: User deleted comment: \(comment.id)")
+                                    statsViewModel.deleteComment(comment) 
+                                },
                                 onReply: { text in
+                                    print("💬 DEBUG: User replied to comment: \(comment.id)")
                                     statsViewModel.addComment(text, parentId: comment.id)
                                 }
                             )
@@ -186,9 +255,15 @@ struct SubCategoryStatsView: View {
         }
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {
-            print("DEBUG: SubCategoryStatsView appeared")
-            print("DEBUG: Current subcategory - Name: \(statsViewModel.currentSubCategory.name)")
-            print("DEBUG: Current votes - Yay: \(statsViewModel.currentSubCategory.yayCount), Nay: \(statsViewModel.currentSubCategory.nayCount)")
+            print("\n📱 DEBUG: SubCategoryStatsView appeared")
+            print("📊 DEBUG: Current subcategory state:")
+            print("   - Name: \(statsViewModel.currentSubCategory.name)")
+            print("   - ID: \(statsViewModel.currentSubCategory.id)")
+            print("   - Yay Count: \(statsViewModel.currentSubCategory.yayCount)")
+            print("   - Nay Count: \(statsViewModel.currentSubCategory.nayCount)")
+            print("   - Total Votes: \(totalVotes)")
+            print("   - Yay Percentage: \(yayPercentage)%")
+            print("   - Nay Percentage: \(nayPercentage)%")
             categoryViewModel.fetchCategories()
         }
     }

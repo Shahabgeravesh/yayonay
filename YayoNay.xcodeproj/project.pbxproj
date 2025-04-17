@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		BA2984202DB06E6300D5CBBF /* FirebaseMessaging in Frameworks */ = {isa = PBXBuildFile; productRef = BA29841F2DB06E6300D5CBBF /* FirebaseMessaging */; };
 		BAE90E602D869B810067F715 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = BAE90E5F2D869B810067F715 /* FirebaseAuth */; };
 		BAE90E622D869B810067F715 /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = BAE90E612D869B810067F715 /* FirebaseFirestore */; };
 		BAE90E642D869B810067F715 /* FirebaseStorage in Frameworks */ = {isa = PBXBuildFile; productRef = BAE90E632D869B810067F715 /* FirebaseStorage */; };
@@ -75,6 +76,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				BA2984202DB06E6300D5CBBF /* FirebaseMessaging in Frameworks */,
 				BAE90EF92D88DC790067F715 /* GoogleSignInSwift in Frameworks */,
 				BAE90E602D869B810067F715 /* FirebaseAuth in Frameworks */,
 				BAE90EF72D88DC790067F715 /* GoogleSignIn in Frameworks */,
@@ -146,6 +148,7 @@
 				BAE90E632D869B810067F715 /* FirebaseStorage */,
 				BAE90EF62D88DC790067F715 /* GoogleSignIn */,
 				BAE90EF82D88DC790067F715 /* GoogleSignInSwift */,
+				BA29841F2DB06E6300D5CBBF /* FirebaseMessaging */,
 			);
 			productName = YayoNay;
 			productReference = BAE90E212D8699540067F715 /* YayoNay.app */;
@@ -653,6 +656,11 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		BA29841F2DB06E6300D5CBBF /* FirebaseMessaging */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = BAE90E5E2D869B810067F715 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseMessaging;
+		};
 		BAE90E5F2D869B810067F715 /* FirebaseAuth */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = BAE90E5E2D869B810067F715 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
