@@ -23,220 +23,249 @@ struct SubCategoryStatsView: View {
     @State private var showShareSheet = false
     
     init(subCategory: SubCategory) {
+        print("DEBUG: Initializing SubCategoryStatsView with subCategory: \(subCategory.name)")
+        print("DEBUG: Initial yayCount: \(subCategory.yayCount), nayCount: \(subCategory.nayCount)")
         _statsViewModel = StateObject(wrappedValue: SubCategoryStatsViewModel(subCategory: subCategory))
     }
     
     private var totalVotes: Int {
-        statsViewModel.currentSubCategory.yayCount + statsViewModel.currentSubCategory.nayCount
+        let total = statsViewModel.currentSubCategory.yayCount + statsViewModel.currentSubCategory.nayCount
+        print("DEBUG: Calculating total votes: \(total)")
+        return total
     }
     
     private var yayPercentage: Double {
-        totalVotes > 0 ? Double(statsViewModel.currentSubCategory.yayCount) / Double(totalVotes) * 100 : 0
+        let percentage = totalVotes > 0 ? Double(statsViewModel.currentSubCategory.yayCount) / Double(totalVotes) * 100 : 0
+        print("DEBUG: Calculating yay percentage: \(percentage)%")
+        return percentage
     }
     
     private var nayPercentage: Double {
-        totalVotes > 0 ? Double(statsViewModel.currentSubCategory.nayCount) / Double(totalVotes) * 100 : 0
+        let percentage = totalVotes > 0 ? Double(statsViewModel.currentSubCategory.nayCount) / Double(totalVotes) * 100 : 0
+        print("DEBUG: Calculating nay percentage: \(percentage)%")
+        return percentage
     }
     
     var body: some View {
         ScrollView {
-            VStack(spacing: 20) {
-                headerSection
+            VStack(spacing: 24) {
+                // Image and Name
+                AsyncImage(url: URL(string: statsViewModel.currentSubCategory.imageURL)) { image in
+                    image
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                } placeholder: {
+                    Color.gray.opacity(0.2)
+                }
+                .frame(height: 200)
+                .clipShape(RoundedRectangle(cornerRadius: 20))
                 
-                // Voting section
-                if let category = categoryViewModel.categories.first(where: { $0.id == statsViewModel.currentSubCategory.categoryId }) {
-                    VStack(spacing: 16) {
-                        ForEach(category.attributes, id: \.name) { attribute in
-                            AttributeRow(
-                                name: attribute.name,
-                                yayText: attribute.yayText,
-                                nayText: attribute.nayText,
-                                votes: statsViewModel.attributeVotes[attribute.name] ?? AttributeVotes(),
-                                onVote: { isYay in
-                                    statsViewModel.voteForAttribute(name: attribute.name, isYay: isYay)
-                                }
-                            )
+                Text(statsViewModel.currentSubCategory.name)
+                    .font(.title2)
+                    .fontWeight(.semibold)
+                
+                // Overall Vote Stats
+                VStack(spacing: 16) {
+                    // Total Votes
+                    Text("Total Votes: \(totalVotes)")
+                        .font(.headline)
+                        .foregroundColor(.primary)
+                    
+                    // Vote Percentages
+                    HStack(spacing: 20) {
+                        // Yay Stats
+                        VStack(spacing: 4) {
+                            Text("\(Int(yayPercentage))%")
+                                .font(.title)
+                                .foregroundColor(.green)
+                            Text("Yay")
+                                .font(.subheadline)
+                                .foregroundColor(.green)
                         }
+                        .frame(maxWidth: .infinity)
+                        
+                        // Divider
+                        Rectangle()
+                            .frame(width: 1, height: 40)
+                            .foregroundColor(.gray.opacity(0.3))
+                        
+                        // Nay Stats
+                        VStack(spacing: 4) {
+                            Text("\(Int(nayPercentage))%")
+                                .font(.title)
+                                .foregroundColor(.red)
+                            Text("Nay")
+                                .font(.subheadline)
+                                .foregroundColor(.red)
+                        }
+                        .frame(maxWidth: .infinity)
                     }
                     .padding()
                     .background(Color(.systemBackground))
                     .cornerRadius(12)
                     .shadow(color: .black.opacity(0.1), radius: 5, y: 2)
+                    
+                    // Vote Bar
+                    GeometryReader { geometry in
+                        HStack(spacing: 0) {
+                            // Yay portion
+                            Rectangle()
+                                .fill(Color.green.opacity(0.7))
+                                .frame(width: geometry.size.width * CGFloat(yayPercentage / 100))
+                            
+                            // Nay portion
+                            Rectangle()
+                                .fill(Color.red.opacity(0.7))
+                                .frame(width: geometry.size.width * CGFloat(nayPercentage / 100))
+                        }
+                    }
+                    .frame(height: 8)
+                    .clipShape(RoundedRectangle(cornerRadius: 4))
                 }
+                .padding(.horizontal)
+                
+                // Voting Buttons
+                HStack(spacing: 20) {
+                    Button(action: {
+                        print("DEBUG: Voting Yay")
+                        statsViewModel.voteForAttribute(name: statsViewModel.currentSubCategory.name, isYay: true)
+                    }) {
+                        Text("Yay!")
+                            .font(.headline)
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(Color.green)
+                            .cornerRadius(12)
+                    }
+                    
+                    Button(action: {
+                        print("DEBUG: Voting Nay")
+                        statsViewModel.voteForAttribute(name: statsViewModel.currentSubCategory.name, isYay: false)
+                    }) {
+                        Text("Nay!")
+                            .font(.headline)
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(Color.red)
+                            .cornerRadius(12)
+                    }
+                }
+                .padding(.horizontal)
                 
                 // Comments Section
                 VStack(alignment: .leading, spacing: 16) {
-                    Text("Comment")
+                    Text("Comments")
                         .font(.headline)
+                        .padding(.horizontal)
                     
-                    // Comment Input
-                    HStack {
-                        TextField("Add your comments here", text: $newComment)
-                            .textFieldStyle(RoundedBorderTextFieldStyle())
-                        
-                        Button(action: submitComment) {
-                            Text("Post")
-                                .foregroundColor(newComment.isEmpty ? .gray : .blue)
+                    TextField("Add a comment...", text: $newComment)
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                        .padding(.horizontal)
+                    
+                    if !statsViewModel.comments.isEmpty {
+                        ForEach(statsViewModel.comments) { comment in
+                            CommentRow(
+                                comment: comment,
+                                onLike: { statsViewModel.likeComment(comment) },
+                                onDelete: { statsViewModel.deleteComment(comment) },
+                                onReply: { text in
+                                    statsViewModel.addComment(text, parentId: comment.id)
+                                }
+                            )
                         }
-                        .disabled(newComment.isEmpty)
-                    }
-                    
-                    // Comments List
-                    ForEach(statsViewModel.comments) { comment in
-                        CommentRow(
-                            comment: comment,
-                            onLike: { statsViewModel.likeComment(comment) },
-                            onDelete: { statsViewModel.deleteComment(comment) },
-                            onReply: { text in
-                                statsViewModel.addComment(text, parentId: comment.id)
-                            }
-                        )
+                    } else {
+                        Text("No comments yet")
+                            .foregroundColor(.secondary)
+                            .padding()
                     }
                 }
-                .padding()
-                
-                // Share Section
-                SocialShareSection(onShare: share)
             }
             .padding()
         }
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {
+            print("DEBUG: SubCategoryStatsView appeared")
+            print("DEBUG: Current subcategory - Name: \(statsViewModel.currentSubCategory.name)")
+            print("DEBUG: Current votes - Yay: \(statsViewModel.currentSubCategory.yayCount), Nay: \(statsViewModel.currentSubCategory.nayCount)")
             categoryViewModel.fetchCategories()
         }
     }
-    
-    private var headerSection: some View {
-        VStack(spacing: 16) {
-            AsyncImage(url: URL(string: statsViewModel.currentSubCategory.imageURL)) { image in
-                image
-                    .resizable()
-                    .aspectRatio(contentMode: .fill)
-            } placeholder: {
-                Color.gray.opacity(0.2)
-            }
-            .frame(height: 200)
-            .clipShape(RoundedRectangle(cornerRadius: 20))
-            
-            Text(statsViewModel.currentSubCategory.name)
-                .font(.title)
-                .fontWeight(.bold)
-        }
-    }
-    
-    private func submitComment() {
-        guard !newComment.isEmpty else { return }
-        statsViewModel.addComment(newComment)
-        newComment = ""
-    }
-    
-    private func share(on platform: SocialPlatform) {
-        // Handle sharing based on platform
-        showShareSheet = true
-    }
 }
 
-struct AttributeRow: View {
+struct AttributeVoteRow: View {
     let name: String
-    let yayText: String
-    let nayText: String
     let votes: AttributeVotes
     let onVote: (Bool) -> Void
     @State private var hasVoted = false
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 8) {
             Text(name)
                 .font(.headline)
-                .padding(.bottom, 4)
             
             if hasVoted || votes.totalVotes > 0 {
-                // Results View
+                // Show results
                 VStack(spacing: 8) {
-                    // Yay Result Bar
                     HStack {
-                        Text("\(yayText)!")
+                        Text("Yay: \(votes.yayCount)")
                             .foregroundColor(.green)
-                            .font(.system(size: 16, weight: .semibold))
-                        Text("\(Int(votes.yayPercentage))%")
-                            .foregroundColor(.green)
-                            .font(.system(size: 16, weight: .bold))
                         Spacer()
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 12)
-                    .background(Color.green.opacity(0.15))
-                    .cornerRadius(12)
-                    
-                    // Nay Result Bar
-                    HStack {
-                        Text("\(nayText)!")
+                        Text("Nay: \(votes.nayCount)")
                             .foregroundColor(.red)
-                            .font(.system(size: 16, weight: .semibold))
-                        Text("\(100 - Int(votes.yayPercentage))%")
-                            .foregroundColor(.red)
-                            .font(.system(size: 16, weight: .bold))
-                        Spacer()
                     }
-                    .frame(maxWidth: .infinity)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 12)
-                    .background(Color.red.opacity(0.15))
-                    .cornerRadius(12)
+                    .font(.subheadline)
                     
-                    // Progress bar
                     GeometryReader { geometry in
-                        ZStack(alignment: .leading) {
+                        HStack(spacing: 0) {
                             Rectangle()
-                                .fill(Color.red.opacity(0.3))
-                                .frame(height: 3)
+                                .fill(Color.green.opacity(0.3))
+                                .frame(width: geometry.size.width * CGFloat(votes.yayPercentage / 100))
                             
                             Rectangle()
-                                .fill(Color.green)
-                                .frame(width: geometry.size.width * CGFloat(votes.yayPercentage / 100), height: 3)
+                                .fill(Color.red.opacity(0.3))
+                                .frame(width: geometry.size.width * CGFloat((100 - votes.yayPercentage) / 100))
                         }
                     }
-                    .frame(height: 3)
-                    
-                    // Total votes
-                    Text("\(votes.totalVotes) votes")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .padding(.top, 4)
+                    .frame(height: 8)
+                    .clipShape(RoundedRectangle(cornerRadius: 4))
                 }
             } else {
-                // Voting Buttons
+                // Show voting buttons
                 HStack(spacing: 12) {
                     Button(action: {
+                        print("DEBUG: Voting Nay for attribute: \(name)")
                         hasVoted = true
                         onVote(false)
                     }) {
-                        Text(nayText)
+                        Text("Nay!")
                             .frame(maxWidth: .infinity)
-                            .padding(.vertical, 12)
-                            .background(Color.red.opacity(0.15))
+                            .frame(height: 36)
+                            .background(Color.red.opacity(0.1))
                             .foregroundColor(.red)
-                            .cornerRadius(12)
+                            .clipShape(RoundedRectangle(cornerRadius: 8))
                     }
                     
                     Button(action: {
+                        print("DEBUG: Voting Yay for attribute: \(name)")
                         hasVoted = true
                         onVote(true)
                     }) {
-                        Text(yayText)
+                        Text("Yay!")
                             .frame(maxWidth: .infinity)
-                            .padding(.vertical, 12)
-                            .background(Color.green.opacity(0.15))
+                            .frame(height: 36)
+                            .background(Color.green.opacity(0.1))
                             .foregroundColor(.green)
-                            .cornerRadius(12)
+                            .clipShape(RoundedRectangle(cornerRadius: 8))
                     }
                 }
             }
         }
         .padding()
         .background(Color(.systemBackground))
-        .cornerRadius(16)
+        .cornerRadius(12)
+        .shadow(color: .black.opacity(0.1), radius: 5, y: 2)
     }
 }
 

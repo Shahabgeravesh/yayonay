@@ -181,21 +181,20 @@ class VotesViewModel: ObservableObject {
             let commentId = UUID().uuidString
             print("DEBUG: Generated comment ID: \(commentId)")
             
-            let comment = Comment(
-                id: commentId,
-                userId: userId,
-                username: username,
-                userImage: userImage,
-                text: text,
-                parentId: parentId,
-                voteId: voteId
-            )
-            
-            var commentData = comment.dictionary
-            commentData["voteId"] = voteId
+            let commentData: [String: Any] = [
+                "id": commentId,
+                "userId": userId,
+                "username": username,
+                "userImage": userImage,
+                "text": text,
+                "date": Timestamp(date: Date()),
+                "likes": 0,
+                "likedBy": [:],
+                "parentId": parentId as Any,
+                "voteId": voteId
+            ]
             
             print("DEBUG: Comment data to save: \(commentData)")
-            print("DEBUG: Vote ID: \(voteId)")
             
             self.db.collection("comments")
                 .document(commentId)
@@ -233,10 +232,26 @@ class VotesViewModel: ObservableObject {
         guard let userId = Auth.auth().currentUser?.uid,
               comment.userId == userId else { return }
         
+        print("DEBUG: Deleting comment with ID: \(comment.id)")
+        
+        // Delete the comment from Firestore
         db.collection("comments").document(comment.id).delete { [weak self] error in
-            if error == nil {
-                DispatchQueue.main.async {
+            if let error = error {
+                print("DEBUG: Error deleting comment: \(error.localizedDescription)")
+                return
+            }
+            
+            print("DEBUG: Successfully deleted comment from Firestore")
+            
+            DispatchQueue.main.async {
+                if comment.parentId == nil {
+                    // If it's a main comment, remove it and all its replies
                     self?.comments.removeAll { $0.id == comment.id }
+                } else {
+                    // If it's a reply, find the parent comment and remove just this reply
+                    if let parentIndex = self?.comments.firstIndex(where: { $0.id == comment.parentId }) {
+                        self?.comments[parentIndex].replies.removeAll { $0.id == comment.id }
+                    }
                 }
             }
         }
@@ -335,9 +350,10 @@ struct CommentsView: View {
     
     @State private var newCommentText = ""
     @Environment(\.dismiss) private var dismiss
+    @FocusState private var isCommentFieldFocused: Bool
     
     var body: some View {
-        VStack {
+        VStack(spacing: 0) {
             // Vote Summary
             VoteCard(vote: vote, isClickable: false)
                 .padding()
@@ -345,40 +361,100 @@ struct CommentsView: View {
             // Comments List
             ScrollView {
                 LazyVStack(spacing: 16) {
-                    ForEach(comments) { comment in
-                        CommentRow(
-                            comment: comment,
-                            onLike: { onLikeComment(comment) },
-                            onDelete: { onDeleteComment(comment) },
-                            onReply: { text in
-                                onAddComment(text, comment.id)
+                    if comments.isEmpty {
+                        VStack(spacing: 12) {
+                            Image(systemName: "bubble.left")
+                                .font(.system(size: 40))
+                                .foregroundColor(.gray)
+                            Text("No comments yet")
+                                .font(.headline)
+                                .foregroundColor(.gray)
+                            Text("Be the first to comment!")
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 40)
+                    } else {
+                        ForEach(comments) { comment in
+                            CommentRow(
+                                comment: comment,
+                                onLike: { 
+                                    print("DEBUG: Liking comment with ID: \(comment.id)")
+                                    onLikeComment(comment)
+                                },
+                                onDelete: { 
+                                    print("DEBUG: Deleting comment with ID: \(comment.id)")
+                                    onDeleteComment(comment)
+                                },
+                                onReply: { text in
+                                    print("DEBUG: Replying to comment with ID: \(comment.id)")
+                                    onAddComment(text, comment.id)
+                                }
+                            )
+                            .padding(.horizontal)
+                            
+                            // Display replies
+                            ForEach(comment.replies) { reply in
+                                CommentRow(
+                                    comment: reply,
+                                    onLike: {
+                                        print("DEBUG: Liking reply with ID: \(reply.id)")
+                                        onLikeComment(reply)
+                                    },
+                                    onDelete: {
+                                        print("DEBUG: Deleting reply with ID: \(reply.id)")
+                                        onDeleteComment(reply)
+                                    },
+                                    onReply: { text in
+                                        print("DEBUG: Replying to reply with ID: \(reply.id)")
+                                        onAddComment(text, reply.id)
+                                    }
+                                )
+                                .padding(.leading, 52)
+                                .padding(.trailing)
                             }
-                        )
+                        }
                     }
                 }
                 .padding()
             }
             
             // Comment Input
-            HStack {
-                TextField("Add a comment...", text: $newCommentText)
-                    .textFieldStyle(.roundedBorder)
-                
-                Button {
-                    guard !newCommentText.isEmpty else { return }
-                    onAddComment(newCommentText, nil)
-                    newCommentText = ""
-                } label: {
-                    Image(systemName: "arrow.up.circle.fill")
-                        .font(.title2)
-                        .foregroundColor(.blue)
+            VStack(spacing: 0) {
+                Divider()
+                HStack(spacing: 12) {
+                    TextField("Add a comment...", text: $newCommentText)
+                        .textFieldStyle(.roundedBorder)
+                        .frame(maxWidth: .infinity)
+                        .focused($isCommentFieldFocused)
+                        .submitLabel(.send)
+                        .onSubmit {
+                            submitComment()
+                        }
+                    
+                    Button {
+                        submitComment()
+                    } label: {
+                        Image(systemName: "arrow.up.circle.fill")
+                            .font(.title2)
+                            .foregroundColor(newCommentText.isEmpty ? .gray : .blue)
+                    }
+                    .disabled(newCommentText.isEmpty)
                 }
-                .disabled(newCommentText.isEmpty)
+                .padding()
+                .background(Color(.systemBackground))
             }
-            .padding()
         }
         .navigationTitle("Comments")
         .navigationBarTitleDisplayMode(.inline)
+    }
+    
+    private func submitComment() {
+        guard !newCommentText.isEmpty else { return }
+        onAddComment(newCommentText, nil)
+        newCommentText = ""
+        isCommentFieldFocused = false
     }
 }
 
@@ -458,25 +534,37 @@ struct EmptyStateView: View {
 struct VoteCard: View {
     let vote: Vote
     let isClickable: Bool
+    @StateObject private var subCategoryViewModel: SubCategoryViewModel
+    @State private var isLoading = true
     
     init(vote: Vote, isClickable: Bool = true) {
         self.vote = vote
         self.isClickable = isClickable
+        // Initialize with the correct categoryId
+        _subCategoryViewModel = StateObject(wrappedValue: SubCategoryViewModel(categoryId: vote.categoryId))
     }
     
     var body: some View {
         Group {
             if isClickable {
                 NavigationLink {
-                    SubCategoryStatsView(subCategory: SubCategory(
-                        id: vote.subCategoryId,
-                        name: vote.itemName,
-                        imageURL: vote.imageURL,
-                        categoryId: vote.categoryId,
-                        order: 0,
-                        yayCount: 0,
-                        nayCount: 0
-                    ))
+                    Group {
+                        if let subCategory = subCategoryViewModel.subCategories.first(where: { $0.id == vote.subCategoryId }) {
+                            SubCategoryStatsView(subCategory: subCategory)
+                        } else {
+                            VStack {
+                                ProgressView()
+                                Text("Loading...")
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                    }
+                    .onAppear {
+                        print("DEBUG: Navigation destination appeared")
+                        print("DEBUG: CategoryId: \(vote.categoryId)")
+                        print("DEBUG: SubCategoryId: \(vote.subCategoryId)")
+                        print("DEBUG: Current subcategories count: \(subCategoryViewModel.subCategories.count)")
+                    }
                 } label: {
                     voteContent
                 }
@@ -485,45 +573,45 @@ struct VoteCard: View {
                 voteContent
             }
         }
+        .onAppear {
+            if isClickable {
+                print("DEBUG: VoteCard appeared")
+                print("DEBUG: CategoryId: \(vote.categoryId)")
+                print("DEBUG: SubCategoryId: \(vote.subCategoryId)")
+                subCategoryViewModel.fetchSubCategories(for: vote.categoryId)
+            }
+        }
     }
     
     private var voteContent: some View {
-        HStack(spacing: 12) {
-            // Image
+        VStack(alignment: .leading, spacing: 12) {
+            // Item image
             AsyncImage(url: URL(string: vote.imageURL)) { image in
                 image
                     .resizable()
                     .aspectRatio(contentMode: .fill)
             } placeholder: {
-                Color.gray.opacity(0.2)
+                Rectangle()
+                    .fill(Color.gray.opacity(0.2))
             }
-            .frame(width: 50, height: 50)
-            .clipShape(RoundedRectangle(cornerRadius: 8))
+            .frame(height: 200)
+            .clipShape(RoundedRectangle(cornerRadius: 12))
             
-            // Content
-            VStack(alignment: .leading, spacing: 4) {
-                HStack {
-                    Text(vote.itemName)
-                        .font(.headline)
-                    
-                    Text(vote.isYay ? "Yay!" : "Nay!")
-                        .font(.subheadline)
-                        .foregroundColor(vote.isYay ? .green : .red)
-                }
-                
+            // Item name
+            Text(vote.itemName)
+                .font(.system(size: 18, weight: .semibold))
+                .lineLimit(2)
+            
+            // Vote status
+            HStack {
+                Label(vote.isYay ? "Yay!" : "Nay!", systemImage: vote.isYay ? "hand.thumbsup.fill" : "hand.thumbsdown.fill")
+                    .foregroundColor(vote.isYay ? .green : .red)
+                Spacer()
                 Text(formatDate(vote.date))
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
-            
-            Spacer()
-            
-            // Only show chevron if clickable
-            if isClickable {
-                Image(systemName: "chevron.forward")
-                    .foregroundStyle(.secondary)
-                    .font(.system(size: 14))
-            }
+            .font(.system(size: 14))
         }
         .padding()
         .background(Color(.systemBackground))
@@ -535,6 +623,63 @@ struct VoteCard: View {
         let formatter = DateFormatter()
         formatter.dateFormat = "M/d/yy"
         return formatter.string(from: date)
+    }
+}
+
+struct VoteStatsView: View {
+    let yayCount: Int
+    let nayCount: Int
+    
+    private var totalVotes: Int {
+        yayCount + nayCount
+    }
+    
+    private var yayPercentage: Double {
+        guard totalVotes > 0 else { return 0 }
+        return Double(yayCount) / Double(totalVotes) * 100
+    }
+    
+    private var nayPercentage: Double {
+        guard totalVotes > 0 else { return 0 }
+        return Double(nayCount) / Double(totalVotes) * 100
+    }
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            // Vote counts text
+            HStack {
+                Text("Yay: \(Int(yayPercentage))%")
+                    .foregroundColor(.green)
+                Spacer()
+                Text("Nay: \(Int(nayPercentage))%")
+                    .foregroundColor(.red)
+            }
+            .font(.caption)
+            
+            // Progress bar
+            GeometryReader { geometry in
+                ZStack(alignment: .leading) {
+                    // Background bar (Nay)
+                    Rectangle()
+                        .fill(Color.red.opacity(0.3))
+                        .frame(height: 8)
+                        .cornerRadius(4)
+                    
+                    // Foreground bar (Yay)
+                    Rectangle()
+                        .fill(Color.green.opacity(0.7))
+                        .frame(width: geometry.size.width * CGFloat(yayPercentage / 100), height: 8)
+                        .cornerRadius(4)
+                }
+            }
+            .frame(height: 8)
+            
+            // Total votes
+            Text("\(totalVotes) total votes")
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+        }
+        .padding(.top, 4)
     }
 }
 

@@ -11,6 +11,7 @@ import GoogleSignIn
 import FirebaseFirestore
 import FirebaseAuth
 import FirebaseStorage
+import FirebaseMessaging
 
 class AppDelegate: NSObject, UIApplicationDelegate {
     func application(_ application: UIApplication,
@@ -30,7 +31,15 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         let config = GIDConfiguration(clientID: clientID)
         GIDSignIn.sharedInstance.configuration = config
         
+        // Request notification permissions
+        NotificationManager.shared.requestNotificationPermission()
+        
         return true
+    }
+    
+    func application(_ application: UIApplication,
+                    didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
+        Messaging.messaging().apnsToken = deviceToken
     }
     
     func application(_ application: UIApplication,
