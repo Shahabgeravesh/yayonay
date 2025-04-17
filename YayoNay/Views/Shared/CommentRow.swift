@@ -47,8 +47,6 @@ struct CommentRow: View {
     @State private var replyText = ""
     @State private var showingDeleteAlert = false
     @State private var isLiked = false
-    @State private var replies: [Comment] = []
-    @State private var isLoadingReplies = false
     
     private let db = Firestore.firestore()
     
@@ -137,7 +135,6 @@ struct CommentRow: View {
                             Button(action: {
                                 if !replyText.isEmpty {
                                     onReply(replyText)
-                                    sendReplyNotification(replyText: replyText)
                                     replyText = ""
                                     isReplying = false
                                 }
@@ -155,9 +152,6 @@ struct CommentRow: View {
                     if !comment.replies.isEmpty {
                         Button(action: {
                             showingReplies.toggle()
-                            if showingReplies && replies.isEmpty {
-                                loadReplies()
-                            }
                         }) {
                             HStack {
                                 Text(showingReplies ? "Hide replies" : "Show \(comment.replies.count) replies")
@@ -175,24 +169,18 @@ struct CommentRow: View {
             
             // Replies
             if showingReplies {
-                if isLoadingReplies {
-                    ProgressView()
-                        .frame(maxWidth: .infinity, alignment: .center)
-                        .padding(.top, 8)
-                } else {
-                    ForEach(replies) { reply in
-                        CommentRow(
-                            comment: reply,
-                            onLike: {
-                                // Handle reply like
-                            },
-                            onDelete: {
-                                // Handle reply delete
-                            },
-                            onReply: onReply
-                        )
-                        .padding(.leading, 52)
-                    }
+                ForEach(comment.replies) { reply in
+                    CommentRow(
+                        comment: reply,
+                        onLike: {
+                            // Handle reply like
+                        },
+                        onDelete: {
+                            // Handle reply delete
+                        },
+                        onReply: onReply
+                    )
+                    .padding(.leading, 52)
                 }
             }
         }
@@ -204,75 +192,6 @@ struct CommentRow: View {
             }
         } message: {
             Text("Are you sure you want to delete this comment? This action cannot be undone.")
-        }
-    }
-    
-    private func loadReplies() {
-        isLoadingReplies = true
-        
-        // Get the vote document reference
-        let voteRef = db.collection("votes").document(comment.voteId)
-        
-        // Get the comment document reference
-        let commentRef = voteRef.collection("comments").document(comment.id)
-        
-        // Get the replies subcollection
-        commentRef.collection("replies")
-            .order(by: "timestamp", descending: false)
-            .getDocuments { snapshot, error in
-                isLoadingReplies = false
-                
-                if let error = error {
-                    print("Error loading replies: \(error.localizedDescription)")
-                    return
-                }
-                
-                guard let documents = snapshot?.documents else { return }
-                
-                replies = documents.compactMap { document -> Comment? in
-                    let data = document.data()
-                    
-                    guard let userId = data["userId"] as? String,
-                          let username = data["username"] as? String,
-                          let text = data["text"] as? String,
-                          let timestamp = (data["timestamp"] as? Timestamp)?.dateValue(),
-                          let likes = data["likes"] as? Int else {
-                        return nil
-                    }
-                    
-                    return Comment(
-                        id: document.documentID,
-                        userId: userId,
-                        username: username,
-                        userImage: data["userImage"] as? String ?? "https://firebasestorage.googleapis.com/v0/b/yayonay-e7f58.appspot.com/o/default_profile.png?alt=media",
-                        text: text,
-                        date: timestamp,
-                        likes: likes,
-                        replies: [],
-                        voteId: comment.voteId
-                    )
-                }
-            }
-    }
-    
-    private func sendReplyNotification(replyText: String) {
-        guard let currentUser = Auth.auth().currentUser else { return }
-        
-        let notification = [
-            "userId": currentUser.uid,
-            "username": currentUser.displayName ?? "Anonymous",
-            "type": "reply",
-            "voteId": comment.voteId,
-            "commentId": comment.id,
-            "text": replyText,
-            "timestamp": Timestamp(),
-            "isRead": false
-        ] as [String : Any]
-        
-        db.collection("notifications").addDocument(data: notification) { error in
-            if let error = error {
-                print("Error sending notification: \(error.localizedDescription)")
-            }
         }
     }
 } 
