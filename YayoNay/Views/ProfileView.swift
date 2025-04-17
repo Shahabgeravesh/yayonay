@@ -41,29 +41,11 @@ struct ProfileView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Menu {
-                        Button(action: { showEditProfile = true }) {
-                            Label("Edit Profile", systemImage: "pencil")
-                        }
-                        
-                        Button(role: .destructive, action: { showSignOutAlert = true }) {
-                            Label("Sign Out", systemImage: "arrow.right.square")
-                        }
-                    } label: {
-                        if let imageData = userManager.currentUser?.imageData,
-                           let data = Data(base64Encoded: imageData),
-                           let uiImage = UIImage(data: data) {
-                            Image(uiImage: uiImage)
-                                .resizable()
-                                .aspectRatio(contentMode: .fill)
-                                .frame(width: 32, height: 32)
-                                .clipShape(Circle())
-                        } else {
-                            defaultProfileImage
-                                .frame(width: 32, height: 32)
-                                .clipShape(Circle())
-                        }
-                    }
+                    ProfileMenuButton(
+                        showEditProfile: $showEditProfile,
+                        showSignOutAlert: $showSignOutAlert,
+                        userManager: userManager
+                    )
                 }
             }
             .sheet(isPresented: $showEditProfile) {
@@ -171,12 +153,21 @@ struct ProfileView: View {
     
     private var profileImage: some View {
         Group {
-            if let imageData = userManager.currentUser?.imageData,
-               let data = Data(base64Encoded: imageData),
-               let uiImage = UIImage(data: data) {
-                Image(uiImage: uiImage)
-                    .resizable()
-                    .aspectRatio(contentMode: .fill)
+            if let imageURL = userManager.currentUser?.imageURL {
+                AsyncImage(url: URL(string: imageURL)) { phase in
+                    switch phase {
+                    case .empty:
+                        defaultProfileImage
+                    case .success(let image):
+                        image
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                    case .failure:
+                        defaultProfileImage
+                    @unknown default:
+                        defaultProfileImage
+                    }
+                }
             } else {
                 defaultProfileImage
             }
@@ -357,6 +348,64 @@ struct FlowLayout: Layout {
         }
         
         return (offsets, CGSize(width: containerWidth, height: maxHeight))
+    }
+}
+
+// MARK: - Profile Menu Button
+private struct ProfileMenuButton: View {
+    @Binding var showEditProfile: Bool
+    @Binding var showSignOutAlert: Bool
+    let userManager: UserManager
+    
+    var body: some View {
+        Menu {
+            Button(action: { showEditProfile = true }) {
+                Label("Edit Profile", systemImage: "pencil")
+            }
+            
+            Button(role: .destructive, action: { showSignOutAlert = true }) {
+                Label("Sign Out", systemImage: "arrow.right.square")
+            }
+        } label: {
+            ProfileMenuImage(userManager: userManager)
+        }
+    }
+}
+
+// MARK: - Profile Menu Image
+private struct ProfileMenuImage: View {
+    let userManager: UserManager
+    
+    var body: some View {
+        Group {
+            if let imageURL = userManager.currentUser?.imageURL {
+                AsyncImage(url: URL(string: imageURL)) { phase in
+                    switch phase {
+                    case .empty:
+                        defaultProfileImage
+                    case .success(let image):
+                        image
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                    case .failure:
+                        defaultProfileImage
+                    @unknown default:
+                        defaultProfileImage
+                    }
+                }
+            } else {
+                defaultProfileImage
+            }
+        }
+        .frame(width: 32, height: 32)
+        .clipShape(Circle())
+    }
+    
+    private var defaultProfileImage: some View {
+        Image(systemName: "person.circle.fill")
+            .resizable()
+            .aspectRatio(contentMode: .fit)
+            .foregroundStyle(AppColor.accent)
     }
 }
 

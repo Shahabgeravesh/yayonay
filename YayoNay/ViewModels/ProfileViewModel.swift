@@ -25,7 +25,8 @@ class ProfileViewModel: ObservableObject {
         self.profile = UserProfile(
             id: UUID().uuidString,
             username: "",
-            imageData: nil,
+            imageURL: "",
+            email: nil,
             bio: "",
             votesCount: 0,
             lastVoteDate: Date(),
@@ -101,7 +102,8 @@ class ProfileViewModel: ObservableObject {
             profile = UserProfile(
                 id: UUID().uuidString,
                 username: "",
-                imageData: nil,
+                imageURL: "",
+                email: nil,
                 bio: "",
                 votesCount: 0,
                 lastVoteDate: Date(),
@@ -126,7 +128,48 @@ class ProfileViewModel: ObservableObject {
             return
         }
         
-        profile.imageData = imageData
+        profile.imageURL = imageData
+    }
+    
+    private func createDefaultProfile() -> UserProfile {
+        return UserProfile(
+            id: UUID().uuidString,
+            username: "User\(Int.random(in: 1000...9999))",
+            imageURL: "https://firebasestorage.googleapis.com/v0/b/yayonay-e7f58.appspot.com/o/default_profile.png?alt=media",
+            email: nil,
+            bio: "",
+            votesCount: 0,
+            lastVoteDate: Date(),
+            topInterests: []
+        )
+    }
+
+    private func createProfileFromUser(_ user: User) -> UserProfile {
+        // Get username from display name or email
+        var username = user.displayName ?? ""
+        if username.isEmpty, let email = user.email {
+            // Use email username part if no display name
+            let emailParts = email.split(separator: "@")
+            if !emailParts.isEmpty {
+                username = String(emailParts[0])
+            }
+        }
+        
+        return UserProfile(
+            id: user.uid,
+            username: username,
+            imageURL: "https://firebasestorage.googleapis.com/v0/b/yayonay-e7f58.appspot.com/o/default_profile.png?alt=media",
+            email: user.email,
+            bio: "",
+            votesCount: 0,
+            lastVoteDate: Date(),
+            topInterests: []
+        )
+    }
+
+    private func updateLocalProfile(_ profile: UserProfile) {
+        self.profile = profile
+        self.selectedInterests = Set(profile.topInterests)
     }
 }
 

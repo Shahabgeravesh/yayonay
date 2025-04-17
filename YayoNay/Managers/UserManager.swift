@@ -131,6 +131,37 @@ class UserManager: NSObject, ObservableObject {
     }
     */
     
+    private func uploadProfileImage(_ image: UIImage) async throws -> String {
+        guard let userId = auth.currentUser?.uid else {
+            throw NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: "No user ID available"])
+        }
+        
+        print("🔍 DEBUG: Starting profile image processing")
+        print("🔍 DEBUG: User ID: \(userId)")
+        
+        // Resize image to reduce size
+        let size = CGSize(width: 200, height: 200)
+        let renderer = UIGraphicsImageRenderer(size: size)
+        let resizedImage = renderer.image { context in
+            image.draw(in: CGRect(origin: .zero, size: size))
+        }
+        
+        // Convert to JPEG data with lower quality to reduce size
+        guard let imageData = resizedImage.jpegData(compressionQuality: 0.3) else {
+            print("❌ DEBUG: Failed to convert image to JPEG data")
+            throw NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: "Failed to convert image to JPEG"])
+        }
+        
+        print("✅ DEBUG: Successfully converted image to JPEG data (\(imageData.count) bytes)")
+        
+        // Convert to base64 string
+        let base64String = imageData.base64EncodedString()
+        print("✅ DEBUG: Successfully converted image to base64 string (\(base64String.count) characters)")
+        
+        // Return the base64 string with a data URI prefix
+        return "data:image/jpeg;base64,\(base64String)"
+    }
+    
     func updateProfile(username: String, image: UIImage?, bio: String? = nil, interests: [String]? = nil) {
         guard let userId = auth.currentUser?.uid else {
             self.error = NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: "No user ID available"])
@@ -140,87 +171,53 @@ class UserManager: NSObject, ObservableObject {
         isLoading = true
         print("Starting profile update for user: \(userId)")
         
-        var imageData: String? = nil
-        if let image = image {
-            // Resize image to reduce size
-            let size = CGSize(width: 200, height: 200)
-            let renderer = UIGraphicsImageRenderer(size: size)
-            let resizedImage = renderer.image { context in
-                image.draw(in: CGRect(origin: .zero, size: size))
-            }
-            
-            // Convert to base64
-            if let jpegData = resizedImage.jpegData(compressionQuality: 0.5) {
-                imageData = jpegData.base64EncodedString()
-            }
-        }
-        
-        updateUserData(
-            userId: userId,
-            username: username,
-            imageData: imageData,
-            bio: bio,
-            interests: interests
-        )
-    }
-    
-    private func updateUserData(userId: String, username: String, imageData: String?, bio: String?, interests: [String]?) {
-        var userData: [String: Any] = [
-            "username": username,
-            "lastUpdated": Timestamp(date: Date())
-        ]
-        
-        if let imageData = imageData {
-            userData["imageData"] = imageData
-        }
-        if let bio = bio {
-            userData["bio"] = bio
-        }
-        if let interests = interests {
-            userData["topInterests"] = interests
-        }
-        
-        let docRef = db.collection("users").document(userId)
-        
-        // First check if document exists
-        docRef.getDocument { [weak self] snapshot, error in
-            guard let self = self else { return }
-            
-            if let error = error {
-                DispatchQueue.main.async {
+        Task {
+            do {
+                var userData: [String: Any] = [
+                    "username": username,
+                    "lastUpdated": Timestamp(date: Date())
+                ]
+                
+                if let image = image {
+                    let imageURL = try await uploadProfileImage(image)
+                    userData["imageURL"] = imageURL
+                }
+                
+                if let bio = bio {
+                    userData["bio"] = bio
+                }
+                if let interests = interests {
+                    userData["topInterests"] = interests
+                }
+                
+                let docRef = db.collection("users").document(userId)
+                
+                // First check if document exists
+                let snapshot = try await docRef.getDocument()
+                
+                if snapshot.exists {
+                    // Update existing document
+                    try await docRef.updateData(userData)
+                } else {
+                    // Create new document with default values
+                    var newUserData = userData
+                    newUserData["joinDate"] = Timestamp(date: Date())
+                    newUserData["votesCount"] = 0
+                    newUserData["lastVoteDate"] = Timestamp(date: Date())
+                    newUserData["socialLinks"] = [:] as [String: String]
+                    newUserData["imageURL"] = userData["imageURL"] ?? "https://firebasestorage.googleapis.com/v0/b/yayonay-e7f58.appspot.com/o/default_profile.png?alt=media"
+                    
+                    try await docRef.setData(newUserData)
+                }
+                
+                await MainActor.run {
+                    self.isLoading = false
+                    self.needsOnboarding = false
+                }
+            } catch {
+                await MainActor.run {
                     self.error = error
                     self.isLoading = false
-                }
-                return
-            }
-            
-            if snapshot?.exists == true {
-                // Update existing document
-                docRef.updateData(userData) { [weak self] error in
-                    DispatchQueue.main.async {
-                        self?.isLoading = false
-                        if let error = error {
-                            self?.error = error
-                        }
-                    }
-                }
-            } else {
-                // Create new document with default values
-                var newUserData = userData
-                newUserData["joinDate"] = Timestamp(date: Date())
-                newUserData["votesCount"] = 0
-                newUserData["lastVoteDate"] = Timestamp(date: Date())
-                newUserData["socialLinks"] = [:] as [String: String]
-                
-                docRef.setData(newUserData) { [weak self] error in
-                    DispatchQueue.main.async {
-                        self?.isLoading = false
-                        if let error = error {
-                            self?.error = error
-                        } else {
-                            self?.needsOnboarding = false
-                        }
-                    }
                 }
             }
         }
@@ -230,7 +227,7 @@ class UserManager: NSObject, ObservableObject {
         let defaultProfile = UserProfile(
             id: userId,
             username: "User\(Int.random(in: 1000...9999))",
-            imageData: nil,
+            imageURL: "https://firebasestorage.googleapis.com/v0/b/yayonay-e7f58.appspot.com/o/default_profile.png?alt=media",
             votesCount: 0,
             lastVoteDate: Date(),
             topInterests: []
@@ -348,7 +345,7 @@ class UserManager: NSObject, ObservableObject {
                 let userProfile = UserProfile(
                     id: user.uid,
                     username: username,
-                    imageData: nil,  // This needs to come before email
+                    imageURL: "https://firebasestorage.googleapis.com/v0/b/yayonay-e7f58.appspot.com/o/default_profile.png?alt=media",
                     email: user.email,
                     bio: "",
                     votesCount: 0,

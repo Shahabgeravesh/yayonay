@@ -59,12 +59,30 @@ struct EditProfileView: View {
                 Image(uiImage: selectedImage)
                     .resizable()
                     .aspectRatio(contentMode: .fill)
-            } else if let imageData = userManager.currentUser?.imageData,
-                      let data = Data(base64Encoded: imageData),
-                      let uiImage = UIImage(data: data) {
-                Image(uiImage: uiImage)
-                    .resizable()
-                    .aspectRatio(contentMode: .fill)
+            } else if let imageURL = userManager.currentUser?.imageURL {
+                AsyncImage(url: URL(string: imageURL)) { phase in
+                    switch phase {
+                    case .empty:
+                        Image(systemName: "person.circle.fill")
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .foregroundStyle(AppColor.accent)
+                    case .success(let image):
+                        image
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                    case .failure:
+                        Image(systemName: "person.circle.fill")
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .foregroundStyle(AppColor.accent)
+                    @unknown default:
+                        Image(systemName: "person.circle.fill")
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .foregroundStyle(AppColor.accent)
+                    }
+                }
             } else {
                 Image(systemName: "person.circle.fill")
                     .resizable()

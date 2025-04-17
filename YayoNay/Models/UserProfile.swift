@@ -4,7 +4,7 @@ import FirebaseFirestore
 struct UserProfile: Codable, Identifiable {
     let id: String
     var username: String
-    var imageData: String? // Base64 encoded image data
+    var imageURL: String // URL to the profile image in Firebase Storage
     var email: String?
     var bio: String
     var votesCount: Int
@@ -22,7 +22,7 @@ struct UserProfile: Codable, Identifiable {
     
     init(id: String = UUID().uuidString,
          username: String,
-         imageData: String? = nil,
+         imageURL: String = "https://firebasestorage.googleapis.com/v0/b/yayonay-e7f58.appspot.com/o/default_profile.png?alt=media",
          email: String? = nil,
          bio: String = "",
          votesCount: Int = 0,
@@ -33,7 +33,7 @@ struct UserProfile: Codable, Identifiable {
          recentActivity: [Activity] = []) {
         self.id = id
         self.username = username
-        self.imageData = imageData
+        self.imageURL = imageURL
         self.email = email
         self.bio = bio
         self.votesCount = votesCount
@@ -48,7 +48,7 @@ struct UserProfile: Codable, Identifiable {
         return [
             "id": id,
             "username": username,
-            "imageData": imageData as Any,
+            "imageURL": imageURL,
             "email": email as Any,
             "bio": bio,
             "votesCount": votesCount,
@@ -73,7 +73,7 @@ struct UserProfile: Codable, Identifiable {
         
         self.id = document.documentID
         self.username = username
-        self.imageData = data["imageData"] as? String
+        self.imageURL = data["imageURL"] as? String ?? "https://firebasestorage.googleapis.com/v0/b/yayonay-e7f58.appspot.com/o/default_profile.png?alt=media"
         self.email = data["email"] as? String
         self.bio = data["bio"] as? String ?? ""
         self.votesCount = data["votesCount"] as? Int ?? 0
@@ -83,11 +83,11 @@ struct UserProfile: Codable, Identifiable {
         self.socialLinks = data["socialLinks"] as? [String: String] ?? [:]
         
         // Parse recent activity
-        if let activityData = data["recentActivity"] as? [[String: Any]] {
-            self.recentActivity = activityData.compactMap { dict in
-                guard let type = dict["type"] as? String,
-                      let itemId = dict["itemId"] as? String,
-                      let timestamp = (dict["timestamp"] as? Timestamp)?.dateValue() else {
+        if let activities = data["recentActivity"] as? [[String: Any]] {
+            self.recentActivity = activities.compactMap { activityData in
+                guard let type = activityData["type"] as? String,
+                      let itemId = activityData["itemId"] as? String,
+                      let timestamp = (activityData["timestamp"] as? Timestamp)?.dateValue() else {
                     return nil
                 }
                 return Activity(type: type, itemId: itemId, timestamp: timestamp)
