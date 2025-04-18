@@ -233,6 +233,7 @@ struct VoteBarView: View {
     let yayCount: Int
     let nayCount: Int
     let userVote: Bool?
+    @Environment(\.colorScheme) private var colorScheme
     
     private var totalVotes: Int {
         yayCount + nayCount
@@ -260,13 +261,13 @@ struct VoteBarView: View {
                 ZStack(alignment: .leading) {
                     // Background bar (Nay)
                     Rectangle()
-                        .fill(Color.red.opacity(0.3))
+                        .fill(Color.red.opacity(colorScheme == .dark ? 0.4 : 0.3))
                         .frame(height: 8)
                         .cornerRadius(4)
                     
                     // Foreground bar (Yay)
                     Rectangle()
-                        .fill(Color.green.opacity(0.7))
+                        .fill(Color.green.opacity(colorScheme == .dark ? 0.6 : 0.7))
                         .frame(width: geometry.size.width * CGFloat(yayPercentage / 100), height: 8)
                         .cornerRadius(4)
                 }
@@ -276,12 +277,16 @@ struct VoteBarView: View {
             // Total votes
             Text("\(totalVotes) votes")
                 .font(.caption2)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(AppColor.secondaryText)
         }
         .padding()
-        .background(Color(.systemBackground))
+        .background(AppColor.adaptiveSecondaryBackground(for: colorScheme))
         .cornerRadius(12)
-        .shadow(color: .black.opacity(0.1), radius: 5, y: 2)
+        .shadow(
+            color: colorScheme == .dark ? .black.opacity(0.2) : .black.opacity(0.1),
+            radius: colorScheme == .dark ? 5 : 5,
+            y: colorScheme == .dark ? 1 : 2
+        )
     }
 }
 

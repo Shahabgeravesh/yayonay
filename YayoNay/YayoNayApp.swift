@@ -75,6 +75,7 @@ struct YayoNayApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate
     @StateObject private var userManager = UserManager()
     @StateObject private var authViewModel = AuthViewModel()
+    @Environment(\.colorScheme) private var colorScheme
     
     var body: some Scene {
         WindowGroup {
@@ -84,6 +85,8 @@ struct YayoNayApp: App {
                 .onOpenURL { url in
                     handleDeepLink(url)
                 }
+                .preferredColorScheme(colorScheme)
+                .background(AppColor.adaptiveBackground(for: colorScheme))
         }
     }
     

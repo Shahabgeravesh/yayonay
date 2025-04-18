@@ -323,26 +323,31 @@ struct CardView: View {
 
 // Custom Vote Button
 struct VoteButton: View {
-    let action: () -> Void
     let isYay: Bool
+    let isSelected: Bool
+    let action: () -> Void
+    @Environment(\.colorScheme) private var colorScheme
     
     var body: some View {
         Button(action: action) {
-            VStack {
+            HStack {
                 Image(systemName: isYay ? "hand.thumbsup.fill" : "hand.thumbsdown.fill")
-                    .font(.system(size: 30))
-                Text(isYay ? "Yay!" : "Nay!")
-                    .font(.headline)
+                Text(isYay ? "Yay" : "Nay")
             }
-            .frame(maxWidth: .infinity)
-            .frame(height: 100)
-            .background(isYay ? Color.green.opacity(0.2) : Color.red.opacity(0.2))
-            .clipShape(RoundedRectangle(cornerRadius: 15))
+            .font(.headline)
+            .foregroundColor(isSelected ? .white : (isYay ? .green : .red))
+            .padding(.horizontal, 24)
+            .padding(.vertical, 12)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(isSelected ? (isYay ? Color.green : Color.red) : Color.clear)
+                    .opacity(isSelected ? (colorScheme == .dark ? 0.8 : 1.0) : 0)
+            )
             .overlay(
-                RoundedRectangle(cornerRadius: 15)
+                RoundedRectangle(cornerRadius: 12)
                     .stroke(isYay ? Color.green : Color.red, lineWidth: 2)
+                    .opacity(colorScheme == .dark ? 0.8 : 1.0)
             )
         }
-        .buttonStyle(.plain)
     }
 } 

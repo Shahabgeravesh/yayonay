@@ -382,31 +382,33 @@ struct SubQuestionRow: View {
     let onVote: (Bool) -> Void
     @State private var hasVoted = false
     @State private var showVoteAnimation = false
+    @Environment(\.colorScheme) private var colorScheme
     
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(question.question)
                 .font(.system(size: 16, weight: .medium))
+                .foregroundColor(AppColor.text)
             
             // Vote Bar with Percentage
             GeometryReader { geometry in
                 ZStack(alignment: .leading) {
                     // Background
                     RoundedRectangle(cornerRadius: 8)
-                        .fill(Color.gray.opacity(0.2))
+                        .fill(colorScheme == .dark ? Color.gray.opacity(0.3) : Color.gray.opacity(0.2))
                         .frame(height: 32)
                     
                     // Yay portion
                     if question.yayPercentage > 0 {
                         RoundedRectangle(cornerRadius: 8)
-                            .fill(Color.green.opacity(0.7))
+                            .fill(Color.green.opacity(colorScheme == .dark ? 0.6 : 0.7))
                             .frame(width: geometry.size.width * CGFloat(question.yayPercentage / 100), height: 32)
                     }
                     
                     // Nay portion
                     if question.nayPercentage > 0 {
                         RoundedRectangle(cornerRadius: 8)
-                            .fill(Color.red.opacity(0.7))
+                            .fill(Color.red.opacity(colorScheme == .dark ? 0.6 : 0.7))
                             .frame(width: geometry.size.width * CGFloat(question.nayPercentage / 100), height: 32)
                             .offset(x: geometry.size.width * CGFloat(question.yayPercentage / 100))
                     }
@@ -478,8 +480,12 @@ struct SubQuestionRow: View {
             }
         }
         .padding()
-        .background(Color(.systemBackground))
+        .background(AppColor.adaptiveSecondaryBackground(for: colorScheme))
         .cornerRadius(12)
-        .shadow(color: .black.opacity(0.05), radius: 3, y: 1)
+        .shadow(
+            color: colorScheme == .dark ? .black.opacity(0.2) : .black.opacity(0.05),
+            radius: colorScheme == .dark ? 3 : 3,
+            y: colorScheme == .dark ? 1 : 1
+        )
     }
 } 

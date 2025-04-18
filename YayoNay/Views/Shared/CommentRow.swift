@@ -45,6 +45,7 @@ struct CommentRow: View {
     @State private var isReplying = false
     @State private var replyText = ""
     @FocusState private var isReplyFieldFocused: Bool
+    @Environment(\.colorScheme) private var colorScheme
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -55,11 +56,11 @@ struct CommentRow: View {
                     switch phase {
                     case .empty:
                         Circle()
-                            .fill(Color.gray.opacity(0.2))
+                            .fill(colorScheme == .dark ? Color.gray.opacity(0.3) : Color.gray.opacity(0.2))
                             .overlay(
                                 Text(comment.username.prefix(1).uppercased())
                                     .font(.system(size: 16, weight: .medium))
-                                    .foregroundColor(.gray)
+                                    .foregroundColor(colorScheme == .dark ? .white.opacity(0.7) : .gray)
                             )
                     case .success(let image):
                         image
@@ -67,19 +68,19 @@ struct CommentRow: View {
                             .aspectRatio(contentMode: .fill)
                     case .failure:
                         Circle()
-                            .fill(Color.gray.opacity(0.2))
+                            .fill(colorScheme == .dark ? Color.gray.opacity(0.3) : Color.gray.opacity(0.2))
                             .overlay(
                                 Text(comment.username.prefix(1).uppercased())
                                     .font(.system(size: 16, weight: .medium))
-                                    .foregroundColor(.gray)
+                                    .foregroundColor(colorScheme == .dark ? .white.opacity(0.7) : .gray)
                             )
                     @unknown default:
                         Circle()
-                            .fill(Color.gray.opacity(0.2))
+                            .fill(colorScheme == .dark ? Color.gray.opacity(0.3) : Color.gray.opacity(0.2))
                             .overlay(
                                 Text(comment.username.prefix(1).uppercased())
                                     .font(.system(size: 16, weight: .medium))
-                                    .foregroundColor(.gray)
+                                    .foregroundColor(colorScheme == .dark ? .white.opacity(0.7) : .gray)
                             )
                     }
                 }
@@ -91,14 +92,16 @@ struct CommentRow: View {
                     HStack {
                         Text(comment.username)
                             .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(AppColor.text)
                         Text(comment.date.timeAgoDisplay())
                             .font(.system(size: 14))
-                            .foregroundColor(.secondary)
+                            .foregroundColor(AppColor.secondaryText)
                     }
                     
                     // Comment text
                     Text(comment.text)
                         .font(.system(size: 16))
+                        .foregroundColor(AppColor.text)
                         .fixedSize(horizontal: false, vertical: true)
                     
                     // Action buttons
@@ -109,10 +112,10 @@ struct CommentRow: View {
                         }) {
                             HStack(spacing: 4) {
                                 Image(systemName: comment.isLiked ? "heart.fill" : "heart")
-                                    .foregroundColor(comment.isLiked ? .red : .gray)
+                                    .foregroundColor(comment.isLiked ? .red : AppColor.secondaryText)
                                 Text("\(comment.likes)")
                                     .font(.system(size: 14))
-                                    .foregroundColor(.gray)
+                                    .foregroundColor(AppColor.secondaryText)
                             }
                         }
                         
@@ -122,9 +125,10 @@ struct CommentRow: View {
                         }) {
                             HStack(spacing: 4) {
                                 Image(systemName: "arrowshape.turn.up.left")
+                                    .foregroundColor(AppColor.secondaryText)
                                 Text("Reply")
                                     .font(.system(size: 14))
-                                    .foregroundColor(.gray)
+                                    .foregroundColor(AppColor.secondaryText)
                             }
                         }
                         
@@ -159,7 +163,7 @@ struct CommentRow: View {
                         }) {
                             Text("Post")
                                 .font(.system(size: 14, weight: .medium))
-                                .foregroundColor(replyText.isEmpty ? .gray : .blue)
+                                .foregroundColor(replyText.isEmpty ? AppColor.secondaryText : AppColor.accent)
                         }
                         .disabled(replyText.isEmpty)
                     }
@@ -172,7 +176,7 @@ struct CommentRow: View {
                         }) {
                             Text("Cancel")
                                 .font(.system(size: 14))
-                                .foregroundColor(.gray)
+                                .foregroundColor(AppColor.secondaryText)
                         }
                         
                         Spacer()
@@ -182,7 +186,7 @@ struct CommentRow: View {
                         }) {
                             Text("Done")
                                 .font(.system(size: 14))
-                                .foregroundColor(.blue)
+                                .foregroundColor(AppColor.accent)
                         }
                     }
                     .frame(maxWidth: .infinity)
@@ -190,7 +194,7 @@ struct CommentRow: View {
                 .padding(.leading, 52)
                 .padding(.trailing, 16)
                 .padding(.vertical, 8)
-                .background(Color(.systemBackground))
+                .background(AppColor.adaptiveSecondaryBackground(for: colorScheme))
                 .onAppear {
                     // Set focus after a short delay to ensure view is ready
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
@@ -199,6 +203,14 @@ struct CommentRow: View {
                 }
             }
         }
+        .padding()
+        .background(AppColor.adaptiveBackground(for: colorScheme))
+        .cornerRadius(12)
+        .shadow(
+            color: colorScheme == .dark ? .black.opacity(0.2) : .black.opacity(0.05),
+            radius: colorScheme == .dark ? 3 : 3,
+            y: colorScheme == .dark ? 1 : 1
+        )
     }
     
     private func submitReply() {
