@@ -1,73 +1,112 @@
 {
   "indexes": [
     {
-      "collectionGroup": "subCategories",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "categoryId", "order": "ASCENDING" },
-        { "fieldPath": "order", "order": "ASCENDING" }
-      ]
-    },
-    {
-      "collectionGroup": "comments",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "subCategoryId", "order": "ASCENDING" },
-        { "fieldPath": "date", "order": "DESCENDING" }
-      ]
-    },
-    {
-      "collectionGroup": "comments",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "voteId", "order": "ASCENDING" },
-        { "fieldPath": "date", "order": "DESCENDING" }
-      ]
-    },
-    {
       "collectionGroup": "votes",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "userId", "order": "ASCENDING" },
-        { "fieldPath": "date", "order": "DESCENDING" }
+        {
+          "fieldPath": "userId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "date",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "comments",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "voteId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "date",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "comments",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "subCategoryId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "date",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "subCategories",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "categoryId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "order",
+          "order": "ASCENDING"
+        }
       ]
     }
   ],
   "fieldOverrides": [
     {
-      "collectionGroup": "topics",
-      "fieldPath": "category",
+      "collectionGroup": "categories",
+      "fieldPath": "order",
       "indexes": [
-        { "order": "ASCENDING", "queryScope": "COLLECTION" }
-      ]
-    },
-    {
-      "collectionGroup": "topics",
-      "fieldPath": "date",
-      "indexes": [
-        { "order": "DESCENDING", "queryScope": "COLLECTION" }
-      ]
-    },
-    {
-      "collectionGroup": "topics",
-      "fieldPath": "upvotes",
-      "indexes": [
-        { "order": "DESCENDING", "queryScope": "COLLECTION" }
+        {
+          "order": "ASCENDING",
+          "queryScope": "COLLECTION"
+        }
       ]
     },
     {
       "collectionGroup": "subCategories",
       "fieldPath": "yayCount",
       "indexes": [
-        { "order": "DESCENDING", "queryScope": "COLLECTION" }
+        {
+          "order": "DESCENDING",
+          "queryScope": "COLLECTION"
+        }
       ]
     },
     {
-      "collectionGroup": "categories",
-      "fieldPath": "order",
+      "collectionGroup": "topics",
+      "fieldPath": "category",
       "indexes": [
-        { "order": "ASCENDING", "queryScope": "COLLECTION" }
+        {
+          "order": "ASCENDING",
+          "queryScope": "COLLECTION"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "topics",
+      "fieldPath": "date",
+      "indexes": [
+        {
+          "order": "DESCENDING",
+          "queryScope": "COLLECTION"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "topics",
+      "fieldPath": "upvotes",
+      "indexes": [
+        {
+          "order": "DESCENDING",
+          "queryScope": "COLLECTION"
+        }
       ]
     }
   ]
-} 
+}
