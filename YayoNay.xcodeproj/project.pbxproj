@@ -14,6 +14,7 @@
 		BAE90EF72D88DC790067F715 /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = BAE90EF62D88DC790067F715 /* GoogleSignIn */; };
 		BAE90EF92D88DC790067F715 /* GoogleSignInSwift in Frameworks */ = {isa = PBXBuildFile; productRef = BAE90EF82D88DC790067F715 /* GoogleSignInSwift */; };
 		BAE90F332D893CF80067F715 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = BAE90F322D893CF80067F715 /* GoogleService-Info.plist */; };
+		BAFE33952DB20F8700A0B358 /* serviceAccountKey.json in Resources */ = {isa = PBXBuildFile; fileRef = BAFE33942DB20F8700A0B358 /* serviceAccountKey.json */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -38,6 +39,7 @@
 		BAE90E322D8699550067F715 /* YayoNayTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = YayoNayTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		BAE90E3C2D8699550067F715 /* YayoNayUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = YayoNayUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		BAE90F322D893CF80067F715 /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
+		BAFE33942DB20F8700A0B358 /* serviceAccountKey.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = serviceAccountKey.json; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -110,6 +112,7 @@
 				BAE90E3F2D8699550067F715 /* YayoNayUITests */,
 				BAE90E222D8699540067F715 /* Products */,
 				BAE90F322D893CF80067F715 /* GoogleService-Info.plist */,
+				BAFE33942DB20F8700A0B358 /* serviceAccountKey.json */,
 			);
 			sourceTree = "<group>";
 		};
@@ -253,6 +256,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				BAFE33952DB20F8700A0B358 /* serviceAccountKey.json in Resources */,
 				BAE90F332D893CF80067F715 /* GoogleService-Info.plist in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

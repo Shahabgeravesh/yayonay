@@ -34,6 +34,10 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         // Request notification permissions
         NotificationManager.shared.requestNotificationPermission()
         
+        // Initialize subQuestions collection
+        let seeder = DatabaseSeeder()
+        seeder.initializeSubQuestionsCollection()
+        
         return true
     }
     
@@ -70,11 +74,13 @@ class AppDelegate: NSObject, UIApplicationDelegate {
 struct YayoNayApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate
     @StateObject private var userManager = UserManager()
+    @StateObject private var authViewModel = AuthViewModel()
     
     var body: some Scene {
         WindowGroup {
             RootView()
                 .environmentObject(userManager)
+                .environmentObject(authViewModel)
                 .onOpenURL { url in
                     handleDeepLink(url)
                 }

@@ -144,6 +144,22 @@ struct SubCategoryStatsView: View {
                 }
                 .padding(.horizontal)
                 
+                // Sub-Questions Section
+                if !statsViewModel.subQuestions.isEmpty {
+                    VStack(alignment: .leading, spacing: 16) {
+                        Text("Additional Questions")
+                            .font(.headline)
+                            .padding(.horizontal)
+                        
+                        ForEach(statsViewModel.subQuestions) { question in
+                            SubQuestionRow(question: question, onVote: { isYay in
+                                statsViewModel.voteForSubQuestion(question, isYay: isYay)
+                            })
+                        }
+                    }
+                    .padding(.horizontal)
+                }
+                
                 // Comments Section
                 VStack(alignment: .leading, spacing: 16) {
                     Text("Comments")
@@ -358,5 +374,112 @@ enum SocialPlatform: String, CaseIterable {
         case .linkedin: return "https://www.linkedin.com/sharing/share-offsite/?url="
         case .instagram: return "" // Instagram sharing handled differently
         }
+    }
+}
+
+struct SubQuestionRow: View {
+    let question: SubQuestion
+    let onVote: (Bool) -> Void
+    @State private var hasVoted = false
+    @State private var showVoteAnimation = false
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(question.question)
+                .font(.system(size: 16, weight: .medium))
+            
+            // Vote Bar with Percentage
+            GeometryReader { geometry in
+                ZStack(alignment: .leading) {
+                    // Background
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(Color.gray.opacity(0.2))
+                        .frame(height: 32)
+                    
+                    // Yay portion
+                    if question.yayPercentage > 0 {
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(Color.green.opacity(0.7))
+                            .frame(width: geometry.size.width * CGFloat(question.yayPercentage / 100), height: 32)
+                    }
+                    
+                    // Nay portion
+                    if question.nayPercentage > 0 {
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(Color.red.opacity(0.7))
+                            .frame(width: geometry.size.width * CGFloat(question.nayPercentage / 100), height: 32)
+                            .offset(x: geometry.size.width * CGFloat(question.yayPercentage / 100))
+                    }
+                    
+                    // Vote buttons
+                    if !hasVoted && question.totalVotes == 0 {
+                        HStack(spacing: 0) {
+                            Button(action: {
+                                withAnimation {
+                                    hasVoted = true
+                                    onVote(true)
+                                }
+                            }) {
+                                Text("Yay")
+                                    .font(.system(size: 14, weight: .medium))
+                                    .foregroundColor(.white)
+                                    .frame(width: geometry.size.width / 2, height: 32)
+                            }
+                            
+                            Button(action: {
+                                withAnimation {
+                                    hasVoted = true
+                                    onVote(false)
+                                }
+                            }) {
+                                Text("Nay")
+                                    .font(.system(size: 14, weight: .medium))
+                                    .foregroundColor(.white)
+                                    .frame(width: geometry.size.width / 2, height: 32)
+                            }
+                        }
+                    } else {
+                        // Show percentages
+                        HStack {
+                            if question.yayPercentage > 0 {
+                                Text("\(Int(question.yayPercentage))%")
+                                    .font(.system(size: 14, weight: .bold))
+                                    .foregroundColor(.white)
+                                    .padding(.leading, 8)
+                            }
+                            
+                            Spacer()
+                            
+                            if question.nayPercentage > 0 {
+                                Text("\(Int(question.nayPercentage))%")
+                                    .font(.system(size: 14, weight: .bold))
+                                    .foregroundColor(.white)
+                                    .padding(.trailing, 8)
+                            }
+                        }
+                    }
+                }
+            }
+            .frame(height: 32)
+            
+            // Vote counts
+            if question.totalVotes > 0 {
+                HStack {
+                    Text("\(question.yayCount) Yay")
+                        .font(.system(size: 12))
+                        .foregroundColor(.green)
+                    
+                    Spacer()
+                    
+                    Text("\(question.nayCount) Nay")
+                        .font(.system(size: 12))
+                        .foregroundColor(.red)
+                }
+            }
+        }
+        .padding()
+        .background(Color(.systemBackground))
+        .cornerRadius(12)
+        .shadow(color: .black.opacity(0.05), radius: 3, y: 1)
     }
 } 

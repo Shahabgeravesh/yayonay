@@ -266,6 +266,19 @@ struct VotesView: View {
     @StateObject private var viewModel = VotesViewModel()
     @State private var searchText = ""
     
+    // Helper function to convert Vote to SubCategory
+    private func createSubCategory(from vote: Vote) -> SubCategory {
+        return SubCategory(
+            id: vote.subCategoryId,
+            name: vote.itemName,
+            imageURL: vote.imageURL,
+            categoryId: vote.categoryId,
+            order: 0, // Default order value
+            yayCount: vote.isYay ? 1 : 0,
+            nayCount: vote.isYay ? 0 : 1
+        )
+    }
+    
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
@@ -305,22 +318,7 @@ struct VotesView: View {
                     List {
                         ForEach(viewModel.sortedAndFilteredVotes(searchText: searchText)) { vote in
                             NavigationLink {
-                                CommentsView(
-                                    vote: vote,
-                                    comments: viewModel.comments,
-                                    onAddComment: { text, parentId in
-                                        viewModel.addComment(text, voteId: vote.id, parentId: parentId)
-                                    },
-                                    onLikeComment: { comment in
-                                        viewModel.likeComment(comment)
-                                    },
-                                    onDeleteComment: { comment in
-                                        viewModel.deleteComment(comment)
-                                    }
-                                )
-                                .onAppear {
-                                    viewModel.setupCommentsListener(forVoteId: vote.id)
-                                }
+                                SubCategoryStatsView(subCategory: createSubCategory(from: vote))
                             } label: {
                                 VoteCard(vote: vote, isClickable: false)
                             }

@@ -6,21 +6,25 @@ class SubCategoryStatsViewModel: ObservableObject {
     @Published var attributeVotes: [String: AttributeVotes] = [:]
     @Published var comments: [Comment] = []
     @Published var currentSubCategory: SubCategory
+    @Published var subQuestions: [SubQuestion] = []
     private let db = Firestore.firestore()
     private var attributeListener: ListenerRegistration?
     private var subCategoryListener: ListenerRegistration?
     private var commentsListener: ListenerRegistration?
+    private var subQuestionsListener: ListenerRegistration?
     
     init(subCategory: SubCategory) {
         self.currentSubCategory = subCategory
         setupListeners()
         setupCommentsListener()
+        setupSubQuestionsListener()
     }
     
     deinit {
         attributeListener?.remove()
         subCategoryListener?.remove()
         commentsListener?.remove()
+        subQuestionsListener?.remove()
     }
     
     private func setupListeners() {
@@ -149,6 +153,36 @@ class SubCategoryStatsViewModel: ObservableObject {
         }
     }
     
+    private func setupSubQuestionsListener() {
+        print("DEBUG: Setting up sub-questions listener for categoryId: \(currentSubCategory.categoryId)")
+        
+        let questionsRef = db.collection("subQuestions")
+            .whereField("categoryId", isEqualTo: currentSubCategory.categoryId)
+        
+        subQuestionsListener = questionsRef.addSnapshotListener { [weak self] snapshot, error in
+            if let error = error {
+                print("DEBUG: Error fetching sub-questions: \(error.localizedDescription)")
+                return
+            }
+            
+            guard let documents = snapshot?.documents else {
+                print("DEBUG: No sub-questions found")
+                return
+            }
+            
+            print("DEBUG: Fetched \(documents.count) sub-questions")
+            
+            let questions = documents.compactMap { document -> SubQuestion? in
+                return SubQuestion(document: document)
+            }
+            
+            DispatchQueue.main.async {
+                self?.subQuestions = questions
+                print("DEBUG: Updated sub-questions: \(questions.count)")
+            }
+        }
+    }
+    
     func voteForAttribute(name: String, isYay: Bool) {
         guard let userId = Auth.auth().currentUser?.uid else { return }
         
@@ -177,6 +211,41 @@ class SubCategoryStatsViewModel: ObservableObject {
         ]) { error in
             if let error = error {
                 print("Error updating subcategory vote count: \(error.localizedDescription)")
+            }
+        }
+    }
+    
+    func voteForSubQuestion(_ question: SubQuestion, isYay: Bool) {
+        guard let userId = Auth.auth().currentUser?.uid else { return }
+        
+        let docRef = db.collection("subQuestions").document(question.id)
+        
+        // Update the vote count
+        docRef.updateData([
+            isYay ? "yayCount" : "nayCount": FieldValue.increment(Int64(1))
+        ]) { error in
+            if let error = error {
+                print("DEBUG: Error updating sub-question vote: \(error.localizedDescription)")
+            } else {
+                print("DEBUG: Successfully updated sub-question vote")
+            }
+        }
+        
+        // Record the user's vote
+        let vote = Vote(
+            id: UUID().uuidString,
+            itemName: currentSubCategory.name,
+            imageURL: currentSubCategory.imageURL,
+            isYay: isYay,
+            date: Date(),
+            categoryName: question.question,
+            categoryId: currentSubCategory.categoryId,
+            subCategoryId: currentSubCategory.id
+        )
+        
+        db.collection("votes").document(vote.id).setData(vote.dictionary) { error in
+            if let error = error {
+                print("DEBUG: Error recording vote: \(error.localizedDescription)")
             }
         }
     }
