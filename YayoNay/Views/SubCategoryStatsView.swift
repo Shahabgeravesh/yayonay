@@ -80,139 +80,67 @@ struct SubCategoryStatsView: View {
                     // Total Votes Card
                     VStack(spacing: 8) {
                         Text("Total Votes")
-                            .font(.headline)
-                            .foregroundColor(.secondary)
+                            .font(.title3)
+                            .fontWeight(.bold)
+                            .foregroundColor(.primary)
                         
                         Text("\(totalVotes)")
-                            .font(.system(size: 36, weight: .bold))
+                            .font(.system(size: 48, weight: .bold))
                             .foregroundColor(.primary)
                             .onAppear {
                                 print("📊 DEBUG: Displaying total votes in UI: \(totalVotes)")
                             }
                         
-                        HStack(spacing: 24) {
-                            // Yay Count
+                        // Vote Distribution
+                        HStack(spacing: 32) {
+                            // Yay Stats
                             VStack(spacing: 4) {
-                                let yayCount = statsViewModel.currentSubCategory.yayCount
-                                Text("\(yayCount)")
-                                    .font(.title3)
+                                Text("\(Int(yayPercentage))%")
+                                    .font(.title2)
+                                    .fontWeight(.bold)
                                     .foregroundColor(.green)
-                                    .onAppear {
-                                        print("✅ DEBUG: Displaying Yay count: \(yayCount)")
-                                    }
-                                Text("Yay")
-                                    .font(.caption)
+                                Text("\(statsViewModel.currentSubCategory.yayCount) Yay")
+                                    .font(.subheadline)
                                     .foregroundColor(.green)
                             }
+                            .frame(maxWidth: .infinity)
                             
-                            // Nay Count
+                            // Nay Stats
                             VStack(spacing: 4) {
-                                let nayCount = statsViewModel.currentSubCategory.nayCount
-                                Text("\(nayCount)")
-                                    .font(.title3)
+                                Text("\(Int(nayPercentage))%")
+                                    .font(.title2)
+                                    .fontWeight(.bold)
                                     .foregroundColor(.red)
-                                    .onAppear {
-                                        print("❌ DEBUG: Displaying Nay count: \(nayCount)")
-                                    }
-                                Text("Nay")
-                                    .font(.caption)
+                                Text("\(statsViewModel.currentSubCategory.nayCount) Nay")
+                                    .font(.subheadline)
                                     .foregroundColor(.red)
                             }
+                            .frame(maxWidth: .infinity)
                         }
-                        .padding(.top, 4)
-                    }
-                    .padding()
-                    .frame(maxWidth: .infinity)
-                    .background(Color(.systemBackground))
-                    .cornerRadius(12)
-                    .shadow(color: .black.opacity(0.1), radius: 5, y: 2)
-                    
-                    // Vote Percentages
-                    HStack(spacing: 20) {
-                        // Yay Stats
-                        VStack(spacing: 4) {
-                            Text("\(Int(yayPercentage))%")
-                                .font(.title)
-                                .foregroundColor(.green)
-                                .onAppear {
-                                    print("📊 DEBUG: Displaying Yay percentage: \(Int(yayPercentage))%")
-                                }
-                            Text("Yay")
-                                .font(.subheadline)
-                                .foregroundColor(.green)
-                        }
-                        .frame(maxWidth: .infinity)
+                        .padding(.top, 8)
                         
-                        // Divider
-                        Rectangle()
-                            .frame(width: 1, height: 40)
-                            .foregroundColor(.gray.opacity(0.3))
-                        
-                        // Nay Stats
-                        VStack(spacing: 4) {
-                            Text("\(Int(nayPercentage))%")
-                                .font(.title)
-                                .foregroundColor(.red)
-                                .onAppear {
-                                    print("📊 DEBUG: Displaying Nay percentage: \(Int(nayPercentage))%")
-                                }
-                            Text("Nay")
-                                .font(.subheadline)
-                                .foregroundColor(.red)
+                        // Vote Bar
+                        GeometryReader { geometry in
+                            HStack(spacing: 2) {
+                                // Yay portion
+                                Rectangle()
+                                    .fill(Color.green.opacity(0.7))
+                                    .frame(width: geometry.size.width * CGFloat(yayPercentage / 100))
+                                
+                                // Nay portion
+                                Rectangle()
+                                    .fill(Color.red.opacity(0.7))
+                                    .frame(width: geometry.size.width * CGFloat(nayPercentage / 100))
+                            }
                         }
-                        .frame(maxWidth: .infinity)
+                        .frame(height: 12)
+                        .clipShape(RoundedRectangle(cornerRadius: 6))
+                        .padding(.top, 8)
                     }
                     .padding()
                     .background(Color(.systemBackground))
-                    .cornerRadius(12)
+                    .cornerRadius(16)
                     .shadow(color: .black.opacity(0.1), radius: 5, y: 2)
-                    
-                    // Vote Bar
-                    GeometryReader { geometry in
-                        HStack(spacing: 0) {
-                            // Yay portion
-                            Rectangle()
-                                .fill(Color.green.opacity(0.7))
-                                .frame(width: geometry.size.width * CGFloat(yayPercentage / 100))
-                            
-                            // Nay portion
-                            Rectangle()
-                                .fill(Color.red.opacity(0.7))
-                                .frame(width: geometry.size.width * CGFloat(nayPercentage / 100))
-                        }
-                    }
-                    .frame(height: 8)
-                    .clipShape(RoundedRectangle(cornerRadius: 4))
-                }
-                .padding(.horizontal)
-                
-                // Voting Buttons
-                HStack(spacing: 20) {
-                    Button(action: {
-                        print("👍 DEBUG: User tapped Yay button")
-                        statsViewModel.voteForAttribute(name: statsViewModel.currentSubCategory.name, isYay: true)
-                    }) {
-                        Text("Yay!")
-                            .font(.headline)
-                            .foregroundColor(.white)
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(Color.green)
-                            .cornerRadius(12)
-                    }
-                    
-                    Button(action: {
-                        print("👎 DEBUG: User tapped Nay button")
-                        statsViewModel.voteForAttribute(name: statsViewModel.currentSubCategory.name, isYay: false)
-                    }) {
-                        Text("Nay!")
-                            .font(.headline)
-                            .foregroundColor(.white)
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(Color.red)
-                            .cornerRadius(12)
-                    }
                 }
                 .padding(.horizontal)
                 
@@ -226,23 +154,64 @@ struct SubCategoryStatsView: View {
                         .textFieldStyle(RoundedBorderTextFieldStyle())
                         .padding(.horizontal)
                     
+                    HStack {
+                        Spacer()
+                        Button(action: {
+                            if !newComment.isEmpty {
+                                print("💬 DEBUG: User added a new comment")
+                                statsViewModel.addComment(newComment)
+                                newComment = ""
+                            }
+                        }) {
+                            Text("Post")
+                                .font(.system(size: 14, weight: .medium))
+                                .foregroundColor(newComment.isEmpty ? .gray : .blue)
+                        }
+                        .disabled(newComment.isEmpty)
+                        .padding(.trailing)
+                    }
+                    
                     if !statsViewModel.comments.isEmpty {
                         ForEach(statsViewModel.comments) { comment in
-                            CommentRow(
-                                comment: comment,
-                                onLike: { 
-                                    print("❤️ DEBUG: User liked comment: \(comment.id)")
-                                    statsViewModel.likeComment(comment) 
-                                },
-                                onDelete: { 
-                                    print("🗑️ DEBUG: User deleted comment: \(comment.id)")
-                                    statsViewModel.deleteComment(comment) 
-                                },
-                                onReply: { text in
-                                    print("💬 DEBUG: User replied to comment: \(comment.id)")
-                                    statsViewModel.addComment(text, parentId: comment.id)
+                            VStack(alignment: .leading, spacing: 8) {
+                                CommentRow(
+                                    comment: comment,
+                                    onLike: {
+                                        statsViewModel.likeComment(comment)
+                                    },
+                                    onDelete: {
+                                        statsViewModel.deleteComment(comment)
+                                    },
+                                    onReply: { replyText in
+                                        print("DEBUG: Adding reply to comment: \(comment.id)")
+                                        statsViewModel.addComment(replyText, parentId: comment.id)
+                                    }
+                                )
+                                .padding(.horizontal)
+                                
+                                // Display replies
+                                if !comment.replies.isEmpty {
+                                    VStack(alignment: .leading, spacing: 8) {
+                                        ForEach(comment.replies) { reply in
+                                            CommentRow(
+                                                comment: reply,
+                                                onLike: {
+                                                    statsViewModel.likeComment(reply)
+                                                },
+                                                onDelete: {
+                                                    statsViewModel.deleteComment(reply)
+                                                },
+                                                onReply: { replyText in
+                                                    statsViewModel.addComment(replyText, parentId: comment.id)
+                                                }
+                                            )
+                                        }
+                                    }
+                                    .padding(.leading, 40)
                                 }
-                            )
+                            }
+                            .padding(.vertical, 8)
+                            Divider()
                         }
                     } else {
                         Text("No comments yet")
@@ -250,6 +219,7 @@ struct SubCategoryStatsView: View {
                             .padding()
                     }
                 }
+                .padding(.top)
             }
             .padding()
         }

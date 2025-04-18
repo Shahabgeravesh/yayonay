@@ -100,7 +100,6 @@ class SubCategoryStatsViewModel: ObservableObject {
                 
                 guard let userId = data["userId"] as? String,
                       let username = data["username"] as? String,
-                      let userImage = data["userImage"] as? String,
                       let text = data["text"] as? String,
                       let timestamp = data["date"] as? Timestamp else {
                     print("DEBUG: Failed to parse comment data: \(data)")
@@ -111,7 +110,7 @@ class SubCategoryStatsViewModel: ObservableObject {
                     id: document.documentID,
                     userId: userId,
                     username: username,
-                    userImage: userImage,
+                    userImage: data["userImage"] as? String ?? "https://firebasestorage.googleapis.com/v0/b/yayonay-e7f58.appspot.com/o/default_profile.png?alt=media",
                     text: text,
                     date: timestamp.dateValue(),
                     likes: data["likes"] as? Int ?? 0,
@@ -123,20 +122,29 @@ class SubCategoryStatsViewModel: ObservableObject {
             
             print("DEBUG: Successfully parsed \(allComments.count) comments")
             
-            // Organize comments into threads
             DispatchQueue.main.async {
                 // First, get all top-level comments (no parentId)
-                self?.comments = allComments.filter { $0.parentId == nil }
-                print("DEBUG: Top-level comments: \(self?.comments.count ?? 0)")
+                var topLevelComments = allComments.filter { $0.parentId == nil }
                 
-                // Then, for each top-level comment, attach its replies
-                self?.comments = self?.comments.map { comment in
+                // Create a dictionary to organize replies by parent comment ID
+                let repliesByParentId = Dictionary(grouping: allComments.filter { $0.parentId != nil },
+                                                 by: { $0.parentId ?? "" })
+                
+                // Attach replies to their parent comments
+                topLevelComments = topLevelComments.map { comment in
                     var updatedComment = comment
-                    updatedComment.replies = allComments.filter { $0.parentId == comment.id }
+                    updatedComment.replies = repliesByParentId[comment.id] ?? []
                     return updatedComment
-                } ?? []
+                }
                 
-                print("DEBUG: Final comments with replies: \(self?.comments.count ?? 0)")
+                // Sort comments by date (newest first)
+                self?.comments = topLevelComments.sorted(by: { $0.date > $1.date })
+                
+                print("DEBUG: Organized comments structure:")
+                print("- Top-level comments: \(self?.comments.count ?? 0)")
+                for comment in self?.comments ?? [] {
+                    print("  - Comment \(comment.id) has \(comment.replies.count) replies")
+                }
             }
         }
     }
@@ -197,7 +205,6 @@ class SubCategoryStatsViewModel: ObservableObject {
             
             print("DEBUG: User data: \(data)")
             
-            // Extract username and userImage with fallbacks
             let username = data["username"] as? String ?? "Anonymous User"
             let userImage = data["imageURL"] as? String ?? "https://firebasestorage.googleapis.com/v0/b/yayonay-e7f58.appspot.com/o/default_profile.png?alt=media"
             
@@ -213,24 +220,25 @@ class SubCategoryStatsViewModel: ObservableObject {
                 userImage: userImage,
                 text: text,
                 parentId: parentId,
-                voteId: currentSubCategory.id
+                voteId: self.currentSubCategory.id
             )
             
             var commentData = comment.dictionary
             commentData["subCategoryId"] = self.currentSubCategory.id
             
-            print("DEBUG: Comment data to save: \(commentData)")
-            print("DEBUG: SubCategory ID: \(self.currentSubCategory.id)")
+            if let parentId = parentId {
+                commentData["parentId"] = parentId
+            }
             
-            self.db.collection("comments")
-                .document(commentId)
-                .setData(commentData) { error in
-                    if let error = error {
-                        print("DEBUG: Error adding comment: \(error.localizedDescription)")
-                    } else {
-                        print("DEBUG: Comment successfully added to Firestore")
-                    }
+            print("DEBUG: Comment data to save: \(commentData)")
+            
+            self.db.collection("comments").document(commentId).setData(commentData) { error in
+                if let error = error {
+                    print("DEBUG: Error adding comment: \(error.localizedDescription)")
+                } else {
+                    print("DEBUG: Comment successfully added to Firestore")
                 }
+            }
         }
     }
     
@@ -255,13 +263,56 @@ class SubCategoryStatsViewModel: ObservableObject {
     }
     
     func deleteComment(_ comment: Comment) {
-        guard let userId = Auth.auth().currentUser?.uid,
-              comment.userId == userId else { return }
+        print("DEBUG: Attempting to delete comment: \(comment.id)")
         
-        db.collection("comments").document(comment.id).delete { [weak self] error in
-            if error == nil {
-                DispatchQueue.main.async {
-                    self?.comments.removeAll { $0.id == comment.id }
+        guard let userId = Auth.auth().currentUser?.uid,
+              comment.userId == userId else {
+            print("DEBUG: Delete failed - User not authorized")
+            return
+        }
+        
+        let batch = db.batch()
+        let commentRef = db.collection("comments").document(comment.id)
+        
+        // Delete the comment
+        batch.deleteDocument(commentRef)
+        
+        // If this is a parent comment, also delete all replies
+        if comment.parentId == nil {
+            // Query for replies to this comment
+            db.collection("comments")
+                .whereField("parentId", isEqualTo: comment.id)
+                .getDocuments { [weak self] snapshot, error in
+                    if let error = error {
+                        print("DEBUG: Error fetching replies to delete: \(error.localizedDescription)")
+                        return
+                    }
+                    
+                    guard let documents = snapshot?.documents else { return }
+                    
+                    let batch = self?.db.batch()
+                    
+                    // Add each reply to the batch delete
+                    for document in documents {
+                        batch?.deleteDocument(document.reference)
+                    }
+                    
+                    // Commit the batch delete
+                    batch?.commit { error in
+                        if let error = error {
+                            print("DEBUG: Error deleting replies: \(error.localizedDescription)")
+                        } else {
+                            print("DEBUG: Successfully deleted comment and its replies")
+                        }
+                    }
+                }
+        } else {
+            // Just delete the single reply
+            batch.commit { error in
+                if let error = error {
+                    print("DEBUG: Error deleting reply: \(error.localizedDescription)")
+                } else {
+                    print("DEBUG: Successfully deleted reply")
                 }
             }
         }

@@ -44,7 +44,7 @@ struct Comment: Identifiable, Codable {
         guard let userId = data["userId"] as? String,
               let username = data["username"] as? String,
               let text = data["text"] as? String,
-              let timestamp = (data["timestamp"] as? Timestamp)?.dateValue(),
+              let timestamp = (data["date"] as? Timestamp)?.dateValue(),
               let likes = data["likes"] as? Int,
               let voteId = data["voteId"] as? String else {
             return nil
@@ -58,7 +58,7 @@ struct Comment: Identifiable, Codable {
         self.date = timestamp
         self.likes = likes
         self.isLiked = false
-        self.parentId = nil
+        self.parentId = data["parentId"] as? String
         self.replies = []
         self.voteId = voteId
     }
@@ -70,7 +70,8 @@ struct Comment: Identifiable, Codable {
             "userImage": userImage,
             "text": text,
             "date": Timestamp(date: date),
-            "likes": likes
+            "likes": likes,
+            "voteId": voteId
         ]
         if let parentId = parentId {
             dict["parentId"] = parentId
