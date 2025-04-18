@@ -108,24 +108,4 @@ extension View {
     func glassmorphic() -> some View {
         modifier(GlassmorphicBackground())
     }
-    
-    // Apply adaptive background based on color scheme
-    func adaptiveBackground() -> some View {
-        self.background(AppColor.adaptiveBackground(for: colorScheme))
-    }
-    
-    // Apply adaptive secondary background based on color scheme
-    func adaptiveSecondaryBackground() -> some View {
-        self.background(AppColor.adaptiveSecondaryBackground(for: colorScheme))
-    }
-    
-    // Apply adaptive accent color based on color scheme
-    func adaptiveAccent() -> some View {
-        self.foregroundColor(AppColor.adaptiveAccent(for: colorScheme))
-    }
-    
-    // Apply adaptive gradient based on color scheme
-    func adaptiveGradient() -> some View {
-        self.background(AppColor.adaptiveGradient(for: colorScheme))
-    }
 } 
