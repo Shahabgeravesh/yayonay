@@ -100,19 +100,6 @@ struct ProfileView: View {
                                     .clipShape(RoundedRectangle(cornerRadius: 18))
                                 }
                             }
-                            
-                            Button(action: { showSignOutAlert = true }) {
-                                HStack {
-                                    Image(systemName: "rectangle.portrait.and.arrow.right")
-                                    Text("Sign Out")
-                                }
-                                .font(AppFont.medium(15))
-                                .foregroundStyle(.red)
-                                .frame(height: 36)
-                                .frame(maxWidth: .infinity)
-                                .background(Color.red.opacity(0.1))
-                                .clipShape(RoundedRectangle(cornerRadius: 18))
-                            }
                         }
                         .padding(.horizontal, 32)
                         
@@ -126,6 +113,24 @@ struct ProfileView: View {
                             interestsSection(interests: interests)
                                 .padding(.horizontal, 20)
                         }
+                        
+                        Spacer()
+                        
+                        // Sign Out Button at the bottom
+                        Button(action: { showSignOutAlert = true }) {
+                            HStack {
+                                Image(systemName: "rectangle.portrait.and.arrow.right")
+                                Text("Sign Out")
+                            }
+                            .font(AppFont.medium(15))
+                            .foregroundStyle(.red)
+                            .frame(height: 36)
+                            .frame(maxWidth: .infinity)
+                            .background(Color.red.opacity(0.1))
+                            .clipShape(RoundedRectangle(cornerRadius: 18))
+                        }
+                        .padding(.horizontal, 32)
+                        .padding(.bottom, 20)
                     }
                     .padding(.vertical, 20)
                 }
