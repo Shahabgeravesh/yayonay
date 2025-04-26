@@ -76,13 +76,15 @@ class ShareManager: NSObject, MFMessageComposeViewControllerDelegate {
         
         // Present the share sheet
         DispatchQueue.main.async {
-            if let topVC = UIApplication.shared.windows.first?.rootViewController?.topMostViewController() {
+            if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+               let window = windowScene.windows.first,
+               let rootVC = window.rootViewController?.topMostViewController() {
                 if UIDevice.current.userInterfaceIdiom == .pad {
-                    activityVC.popoverPresentationController?.sourceView = topVC.view
+                    activityVC.popoverPresentationController?.sourceView = rootVC.view
                     activityVC.popoverPresentationController?.sourceRect = CGRect(x: UIScreen.main.bounds.width / 2, y: UIScreen.main.bounds.height / 2, width: 0, height: 0)
                     activityVC.popoverPresentationController?.permittedArrowDirections = []
                 }
-                topVC.present(activityVC, animated: true)
+                rootVC.present(activityVC, animated: true)
             }
         }
     }
@@ -91,14 +93,16 @@ class ShareManager: NSObject, MFMessageComposeViewControllerDelegate {
         guard MFMessageComposeViewController.canSendText() else {
             // Show alert that messaging is not available
             DispatchQueue.main.async {
-                if let topVC = UIApplication.shared.windows.first?.rootViewController?.topMostViewController() {
+                if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+                   let window = windowScene.windows.first,
+                   let rootVC = window.rootViewController?.topMostViewController() {
                     let alert = UIAlertController(
                         title: "Cannot Send Message",
                         message: "Your device is not configured to send text messages.",
                         preferredStyle: .alert
                     )
                     alert.addAction(UIAlertAction(title: "OK", style: .default))
-                    topVC.present(alert, animated: true)
+                    rootVC.present(alert, animated: true)
                 }
             }
             return

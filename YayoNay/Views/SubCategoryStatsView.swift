@@ -1,6 +1,7 @@
 import SwiftUI
 import FirebaseFirestore
 import FirebaseAuth
+import Charts
 
 struct AttributeVotes: Codable, Equatable {
     var yayCount: Int = 0
@@ -143,6 +144,9 @@ struct SubCategoryStatsView: View {
                     .shadow(color: .black.opacity(0.1), radius: 5, y: 2)
                 }
                 .padding(.horizontal)
+                
+                // Add Social Sharing
+                SocialSharingView(subCategory: statsViewModel.currentSubCategory)
                 
                 // Sub-Questions Section
                 if !statsViewModel.subQuestions.isEmpty {
@@ -328,12 +332,6 @@ struct AttributeVoteRow: View {
         .cornerRadius(12)
         .shadow(color: .black.opacity(0.1), radius: 5, y: 2)
     }
-}
-
-enum CommentAction {
-    case like
-    case delete
-    case reply(String)
 }
 
 struct SocialShareSection: View {

@@ -155,6 +155,7 @@ class SubCategoryStatsViewModel: ObservableObject {
     
     private func setupSubQuestionsListener() {
         print("DEBUG: Setting up sub-questions listener for categoryId: \(currentSubCategory.categoryId)")
+        print("DEBUG: Current subcategory name: \(currentSubCategory.name)")
         
         let questionsRef = db.collection("subQuestions")
             .whereField("categoryId", isEqualTo: currentSubCategory.categoryId)
@@ -166,19 +167,28 @@ class SubCategoryStatsViewModel: ObservableObject {
             }
             
             guard let documents = snapshot?.documents else {
-                print("DEBUG: No sub-questions found")
+                print("DEBUG: No sub-questions found for categoryId: \(self?.currentSubCategory.categoryId ?? "unknown")")
+                print("DEBUG: Category name: \(self?.currentSubCategory.name ?? "unknown")")
                 return
             }
             
             print("DEBUG: Fetched \(documents.count) sub-questions")
+            print("DEBUG: Category ID being queried: \(self?.currentSubCategory.categoryId ?? "unknown")")
+            print("DEBUG: Category name: \(self?.currentSubCategory.name ?? "unknown")")
             
             let questions = documents.compactMap { document -> SubQuestion? in
+                let data = document.data()
+                print("DEBUG: Processing sub-question document:")
+                print("  - ID: \(document.documentID)")
+                print("  - Category ID: \(data["categoryId"] as? String ?? "unknown")")
+                print("  - Question: \(data["question"] as? String ?? "unknown")")
                 return SubQuestion(document: document)
             }
             
             DispatchQueue.main.async {
                 self?.subQuestions = questions
                 print("DEBUG: Updated sub-questions: \(questions.count)")
+                print("DEBUG: First question (if any): \(questions.first?.question ?? "none")")
             }
         }
     }

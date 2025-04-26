@@ -35,8 +35,55 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         NotificationManager.shared.requestNotificationPermission()
         
         // Initialize subQuestions collection
+        print("DEBUG: Initializing DatabaseSeeder...")
+        
+        // First verify the categories collection
+        print("DEBUG: Verifying categories collection...")
+        Firestore.firestore().collection("categories").getDocuments { snapshot, error in
+            if let error = error {
+                print("DEBUG: Error verifying categories: \(error.localizedDescription)")
+                return
+            }
+            
+            if let documents = snapshot?.documents {
+                print("DEBUG: Found \(documents.count) categories in the database")
+                for document in documents {
+                    let data = document.data()
+                    print("DEBUG: Category document:")
+                    print("  - ID: \(document.documentID)")
+                    print("  - Name: \(data["name"] as? String ?? "unknown")")
+                }
+            } else {
+                print("DEBUG: No categories found in the database")
+            }
+        }
+        
         let seeder = DatabaseSeeder()
         seeder.initializeSubQuestionsCollection()
+        
+        // Add a delay to ensure Firebase is initialized
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+            print("DEBUG: Verifying subQuestions collection...")
+            Firestore.firestore().collection("subQuestions").getDocuments { snapshot, error in
+                if let error = error {
+                    print("DEBUG: Error verifying subQuestions: \(error.localizedDescription)")
+                    return
+                }
+                
+                if let documents = snapshot?.documents {
+                    print("DEBUG: Found \(documents.count) subQuestions in the database")
+                    for document in documents {
+                        let data = document.data()
+                        print("DEBUG: SubQuestion document:")
+                        print("  - ID: \(document.documentID)")
+                        print("  - Category ID: \(data["categoryId"] as? String ?? "unknown")")
+                        print("  - Question: \(data["question"] as? String ?? "unknown")")
+                    }
+                } else {
+                    print("DEBUG: No subQuestions found in the database")
+                }
+            }
+        }
         
         return true
     }
