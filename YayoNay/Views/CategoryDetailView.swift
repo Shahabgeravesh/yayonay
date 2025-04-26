@@ -202,19 +202,20 @@ struct CategoryDetailView: View {
                 print("📊 Found \(documents.count) vote documents")
                 
                 // Find the most recent vote
-                let latestVote = documents.compactMap { document -> Date? in
-                    if let timestamp = document.data()["date"] as? Timestamp {
-                        return timestamp.dateValue()
+                let latestVote = documents.compactMap { document -> (id: String, date: Date, isYay: Bool)? in
+                    if let timestamp = document.data()["date"] as? Timestamp,
+                       let isYay = document.data()["isYay"] as? Bool {
+                        return (id: document.documentID, date: timestamp.dateValue(), isYay: isYay)
                     }
                     return nil
-                }.sorted(by: >).first
+                }.sorted(by: { $0.date > $1.date }).first
                 
                 if let latestVote = latestVote {
-                    print("⏰ Found previous vote from \(latestVote)")
+                    print("⏰ Found previous vote from \(latestVote.date)")
                     
                     let calendar = Calendar.current
                     let now = Date()
-                    let components = calendar.dateComponents([.day], from: latestVote, to: now)
+                    let components = calendar.dateComponents([.day], from: latestVote.date, to: now)
                     let daysSinceLastVote = components.day ?? 0
                     
                     print("📅 Days since last vote: \(daysSinceLastVote)")
@@ -227,11 +228,78 @@ struct CategoryDetailView: View {
                         }
                         return
                     }
+                    
+                    // If we're here, it means the cooldown period has passed
+                    // Update the existing vote instead of creating a new one
+                    print("📝 Updating existing vote")
+                    print("User ID: \(userId)")
+                    print("SubCategory ID: \(subCategory.id)")
+                    print("Is Yay: \(isYay)")
+                    
+                    // Create a batch write
+                    let batch = db.batch()
+                    print("🔄 Created batch write operation")
+                    
+                    // Update the existing vote document
+                    let voteRef = db.collection("votes").document(latestVote.id)
+                    let voteData: [String: Any] = [
+                        "itemName": subCategory.name,
+                        "imageURL": subCategory.imageURL,
+                        "isYay": isYay,
+                        "date": Timestamp(date: Date()),
+                        "categoryName": self.category.name,
+                        "categoryId": self.category.id,
+                        "subCategoryId": subCategory.id,
+                        "userId": userId
+                    ]
+                    batch.setData(voteData, forDocument: voteRef)
+                    print("📝 Updated existing vote document in batch")
+                    
+                    // Update subcategory's vote counts
+                    let subCategoryRef = db.collection("subCategories").document(subCategory.id)
+                    let updateData: [String: Any] = [
+                        // Decrement the old vote count
+                        latestVote.isYay ? "yayCount" : "nayCount": FieldValue.increment(Int64(-1)),
+                        // Increment the new vote count
+                        isYay ? "yayCount" : "nayCount": FieldValue.increment(Int64(1))
+                    ]
+                    batch.updateData(updateData, forDocument: subCategoryRef)
+                    print("📊 Added subcategory vote count update to batch: \(updateData)")
+                    
+                    // Update user profile
+                    let userRef = db.collection("users").document(userId)
+                    batch.updateData([
+                        "lastVoteDate": Timestamp(date: Date())
+                    ], forDocument: userRef)
+                    print("👤 Added user profile update to batch")
+                    
+                    // Add recent activity
+                    let activity = [
+                        "type": "vote",
+                        "itemId": subCategory.id,
+                        "title": subCategory.name,
+                        "timestamp": Timestamp(date: Date())
+                    ] as [String: Any]
+                    batch.updateData([
+                        "recentActivity": FieldValue.arrayUnion([activity])
+                    ], forDocument: userRef)
+                    print("📝 Added recent activity to batch: \(activity)")
+                    
+                    // Commit the batch
+                    print("🚀 Committing batch write...")
+                    batch.commit { error in
+                        if let error = error {
+                            print("❌ Batch write failed: \(error.localizedDescription)")
+                        } else {
+                            print("✅ Batch write completed successfully")
+                        }
+                    }
+                    return
                 }
             }
             
-            // Only proceed with vote recording if no cooldown is active
-            print("📝 Starting vote submission process")
+            // If we're here, it means there's no existing vote or it's a new vote
+            print("📝 Starting new vote submission process")
             print("User ID: \(userId)")
             print("SubCategory ID: \(subCategory.id)")
             print("Is Yay: \(isYay)")
