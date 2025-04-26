@@ -88,9 +88,7 @@ struct SubCategoryStatsView: View {
                                     .font(.title2)
                                     .fontWeight(.bold)
                                     .foregroundColor(.green)
-                                Text("\(statsViewModel.currentSubCategory.yayCount) Yay")
-                                    .font(.subheadline)
-                                    .foregroundColor(.green)
+                               
                             }
                             .frame(maxWidth: .infinity)
                             
@@ -102,9 +100,7 @@ struct SubCategoryStatsView: View {
                                     .font(.title2)
                                     .fontWeight(.bold)
                                     .foregroundColor(.red)
-                                Text("\(statsViewModel.currentSubCategory.nayCount) Nay")
-                                    .font(.subheadline)
-                                    .foregroundColor(.red)
+                               
                             }
                             .frame(maxWidth: .infinity)
                         }
