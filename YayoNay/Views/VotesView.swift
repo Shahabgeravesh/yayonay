@@ -1,3 +1,5 @@
+//This is My Votes tab in the app.
+
 import SwiftUI
 import FirebaseFirestore
 import FirebaseAuth
@@ -6,9 +8,7 @@ class VotesViewModel: ObservableObject {
     @Published var votes: [Vote] = []
     @Published var sortOption: SortOption = .date
     @Published var filterOption: FilterOption = .all
-    @Published var comments: [Comment] = []
     private let db = Firestore.firestore()
-    private var commentsListener: ListenerRegistration?
     
     enum SortOption: String, CaseIterable {
         case date = "Date"
@@ -78,188 +78,6 @@ class VotesViewModel: ObservableObject {
             }
         }
     }
-    
-    func setupCommentsListener(forVoteId voteId: String) {
-        print("DEBUG: Setting up comments listener for voteId: \(voteId)")
-        
-        // Remove existing listener if any
-        commentsListener?.remove()
-        
-        let commentsRef = db.collection("comments")
-            .whereField("voteId", isEqualTo: voteId)
-            .order(by: "date", descending: true)
-        
-        commentsListener = commentsRef.addSnapshotListener { [weak self] snapshot, error in
-            if let error = error {
-                print("DEBUG: Error fetching comments: \(error.localizedDescription)")
-                return
-            }
-            
-            guard let documents = snapshot?.documents else {
-                print("DEBUG: No documents in snapshot")
-                return
-            }
-            
-            print("DEBUG: Fetched \(documents.count) comments from Firestore")
-            
-            let allComments = documents.compactMap { document -> Comment? in
-                let data = document.data()
-                print("DEBUG: Comment data: \(data)")
-                
-                guard let userId = data["userId"] as? String,
-                      let username = data["username"] as? String,
-                      let userImage = data["userImage"] as? String,
-                      let text = data["text"] as? String,
-                      let timestamp = data["date"] as? Timestamp else {
-                    print("DEBUG: Failed to parse comment data: \(data)")
-                    return nil
-                }
-                
-                return Comment(
-                    id: document.documentID,
-                    userId: userId,
-                    username: username,
-                    userImage: userImage,
-                    text: text,
-                    date: timestamp.dateValue(),
-                    likes: data["likes"] as? Int ?? 0,
-                    isLiked: (data["likedBy"] as? [String: Bool])?[Auth.auth().currentUser?.uid ?? ""] ?? false,
-                    parentId: data["parentId"] as? String,
-                    voteId: data["voteId"] as? String ?? voteId
-                )
-            }
-            
-            print("DEBUG: Successfully parsed \(allComments.count) comments")
-            
-            DispatchQueue.main.async {
-                // First, get all top-level comments (no parentId)
-                self?.comments = allComments.filter { $0.parentId == nil }
-                print("DEBUG: Top-level comments: \(self?.comments.count ?? 0)")
-                
-                // Then, for each top-level comment, attach its replies
-                self?.comments = self?.comments.map { comment in
-                    var updatedComment = comment
-                    updatedComment.replies = allComments.filter { $0.parentId == comment.id }
-                    return updatedComment
-                } ?? []
-                
-                print("DEBUG: Final comments with replies: \(self?.comments.count ?? 0)")
-            }
-        }
-    }
-    
-    func addComment(_ text: String, voteId: String, parentId: String? = nil) {
-        print("DEBUG: Attempting to add comment: '\(text)' for voteId: \(voteId) with parentId: \(parentId ?? "nil")")
-        
-        guard let userId = Auth.auth().currentUser?.uid else {
-            print("DEBUG: Failed to add comment - No authenticated user")
-            return
-        }
-        
-        print("DEBUG: User ID: \(userId)")
-        
-        db.collection("users").document(userId).getDocument { [weak self] snapshot, error in
-            if let error = error {
-                print("DEBUG: Error fetching user data: \(error.localizedDescription)")
-                return
-            }
-            
-            guard let self = self,
-                  let data = snapshot?.data() else {
-                print("DEBUG: Failed to get user data")
-                return
-            }
-            
-            print("DEBUG: User data: \(data)")
-            
-            // Extract username and userImage with fallbacks
-            let username = data["username"] as? String ?? "Anonymous User"
-            let userImage = data["imageURL"] as? String ?? "https://firebasestorage.googleapis.com/v0/b/yayonay-e7f58.appspot.com/o/default_profile.png?alt=media"
-            
-            print("DEBUG: Username: \(username), UserImage: \(userImage)")
-            
-            let commentId = UUID().uuidString
-            print("DEBUG: Generated comment ID: \(commentId)")
-            
-            let commentData: [String: Any] = [
-                "id": commentId,
-                "userId": userId,
-                "username": username,
-                "userImage": userImage,
-                "text": text,
-                "date": Timestamp(date: Date()),
-                "likes": 0,
-                "likedBy": [:],
-                "parentId": parentId as Any,
-                "voteId": voteId
-            ]
-            
-            print("DEBUG: Comment data to save: \(commentData)")
-            
-            self.db.collection("comments")
-                .document(commentId)
-                .setData(commentData) { error in
-                    if let error = error {
-                        print("DEBUG: Error adding comment: \(error.localizedDescription)")
-                    } else {
-                        print("DEBUG: Comment successfully added to Firestore")
-                    }
-                }
-        }
-    }
-    
-    func likeComment(_ comment: Comment) {
-        guard let userId = Auth.auth().currentUser?.uid else { return }
-        
-        let docRef = db.collection("comments").document(comment.id)
-        
-        if comment.isLiked {
-            // Unlike
-            docRef.updateData([
-                "likes": FieldValue.increment(Int64(-1)),
-                "likedBy.\(userId)": FieldValue.delete()
-            ])
-        } else {
-            // Like
-            docRef.updateData([
-                "likes": FieldValue.increment(Int64(1)),
-                "likedBy.\(userId)": true
-            ])
-        }
-    }
-    
-    func deleteComment(_ comment: Comment) {
-        guard let userId = Auth.auth().currentUser?.uid,
-              comment.userId == userId else { return }
-        
-        print("DEBUG: Deleting comment with ID: \(comment.id)")
-        
-        // Delete the comment from Firestore
-        db.collection("comments").document(comment.id).delete { [weak self] error in
-            if let error = error {
-                print("DEBUG: Error deleting comment: \(error.localizedDescription)")
-                return
-            }
-            
-            print("DEBUG: Successfully deleted comment from Firestore")
-            
-            DispatchQueue.main.async {
-                if comment.parentId == nil {
-                    // If it's a main comment, remove it and all its replies
-                    self?.comments.removeAll { $0.id == comment.id }
-                } else {
-                    // If it's a reply, find the parent comment and remove just this reply
-                    if let parentIndex = self?.comments.firstIndex(where: { $0.id == comment.parentId }) {
-                        self?.comments[parentIndex].replies.removeAll { $0.id == comment.id }
-                    }
-                }
-            }
-        }
-    }
-    
-    deinit {
-        commentsListener?.remove()
-    }
 }
 
 struct VotesView: View {
@@ -280,11 +98,11 @@ struct VotesView: View {
     }
     
     var body: some View {
-        NavigationStack {
+        NavigationView {
             VStack(spacing: 0) {
-                // Filter and Sort Options
+                // Filter Options
                 ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 16) {
+                    HStack(spacing: 12) {
                         // Filter Options
                         ForEach(VotesViewModel.FilterOption.allCases, id: \.self) { option in
                             FilterButton(
@@ -293,9 +111,6 @@ struct VotesView: View {
                                 action: { viewModel.filterOption = option }
                             )
                         }
-                        
-                        Divider()
-                            .frame(height: 24)
                         
                         // Sort Options
                         ForEach(VotesViewModel.SortOption.allCases, id: \.self) { option in
@@ -336,123 +151,6 @@ struct VotesView: View {
         .onAppear {
             viewModel.fetchVotes()
         }
-    }
-}
-
-struct CommentsView: View {
-    let vote: Vote
-    let comments: [Comment]
-    let onAddComment: (String, String?) -> Void
-    let onLikeComment: (Comment) -> Void
-    let onDeleteComment: (Comment) -> Void
-    
-    @State private var newCommentText = ""
-    @Environment(\.dismiss) private var dismiss
-    @FocusState private var isCommentFieldFocused: Bool
-    
-    var body: some View {
-        VStack(spacing: 0) {
-            // Vote Summary
-            VoteCard(vote: vote, isClickable: false)
-                .padding()
-            
-            // Comments List
-            ScrollView {
-                LazyVStack(spacing: 16) {
-                    if comments.isEmpty {
-                        VStack(spacing: 12) {
-                            Image(systemName: "bubble.left")
-                                .font(.system(size: 40))
-                                .foregroundColor(.gray)
-                            Text("No comments yet")
-                                .font(.headline)
-                                .foregroundColor(.gray)
-                            Text("Be the first to comment!")
-                                .font(.subheadline)
-                                .foregroundColor(.secondary)
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 40)
-                    } else {
-                        ForEach(comments) { comment in
-                            CommentRow(
-                                comment: comment,
-                                onLike: { 
-                                    print("DEBUG: Liking comment with ID: \(comment.id)")
-                                    onLikeComment(comment)
-                                },
-                                onDelete: { 
-                                    print("DEBUG: Deleting comment with ID: \(comment.id)")
-                                    onDeleteComment(comment)
-                                },
-                                onReply: { text in
-                                    print("DEBUG: Replying to comment with ID: \(comment.id)")
-                                    onAddComment(text, comment.id)
-                                }
-                            )
-                            .padding(.horizontal)
-                            
-                            // Display replies
-                            ForEach(comment.replies) { reply in
-                                CommentRow(
-                                    comment: reply,
-                                    onLike: {
-                                        print("DEBUG: Liking reply with ID: \(reply.id)")
-                                        onLikeComment(reply)
-                                    },
-                                    onDelete: {
-                                        print("DEBUG: Deleting reply with ID: \(reply.id)")
-                                        onDeleteComment(reply)
-                                    },
-                                    onReply: { text in
-                                        print("DEBUG: Replying to reply with ID: \(reply.id)")
-                                        onAddComment(text, reply.id)
-                                    }
-                                )
-                                .padding(.leading, 52)
-                                .padding(.trailing)
-                            }
-                        }
-                    }
-                }
-                .padding()
-            }
-            
-            // Comment Input
-            VStack(spacing: 0) {
-                Divider()
-                HStack(spacing: 12) {
-                    TextField("Add a comment...", text: $newCommentText)
-                        .textFieldStyle(.roundedBorder)
-                        .frame(maxWidth: .infinity)
-                        .focused($isCommentFieldFocused)
-                        .submitLabel(.send)
-                        .onSubmit {
-                            submitComment()
-                        }
-                    
-                    Button {
-                        submitComment()
-                    } label: {
-                        Image(systemName: "arrow.up.circle.fill")
-                            .font(.title2)
-                            .foregroundColor(newCommentText.isEmpty ? .gray : .blue)
-                    }
-                    .disabled(newCommentText.isEmpty)
-                }
-                .padding()
-                .background(Color(.systemBackground))
-            }
-        }
-        .navigationTitle("Comments")
-        .navigationBarTitleDisplayMode(.inline)
-    }
-    
-    private func submitComment() {
-        guard !newCommentText.isEmpty else { return }
-        onAddComment(newCommentText, nil)
-        newCommentText = ""
-        isCommentFieldFocused = false
     }
 }
 
@@ -538,7 +236,6 @@ struct VoteCard: View {
     init(vote: Vote, isClickable: Bool = true) {
         self.vote = vote
         self.isClickable = isClickable
-        // Initialize with the correct categoryId
         _subCategoryViewModel = StateObject(wrappedValue: SubCategoryViewModel(categoryId: vote.categoryId))
     }
     
@@ -582,7 +279,7 @@ struct VoteCard: View {
     }
     
     private var voteContent: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        HStack(spacing: 12) {
             // Item image
             AsyncImage(url: URL(string: vote.imageURL)) { image in
                 image
@@ -592,29 +289,40 @@ struct VoteCard: View {
                 Rectangle()
                     .fill(Color.gray.opacity(0.2))
             }
-            .frame(height: 200)
-            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .frame(width: 80, height: 80)
+            .clipShape(RoundedRectangle(cornerRadius: 8))
             
-            // Item name
-            Text(vote.itemName)
-                .font(.system(size: 18, weight: .semibold))
-                .lineLimit(2)
-            
-            // Vote status
-            HStack {
-                Label(vote.isYay ? "Yay!" : "Nay!", systemImage: vote.isYay ? "hand.thumbsup.fill" : "hand.thumbsdown.fill")
-                    .foregroundColor(vote.isYay ? .green : .red)
-                Spacer()
-                Text(formatDate(vote.date))
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+            VStack(alignment: .leading, spacing: 8) {
+                // Single line for name, vote status, and date
+                HStack(alignment: .center, spacing: 8) {
+                    // Item name with fixed width
+                    Text(vote.itemName)
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundColor(.primary)
+                        .lineLimit(1)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    
+                    // Vote status with background
+                    Text(vote.isYay ? "Yay!" : "Nay!")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(vote.isYay ? .green : .red)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(vote.isYay ? Color.green.opacity(0.1) : Color.red.opacity(0.1))
+                        .clipShape(Capsule())
+                    
+                    // Date
+                    Text(formatDate(vote.date))
+                        .font(.system(size: 13))
+                        .foregroundColor(.secondary)
+                        .frame(width: 50, alignment: .trailing)
+                }
             }
-            .font(.system(size: 14))
         }
-        .padding()
+        .padding(12)
         .background(Color(.systemBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 16))
-        .shadow(color: Color.black.opacity(0.1), radius: 5, y: 2)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .shadow(color: Color.black.opacity(0.05), radius: 3, y: 1)
     }
     
     private func formatDate(_ date: Date) -> String {
