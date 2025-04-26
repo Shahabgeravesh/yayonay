@@ -11,6 +11,7 @@ struct CategoryDetailView: View {
     @State private var showingImportAlert = false
     @State private var isRefreshing = false
     @State private var isAnimatingCard = false
+    @State private var showingCooldownAlert = false
     
     // Constants for thresholds and calculations
     private let swipeThreshold: CGFloat = 100.0
@@ -73,6 +74,11 @@ struct CategoryDetailView: View {
             } message: {
                 Text("Would you like to import sample items for this category?")
             }
+            .alert("Vote Cooldown", isPresented: $showingCooldownAlert) {
+                Button("OK", role: .cancel) { }
+            } message: {
+                Text("You can vote again in 7 days")
+            }
         }
     }
     
@@ -94,33 +100,80 @@ struct CategoryDetailView: View {
             isAnimatingCard = true
             let isYay = offset < 0
             
-            // Save vote and update count first
-            saveVote(for: subCategory, isYay: isYay)
-            viewModel.vote(for: subCategory, isYay: isYay)
+            // First check for cooldown
+            let db = Firestore.firestore()
+            let votesRef = db.collection("votes")
+                .whereField("userId", isEqualTo: Auth.auth().currentUser?.uid ?? "")
+                .whereField("subCategoryId", isEqualTo: subCategory.id)
             
-            // Animate card off screen
-            withAnimation(.interpolatingSpring(stiffness: 180, damping: 100)) {
-                self.offset = offset > 0 ? 1000 : -1000
-                backgroundColor = .white
-            }
-            
-            // Move to next item immediately but delay resetting the card position
-            viewModel.nextItem()
-            
-            // Reset card position and animation state
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                withAnimation(nil) {
-                    self.offset = 0
+            votesRef.getDocuments { (votesSnapshot, votesError) in
+                if let votesError = votesError {
+                    print("❌ Error fetching recent votes: \(votesError.localizedDescription)")
+                    self.isAnimatingCard = false
+                    return
                 }
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                    isAnimatingCard = false
+                
+                if let documents = votesSnapshot?.documents {
+                    let latestVote = documents.compactMap { document -> Date? in
+                        if let timestamp = document.data()["date"] as? Timestamp {
+                            return timestamp.dateValue()
+                        }
+                        return nil
+                    }.sorted(by: >).first
+                    
+                    if let latestVote = latestVote {
+                        let calendar = Calendar.current
+                        let now = Date()
+                        let components = calendar.dateComponents([.day], from: latestVote, to: now)
+                        let daysSinceLastVote = components.day ?? 0
+                        
+                        if daysSinceLastVote < 7 {
+                            print("⏳ Cannot vote - cooldown period active")
+                            // Show cooldown alert and reset card
+                            DispatchQueue.main.async {
+                                self.showingCooldownAlert = true
+                                withAnimation(.interpolatingSpring(stiffness: 180, damping: 100)) {
+                                    self.offset = 0
+                                    self.backgroundColor = .white
+                                }
+                                self.isAnimatingCard = false
+                            }
+                            return
+                        }
+                    }
+                }
+                
+                // If no cooldown or cooldown has expired, proceed with vote
+                DispatchQueue.main.async {
+                    // Save vote and update count
+                    self.saveVote(for: subCategory, isYay: isYay)
+                    self.viewModel.vote(for: subCategory, isYay: isYay)
+                    
+                    // Animate card off screen
+                    withAnimation(.interpolatingSpring(stiffness: 180, damping: 100)) {
+                        self.offset = offset > 0 ? 1000 : -1000
+                        self.backgroundColor = .white
+                    }
+                    
+                    // Move to next item immediately but delay resetting the card position
+                    self.viewModel.nextItem()
+                    
+                    // Reset card position and animation state
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                        withAnimation(nil) {
+                            self.offset = 0
+                        }
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                            self.isAnimatingCard = false
+                        }
+                    }
                 }
             }
         } else {
             // Spring back to center
             withAnimation(.interpolatingSpring(stiffness: 180, damping: 100)) {
                 self.offset = 0
-                backgroundColor = .white
+                self.backgroundColor = .white
             }
         }
     }
@@ -131,71 +184,117 @@ struct CategoryDetailView: View {
             return
         }
         
-        print("📝 Starting vote submission process")
-        print("User ID: \(userId)")
-        print("SubCategory ID: \(subCategory.id)")
-        print("Is Yay: \(isYay)")
-        
+        // First, check for existing votes
         let db = Firestore.firestore()
+        let votesRef = db.collection("votes")
+            .whereField("userId", isEqualTo: userId)
+            .whereField("subCategoryId", isEqualTo: subCategory.id)
         
-        // Create vote document
-        let voteData: [String: Any] = [
-            "itemName": subCategory.name,
-            "imageURL": subCategory.imageURL,
-            "isYay": isYay,
-            "date": Timestamp(date: Date()),
-            "categoryName": category.name,
-            "categoryId": category.id,
-            "subCategoryId": subCategory.id,
-            "userId": userId
-        ]
+        print("🔍 Checking for existing votes")
         
-        print("📄 Created vote data: \(voteData)")
-        
-        // Create a batch write
-        let batch = db.batch()
-        print("🔄 Created batch write operation")
-        
-        // Add vote document
-        let voteRef = db.collection("votes").document()
-        batch.setData(voteData, forDocument: voteRef)
-        print("📝 Added vote document to batch")
-        
-        // Update subcategory's vote counts
-        let subCategoryRef = db.collection("subCategories").document(subCategory.id)
-        let updateData: [String: Any] = isYay ? 
-            ["yayCount": FieldValue.increment(Int64(1))] : 
-            ["nayCount": FieldValue.increment(Int64(1))]
-        batch.updateData(updateData, forDocument: subCategoryRef)
-        print("📊 Added subcategory vote count update to batch: \(updateData)")
-        
-        // Update user profile
-        let userRef = db.collection("users").document(userId)
-        batch.updateData([
-            "votesCount": FieldValue.increment(Int64(1)),
-            "lastVoteDate": Timestamp(date: Date())
-        ], forDocument: userRef)
-        print("👤 Added user profile update to batch")
-        
-        // Add recent activity
-        let activity = [
-            "type": "vote",
-            "itemId": subCategory.id,
-            "title": subCategory.name,
-            "timestamp": Timestamp(date: Date())
-        ] as [String: Any]
-        batch.updateData([
-            "recentActivity": FieldValue.arrayUnion([activity])
-        ], forDocument: userRef)
-        print("📝 Added recent activity to batch: \(activity)")
-        
-        // Commit the batch
-        print("🚀 Committing batch write...")
-        batch.commit { error in
+        votesRef.getDocuments { (snapshot, error) in
             if let error = error {
-                print("❌ Batch write failed: \(error.localizedDescription)")
-            } else {
-                print("✅ Batch write completed successfully")
+                print("❌ Error checking for existing votes: \(error.localizedDescription)")
+                return
+            }
+            
+            if let documents = snapshot?.documents {
+                print("📊 Found \(documents.count) vote documents")
+                
+                // Find the most recent vote
+                let latestVote = documents.compactMap { document -> Date? in
+                    if let timestamp = document.data()["date"] as? Timestamp {
+                        return timestamp.dateValue()
+                    }
+                    return nil
+                }.sorted(by: >).first
+                
+                if let latestVote = latestVote {
+                    print("⏰ Found previous vote from \(latestVote)")
+                    
+                    let calendar = Calendar.current
+                    let now = Date()
+                    let components = calendar.dateComponents([.day], from: latestVote, to: now)
+                    let daysSinceLastVote = components.day ?? 0
+                    
+                    print("📅 Days since last vote: \(daysSinceLastVote)")
+                    
+                    if daysSinceLastVote < 7 {
+                        print("⏳ Cannot vote - cooldown period active")
+                        // Show cooldown alert and return without recording vote
+                        DispatchQueue.main.async {
+                            self.showingCooldownAlert = true
+                        }
+                        return
+                    }
+                }
+            }
+            
+            // Only proceed with vote recording if no cooldown is active
+            print("📝 Starting vote submission process")
+            print("User ID: \(userId)")
+            print("SubCategory ID: \(subCategory.id)")
+            print("Is Yay: \(isYay)")
+            
+            // Create vote document
+            let voteData: [String: Any] = [
+                "itemName": subCategory.name,
+                "imageURL": subCategory.imageURL,
+                "isYay": isYay,
+                "date": Timestamp(date: Date()),
+                "categoryName": self.category.name,
+                "categoryId": self.category.id,
+                "subCategoryId": subCategory.id,
+                "userId": userId
+            ]
+            
+            print("📄 Created vote data: \(voteData)")
+            
+            // Create a batch write
+            let batch = db.batch()
+            print("🔄 Created batch write operation")
+            
+            // Add vote document
+            let voteRef = db.collection("votes").document()
+            batch.setData(voteData, forDocument: voteRef)
+            print("📝 Added vote document to batch")
+            
+            // Update subcategory's vote counts
+            let subCategoryRef = db.collection("subCategories").document(subCategory.id)
+            let updateData: [String: Any] = isYay ? 
+                ["yayCount": FieldValue.increment(Int64(1))] : 
+                ["nayCount": FieldValue.increment(Int64(1))]
+            batch.updateData(updateData, forDocument: subCategoryRef)
+            print("📊 Added subcategory vote count update to batch: \(updateData)")
+            
+            // Update user profile
+            let userRef = db.collection("users").document(userId)
+            batch.updateData([
+                "votesCount": FieldValue.increment(Int64(1)),
+                "lastVoteDate": Timestamp(date: Date())
+            ], forDocument: userRef)
+            print("👤 Added user profile update to batch")
+            
+            // Add recent activity
+            let activity = [
+                "type": "vote",
+                "itemId": subCategory.id,
+                "title": subCategory.name,
+                "timestamp": Timestamp(date: Date())
+            ] as [String: Any]
+            batch.updateData([
+                "recentActivity": FieldValue.arrayUnion([activity])
+            ], forDocument: userRef)
+            print("📝 Added recent activity to batch: \(activity)")
+            
+            // Commit the batch
+            print("🚀 Committing batch write...")
+            batch.commit { error in
+                if let error = error {
+                    print("❌ Batch write failed: \(error.localizedDescription)")
+                } else {
+                    print("✅ Batch write completed successfully")
+                }
             }
         }
     }

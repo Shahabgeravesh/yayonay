@@ -1,6 +1,7 @@
 import Foundation
 import FirebaseFirestore
 import SwiftUI
+import FirebaseAuth
 
 class SubCategoryViewModel: ObservableObject {
     @Published var subCategories: [SubCategory] = []
@@ -22,76 +23,98 @@ class SubCategoryViewModel: ObservableObject {
     }
     
     func fetchSubCategories(for categoryId: String) {
-        guard !categoryId.isEmpty else {
-            print("DEBUG: ❌ Attempted to fetch with empty categoryId")
+        print("DEBUG: 🔍 Fetching subcategories for categoryId: \(categoryId)")
+        print("DEBUG: Setting up Firestore listener for subcategories")
+        
+        guard let userId = Auth.auth().currentUser?.uid else {
+            print("❌ No user ID available")
             return
         }
         
-        print("DEBUG: 🔍 Fetching subcategories for categoryId: \(categoryId)")
+        // First, get all votes from the last 7 days
+        let votesRef = Firestore.firestore().collection("votes")
+            .whereField("userId", isEqualTo: userId)
         
-        // Remove existing listener if any
-        listener?.remove()
-        
-        let query = db.collection("subCategories")
-            .whereField("categoryId", isEqualTo: categoryId)
-            .order(by: "order", descending: false)
-        
-        print("DEBUG: Setting up Firestore listener for subcategories")
-        
-        listener = query.addSnapshotListener { [weak self] querySnapshot, error in
-            guard let self = self else {
-                print("DEBUG: ❌ Self is nil in snapshot listener")
+        votesRef.getDocuments { [weak self] (votesSnapshot, votesError) in
+            guard let self = self else { return }
+            
+            if let votesError = votesError {
+                print("❌ Error fetching recent votes: \(votesError.localizedDescription)")
                 return
             }
             
-            if let error = error {
-                print("DEBUG: ❌ Error fetching subcategories: \(error.localizedDescription)")
-                return
-            }
+            // Get the IDs of recently voted items
+            let sevenDaysAgo = Calendar.current.date(byAdding: .day, value: -7, to: Date()) ?? Date()
+            let recentlyVotedIds = votesSnapshot?.documents.compactMap { document -> String? in
+                if let timestamp = document.data()["date"] as? Timestamp,
+                   timestamp.dateValue() > sevenDaysAgo {
+                    return document.data()["subCategoryId"] as? String
+                }
+                return nil
+            } ?? []
             
-            guard let documents = querySnapshot?.documents else {
-                print("DEBUG: ❌ No documents in snapshot")
-                return
-            }
+            print("📊 Found \(recentlyVotedIds.count) recently voted items")
             
-            if documents.isEmpty {
-                print("DEBUG: ❌ No subcategories found for categoryId: \(categoryId)")
-                return
-            }
+            // Now fetch subcategories, excluding recently voted ones
+            let subCategoriesRef = Firestore.firestore().collection("subCategories")
+                .whereField("categoryId", isEqualTo: categoryId)
             
-            print("DEBUG: 📄 Found \(documents.count) subcategories")
-            
-            // Only process if not already processing
-            guard !self.isProcessingUpdate else {
-                print("DEBUG: ⚠️ Update already in progress, skipping")
-                return
-            }
-            
-            self.isProcessingUpdate = true
-            
-            let newSubCategories = documents.compactMap { document -> SubCategory? in
-                let subCategory = SubCategory(document: document)
-                print("DEBUG: Processing subcategory - ID: \(document.documentID), Name: \(subCategory?.name ?? "nil")")
-                return subCategory
-            }
-            
-            print("DEBUG: 📦 Processed \(newSubCategories.count) valid subcategories")
-            
-            // Only update if the data is actually different
-            if self.subCategories != newSubCategories {
-                DispatchQueue.main.async {
-                    print("DEBUG: ✅ Updating subcategories in ViewModel")
-                    self.subCategories = newSubCategories
-                    // Reset index if needed
-                    if self.currentIndex >= self.subCategories.count {
-                        self.currentIndex = 0
+            subCategoriesRef.getDocuments { [weak self] (snapshot, error) in
+                guard let self = self else { return }
+                
+                if let error = error {
+                    print("❌ Error fetching subcategories: \(error.localizedDescription)")
+                    return
+                }
+                
+                guard let documents = snapshot?.documents else {
+                    print("❌ No subcategories found")
+                    return
+                }
+                
+                print("DEBUG: 📄 Found \(documents.count) subcategories")
+                
+                var validSubCategories: [SubCategory] = []
+                
+                for document in documents {
+                    let data = document.data()
+                    
+                    // Skip if this item was recently voted on
+                    if recentlyVotedIds.contains(document.documentID) {
+                        print("⏳ Skipping recently voted item: \(data["name"] as? String ?? "Unknown")")
+                        continue
+                    }
+                    
+                    // Rest of the existing validation code...
+                    if let name = data["name"] as? String,
+                       let imageURL = data["imageURL"] as? String,
+                       let categoryId = data["categoryId"] as? String,
+                       let order = data["order"] as? Int,
+                       let yayCount = data["yayCount"] as? Int,
+                       let nayCount = data["nayCount"] as? Int {
+                        
+                        let subCategory = SubCategory(
+                            id: document.documentID,
+                            name: name,
+                            imageURL: imageURL,
+                            categoryId: categoryId,
+                            order: order,
+                            yayCount: yayCount,
+                            nayCount: nayCount
+                        )
+                        
+                        validSubCategories.append(subCategory)
+                        print("DEBUG: Processing subcategory - ID: \(document.documentID), Name: \(name)")
                     }
                 }
-            } else {
-                print("DEBUG: ℹ️ No changes in subcategories data")
+                
+                print("DEBUG: 📦 Processed \(validSubCategories.count) valid subcategories")
+                
+                DispatchQueue.main.async {
+                    self.subCategories = validSubCategories
+                    print("DEBUG: ✅ Updating subcategories in ViewModel")
+                }
             }
-            
-            self.isProcessingUpdate = false
         }
     }
     

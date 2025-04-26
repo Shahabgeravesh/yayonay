@@ -164,7 +164,7 @@ struct SubCategoryStatsView: View {
                     ForEach(statsViewModel.subQuestions) { question in
                         SubQuestionRow(question: question, onVote: { isYay in
                             statsViewModel.voteForSubQuestion(question, isYay: isYay)
-                        })
+                        }, viewModel: statsViewModel)
                     }
                 }
                 .padding(.horizontal)
@@ -385,6 +385,7 @@ struct SubQuestionRow: View {
     @State private var hasVoted = false
     @State private var showVoteAnimation = false
     @Environment(\.colorScheme) private var colorScheme
+    @ObservedObject var viewModel: SubCategoryStatsViewModel
     
     var body: some View {
         HStack(spacing: 8) {
@@ -468,15 +469,15 @@ struct SubQuestionRow: View {
                         }
                     }
                 }
-            }
-            .frame(width: 100, height: 16)
-            
-            // Total votes
-            if question.totalVotes > 0 {
-                Text("\(question.totalVotes)")
-                    .font(.system(size: 8))
-                    .foregroundStyle(.secondary)
-                    .frame(width: 100, alignment: .center)
+                .frame(width: 100, height: 16)
+                
+                // Total votes
+                if question.totalVotes > 0 {
+                    Text("\(question.totalVotes)")
+                        .font(.system(size: 8))
+                        .foregroundStyle(.secondary)
+                        .frame(width: 100, alignment: .center)
+                }
             }
         }
         .padding(.horizontal, 8)
@@ -488,5 +489,10 @@ struct SubQuestionRow: View {
             radius: colorScheme == .dark ? 3 : 3,
             y: colorScheme == .dark ? 1 : 1
         )
+        .alert("Voting Cooldown", isPresented: $viewModel.showCooldownAlert) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text("You can vote again in \(viewModel.getCooldownRemaining())")
+        }
     }
 } 
