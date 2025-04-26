@@ -64,16 +64,16 @@ class SubCategoryViewModel: ObservableObject {
                 
                 if let error = error {
                     print("❌ Error fetching subcategories: \(error.localizedDescription)")
-                    return
-                }
-                
+                return
+            }
+            
                 guard let documents = snapshot?.documents else {
                     print("❌ No subcategories found")
-                    return
-                }
-                
-                print("DEBUG: 📄 Found \(documents.count) subcategories")
-                
+                return
+            }
+            
+            print("DEBUG: 📄 Found \(documents.count) subcategories")
+            
                 var validSubCategories: [SubCategory] = []
                 
                 for document in documents {
@@ -106,10 +106,10 @@ class SubCategoryViewModel: ObservableObject {
                         validSubCategories.append(subCategory)
                         print("DEBUG: Processing subcategory - ID: \(document.documentID), Name: \(name)")
                     }
-                }
-                
+            }
+            
                 print("DEBUG: 📦 Processed \(validSubCategories.count) valid subcategories")
-                
+            
                 DispatchQueue.main.async {
                     self.subCategories = validSubCategories
                     print("DEBUG: ✅ Updating subcategories in ViewModel")

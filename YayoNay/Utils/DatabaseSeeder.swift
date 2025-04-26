@@ -259,67 +259,109 @@ class DatabaseSeeder {
         print("DEBUG: Starting to seed sub-questions...")
         print("DEBUG: Category ID map: \(categoryIdMap)")
         
-        let batch = db.batch()
-        var questionCount = 0
-        var failedCategories: [String] = []
-        
-        for (categoryName, questions) in categoryQuestions {
-            guard let categoryId = categoryIdMap[categoryName] else {
-                print("DEBUG: WARNING: No ID found for category: \(categoryName)")
-                failedCategories.append(categoryName)
-                continue
-            }
+        // First, fetch all subcategories
+        db.collection("subCategories").getDocuments { [weak self] snapshot, error in
+            guard let self = self else { return }
             
-            print("DEBUG: Seeding questions for category: \(categoryName) (ID: \(categoryId))")
-            
-            for question in questions {
-                let subQuestion = SubQuestion(
-                    categoryId: categoryId,
-                    question: question
-                )
-                
-                print("DEBUG: Creating sub-question:")
-                print("  - ID: \(subQuestion.id)")
-                print("  - Category ID: \(subQuestion.categoryId)")
-                print("  - Question: \(subQuestion.question)")
-                
-                let docRef = db.collection("subQuestions").document(subQuestion.id)
-                batch.setData(subQuestion.dictionary, forDocument: docRef)
-                questionCount += 1
-            }
-        }
-        
-        if !failedCategories.isEmpty {
-            print("DEBUG: WARNING: Failed to find IDs for categories: \(failedCategories.joined(separator: ", "))")
-        }
-        
-        print("DEBUG: Committing batch of \(questionCount) questions...")
-        
-        batch.commit { error in
             if let error = error {
-                print("DEBUG: ERROR: Failed to seed sub-questions: \(error.localizedDescription)")
-                print("DEBUG: Error details: \(error)")
-            } else {
-                print("DEBUG: Successfully seeded \(questionCount) sub-questions")
-                
-                // Verify the seeding was successful
-                self.db.collection("subQuestions").getDocuments { snapshot, error in
-                    if let error = error {
-                        print("DEBUG: ERROR: Failed to verify seeding: \(error.localizedDescription)")
-                        return
+                print("DEBUG: Error fetching subcategories: \(error.localizedDescription)")
+                return
+            }
+            
+            guard let subCategoryDocuments = snapshot?.documents else {
+                print("DEBUG: No subcategories found")
+                return
+            }
+            
+            print("DEBUG: Found \(subCategoryDocuments.count) subcategories")
+            
+            // Group subcategories by their categoryId
+            var subCategoriesByCategory: [String: [QueryDocumentSnapshot]] = [:]
+            for doc in subCategoryDocuments {
+                if let categoryId = doc.data()["categoryId"] as? String {
+                    if subCategoriesByCategory[categoryId] == nil {
+                        subCategoriesByCategory[categoryId] = []
                     }
+                    subCategoriesByCategory[categoryId]?.append(doc)
+                }
+            }
+            
+            let batch = self.db.batch()
+            var questionCount = 0
+            var failedCategories: [String] = []
+            
+            for (categoryName, questions) in self.categoryQuestions {
+                guard let categoryId = categoryIdMap[categoryName] else {
+                    print("DEBUG: WARNING: No ID found for category: \(categoryName)")
+                    failedCategories.append(categoryName)
+                    continue
+                }
+                
+                guard let subCategories = subCategoriesByCategory[categoryId] else {
+                    print("DEBUG: WARNING: No subcategories found for category: \(categoryName)")
+                    continue
+                }
+                
+                print("DEBUG: Seeding questions for category: \(categoryName) (ID: \(categoryId))")
+                print("DEBUG: Found \(subCategories.count) subcategories for this category")
+                
+                for subCategoryDoc in subCategories {
+                    let subCategoryId = subCategoryDoc.documentID
+                    print("DEBUG: Processing subcategory: \(subCategoryId)")
                     
-                    if let documents = snapshot?.documents {
-                        print("DEBUG: Verification: Found \(documents.count) sub-questions in database")
-                        for document in documents {
-                            let data = document.data()
-                            print("DEBUG: Verified sub-question:")
-                            print("  - ID: \(document.documentID)")
-                            print("  - Category ID: \(data["categoryId"] as? String ?? "unknown")")
-                            print("  - Question: \(data["question"] as? String ?? "unknown")")
+                    for question in questions {
+                        let subQuestion = SubQuestion(
+                            categoryId: categoryId,
+                            subCategoryId: subCategoryId,
+                            question: question
+                        )
+                        
+                        print("DEBUG: Creating sub-question:")
+                        print("  - ID: \(subQuestion.id)")
+                        print("  - Category ID: \(subQuestion.categoryId)")
+                        print("  - SubCategory ID: \(subQuestion.subCategoryId)")
+                        print("  - Question: \(subQuestion.question)")
+                        
+                        let docRef = self.db.collection("subQuestions").document(subQuestion.id)
+                        batch.setData(subQuestion.dictionary, forDocument: docRef)
+                        questionCount += 1
+                    }
+                }
+            }
+            
+            if !failedCategories.isEmpty {
+                print("DEBUG: WARNING: Failed to find IDs for categories: \(failedCategories.joined(separator: ", "))")
+            }
+            
+            print("DEBUG: Committing batch of \(questionCount) questions...")
+            
+            batch.commit { error in
+                if let error = error {
+                    print("DEBUG: ERROR: Failed to seed sub-questions: \(error.localizedDescription)")
+                    print("DEBUG: Error details: \(error)")
+                } else {
+                    print("DEBUG: Successfully seeded \(questionCount) sub-questions")
+                    
+                    // Verify the seeding was successful
+                    self.db.collection("subQuestions").getDocuments { snapshot, error in
+                        if let error = error {
+                            print("DEBUG: ERROR: Failed to verify seeding: \(error.localizedDescription)")
+                            return
                         }
-                    } else {
-                        print("DEBUG: ERROR: Verification failed - no documents found")
+                        
+                        if let documents = snapshot?.documents {
+                            print("DEBUG: Verification: Found \(documents.count) sub-questions in database")
+                            for document in documents {
+                                let data = document.data()
+                                print("DEBUG: Verified sub-question:")
+                                print("  - ID: \(document.documentID)")
+                                print("  - Category ID: \(data["categoryId"] as? String ?? "unknown")")
+                                print("  - SubCategory ID: \(data["subCategoryId"] as? String ?? "unknown")")
+                                print("  - Question: \(data["question"] as? String ?? "unknown")")
+                            }
+                        } else {
+                            print("DEBUG: ERROR: Verification failed - no documents found")
+                        }
                     }
                 }
             }

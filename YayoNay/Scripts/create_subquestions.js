@@ -75,6 +75,24 @@ async function createSubQuestions() {
     
     console.log('Found categories:', categoryIdMap);
     
+    // Get all subcategories
+    const subCategoriesSnapshot = await db.collection('subCategories').get();
+    const subCategories = {};
+    subCategoriesSnapshot.forEach(doc => {
+      const data = doc.data();
+      if (data.categoryId && data.name) {
+        if (!subCategories[data.categoryId]) {
+          subCategories[data.categoryId] = [];
+        }
+        subCategories[data.categoryId].push({
+          id: doc.id,
+          name: data.name
+        });
+      }
+    });
+    
+    console.log('Found subcategories:', subCategories);
+    
     // Clear existing subQuestions
     const subQuestionsSnapshot = await db.collection('subQuestions').get();
     const batch = db.batch();
@@ -95,10 +113,15 @@ async function createSubQuestions() {
         continue;
       }
       
+      const categorySubCategories = subCategories[categoryId] || [];
+      console.log(`Creating sub-questions for ${categoryName} (${categorySubCategories.length} subcategories)`);
+      
+      for (const subCategory of categorySubCategories) {
       for (const question of questions) {
         const subQuestionRef = db.collection('subQuestions').doc();
         const subQuestion = {
           categoryId: categoryId,
+            subCategoryId: subCategory.id,
           question: question,
           yayCount: 0,
           nayCount: 0
@@ -112,6 +135,7 @@ async function createSubQuestions() {
           await newBatch.commit();
           console.log(`Committed batch of ${count} subQuestions`);
           count = 0;
+          }
         }
       }
     }

@@ -22,6 +22,7 @@ struct SubCategoryStatsView: View {
     @StateObject private var categoryViewModel = CategoryViewModel()
     @State private var newComment = ""
     @State private var showShareSheet = false
+    @State private var showResetConfirmation = false
     
     init(subCategory: SubCategory) {
         print("🔍 DEBUG: Initializing SubCategoryStatsView")
@@ -78,174 +79,224 @@ struct SubCategoryStatsView: View {
                 
                 // Overall Vote Stats
                 VStack(spacing: 16) {
+                    // Vote Distribution
+                    HStack(spacing: 32) {
+                        // Yay Stats
+                        VStack(spacing: 4) {
+                            Text("\(Int(yayPercentage))%")
+                                .font(.title2)
+                                .fontWeight(.bold)
+                                .foregroundColor(.green)
+                        }
+                        .frame(maxWidth: .infinity)
+                        
+                        // Nay Stats
+                        VStack(spacing: 4) {
+                            Text("\(Int(nayPercentage))%")
+                                .font(.title2)
+                                .fontWeight(.bold)
+                                .foregroundColor(.red)
+                        }
+                        .frame(maxWidth: .infinity)
+                    }
+                    .padding(.top, 8)
                     
-                        
-                        // Vote Distribution
-                        HStack(spacing: 32) {
-                            // Yay Stats
-                            VStack(spacing: 4) {
-                                Text("\(Int(yayPercentage))%")
-                                    .font(.title2)
-                                    .fontWeight(.bold)
-                                    .foregroundColor(.green)
-                               
-                            }
-                            .frame(maxWidth: .infinity)
+                    // Vote Bar
+                    GeometryReader { geometry in
+                        HStack(spacing: 2) {
+                            // Yay portion
+                            Rectangle()
+                                .fill(Color.green.opacity(0.7))
+                                .frame(width: geometry.size.width * CGFloat(yayPercentage / 100))
                             
-                          
-                            
-                            // Nay Stats
-                            VStack(spacing: 4) {
-                                Text("\(Int(nayPercentage))%")
-                                    .font(.title2)
-                                    .fontWeight(.bold)
-                                    .foregroundColor(.red)
-                               
-                            }
-                            .frame(maxWidth: .infinity)
+                            // Nay portion
+                            Rectangle()
+                                .fill(Color.red.opacity(0.7))
+                                .frame(width: geometry.size.width * CGFloat(nayPercentage / 100))
                         }
-                        .padding(.top, 8)
-                        
-                        // Vote Bar
-                        GeometryReader { geometry in
-                            HStack(spacing: 2) {
-                                // Yay portion
-                                Rectangle()
-                                    .fill(Color.green.opacity(0.7))
-                                    .frame(width: geometry.size.width * CGFloat(yayPercentage / 100))
-                                
-                                // Nay portion
-                                Rectangle()
-                                    .fill(Color.red.opacity(0.7))
-                                    .frame(width: geometry.size.width * CGFloat(nayPercentage / 100))
-                            }
-                        }
-                        .frame(height: 12)
-                        .clipShape(RoundedRectangle(cornerRadius: 6))
-                        .padding(.top, 8)
                     }
-                    .padding()
-                    .background(Color(.systemBackground))
-                    .cornerRadius(16)
-                    .shadow(color: .black.opacity(0.1), radius: 5, y: 2)
+                    .frame(height: 12)
+                    .clipShape(RoundedRectangle(cornerRadius: 6))
+                    .padding(.top, 8)
                 }
+                .padding()
+                .background(Color(.systemBackground))
+                .cornerRadius(16)
+                .shadow(color: .black.opacity(0.1), radius: 5, y: 2)
                 .padding(.horizontal)
-            
-            // Total Votes Card
-            VStack(spacing: 4) {
-                Text("Total Votes")
-                    .font(.headline)
-                    .fontWeight(.bold)
-                    .foregroundColor(.primary)
                 
-                Text("\(totalVotes)")
-                    .font(.system(size: 24, weight: .bold))
-                    .foregroundColor(.primary)
-                    .onAppear {
-                        print("📊 DEBUG: Displaying total votes in UI: \(totalVotes)")
+                // Total Votes Card
+                HStack(spacing: 8) {
+                    Text("Total Votes")
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundColor(.secondary)
+                    
+                    Text("\(totalVotes)")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundColor(.primary)
+                        .onAppear {
+                            print("📊 DEBUG: Displaying total votes in UI: \(totalVotes)")
+                        }
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .background(Color(.systemBackground))
+                .clipShape(Capsule())
+                .shadow(color: .black.opacity(0.05), radius: 2, y: 1)
+                
+                // Add Social Sharing
+                SocialSharingView(subCategory: statsViewModel.currentSubCategory)
+                
+                // Sub-Questions Section
+                if !statsViewModel.subQuestions.isEmpty {
+                    VStack(alignment: .leading, spacing: 16) {
+                        Text("Additional Questions")
+                            .font(.headline)
+                            .padding(.horizontal)
+                        
+                        ForEach(statsViewModel.subQuestions) { question in
+                            SubQuestionRow(question: question, onVote: { isYay in
+                                statsViewModel.voteForSubQuestion(question, isYay: isYay)
+                            }, viewModel: statsViewModel)
+                        }
                     }
-            }
-            .padding(.vertical, 8)
-            .padding(.horizontal, 16)
-            .background(Color(.systemBackground))
-            .cornerRadius(12)
-            .shadow(color: .black.opacity(0.1), radius: 5, y: 2)
-            
-            // Add Social Sharing
-            SocialSharingView(subCategory: statsViewModel.currentSubCategory)
-            
-            // Sub-Questions Section
-            if !statsViewModel.subQuestions.isEmpty {
+                    .padding(.horizontal)
+                }
+                
+                // Comments Section
                 VStack(alignment: .leading, spacing: 16) {
-                    Text("Additional Questions")
+                    Text("Comments")
                         .font(.headline)
                         .padding(.horizontal)
                     
-                    ForEach(statsViewModel.subQuestions) { question in
-                        SubQuestionRow(question: question, onVote: { isYay in
-                            statsViewModel.voteForSubQuestion(question, isYay: isYay)
-                        }, viewModel: statsViewModel)
-                    }
-                }
-                .padding(.horizontal)
-            }
-            
-            // Comments Section
-            VStack(alignment: .leading, spacing: 16) {
-                Text("Comments")
-                    .font(.headline)
-                    .padding(.horizontal)
-                
-                TextField("Add a comment...", text: $newComment)
-                    .textFieldStyle(RoundedBorderTextFieldStyle())
-                    .padding(.horizontal)
-                
-                HStack {
-                    Spacer()
-                    Button(action: {
-                        if !newComment.isEmpty {
-                            print("💬 DEBUG: User added a new comment")
-                            statsViewModel.addComment(newComment)
-                            newComment = ""
+                    TextField("Add a comment...", text: $newComment)
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                        .padding(.horizontal)
+                    
+                    HStack {
+                        Spacer()
+                        Button(action: {
+                            if !newComment.isEmpty {
+                                print("💬 DEBUG: User added a new comment")
+                                statsViewModel.addComment(newComment)
+                                newComment = ""
+                            }
+                        }) {
+                            Text("Post")
+                                .font(.system(size: 14, weight: .medium))
+                                .foregroundColor(newComment.isEmpty ? .gray : .blue)
                         }
-                    }) {
-                        Text("Post")
-                            .font(.system(size: 14, weight: .medium))
-                            .foregroundColor(newComment.isEmpty ? .gray : .blue)
+                        .disabled(newComment.isEmpty)
+                        .padding(.trailing)
                     }
-                    .disabled(newComment.isEmpty)
-                    .padding(.trailing)
-                }
-                
-                if !statsViewModel.comments.isEmpty {
-                    ForEach(statsViewModel.comments) { comment in
-                        VStack(alignment: .leading, spacing: 8) {
-                            CommentRow(
-                                comment: comment,
-                                onLike: {
-                                    statsViewModel.likeComment(comment)
-                                },
-                                onDelete: {
-                                    statsViewModel.deleteComment(comment)
-                                },
-                                onReply: { replyText in
-                                    print("DEBUG: Adding reply to comment: \(comment.id)")
-                                    statsViewModel.addComment(replyText, parentId: comment.id)
-                                }
-                            )
-                            .padding(.horizontal)
-                            
-                            // Display replies
-                            if !comment.replies.isEmpty {
-                                VStack(alignment: .leading, spacing: 8) {
-                                    ForEach(comment.replies) { reply in
-                                        CommentRow(
-                                            comment: reply,
-                                            onLike: {
-                                                statsViewModel.likeComment(reply)
-                                            },
-                                            onDelete: {
-                                                statsViewModel.deleteComment(reply)
-                                            },
-                                            onReply: { replyText in
-                                                statsViewModel.addComment(replyText, parentId: comment.id)
-                                            }
-                                        )
+                    
+                    if !statsViewModel.comments.isEmpty {
+                        ForEach(statsViewModel.comments) { comment in
+                            VStack(alignment: .leading, spacing: 8) {
+                                CommentRow(
+                                    comment: comment,
+                                    onLike: {
+                                        statsViewModel.likeComment(comment)
+                                    },
+                                    onDelete: {
+                                        statsViewModel.deleteComment(comment)
+                                    },
+                                    onReply: { replyText in
+                                        print("DEBUG: Adding reply to comment: \(comment.id)")
+                                        statsViewModel.addComment(replyText, parentId: comment.id)
                                     }
+                                )
+                                .padding(.horizontal)
+                                
+                                // Display replies
+                                if !comment.replies.isEmpty {
+                                    VStack(alignment: .leading, spacing: 8) {
+                                        ForEach(comment.replies) { reply in
+                                            CommentRow(
+                                                comment: reply,
+                                                onLike: {
+                                                    statsViewModel.likeComment(reply)
+                                                },
+                                                onDelete: {
+                                                    statsViewModel.deleteComment(reply)
+                                                },
+                                                onReply: { replyText in
+                                                    statsViewModel.addComment(replyText, parentId: comment.id)
+                                                }
+                                            )
+                                        }
+                                    }
+                                    .padding(.leading, 40)
                                 }
-                                .padding(.leading, 40)
+                            }
+                            .padding(.vertical, 8)
+                            Divider()
+                        }
+                    } else {
+                        Text("No comments yet")
+                            .foregroundColor(.secondary)
+                            .padding()
+                    }
+                }
+                .padding(.top)
+                
+                // Vote Reset Button
+                if statsViewModel.hasVoted {
+                    VStack(spacing: 8) {
+                        if let lastVoteDate = statsViewModel.lastVoteDate {
+                            let nextVoteDate = Calendar.current.date(byAdding: .day, value: 7, to: lastVoteDate) ?? Date()
+                            let canReset = Calendar.current.dateComponents([.day], from: Date(), to: nextVoteDate).day ?? 0 <= 0
+                            
+                            Button(action: {
+                                if canReset {
+                                    showResetConfirmation = true
+                                }
+                            }) {
+                                HStack(spacing: 8) {
+                                    Image(systemName: "arrow.clockwise.circle.fill")
+                                        .font(.system(size: 18))
+                                    Text(canReset ? "Change My Vote" : "Change My Vote")
+                                        .font(.system(size: 15, weight: .semibold))
+                                }
+                                .foregroundColor(canReset ? .white : .secondary)
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 12)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .fill(canReset ? Color.blue : Color.gray.opacity(0.2))
+                                )
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .stroke(canReset ? Color.blue : Color.gray.opacity(0.3), lineWidth: 1)
+                                )
+                                .shadow(color: canReset ? Color.blue.opacity(0.3) : Color.clear, radius: 4, x: 0, y: 2)
+                            }
+                            .disabled(!canReset)
+                            .scaleEffect(canReset ? 1.0 : 0.95)
+                            .animation(.spring(response: 0.3, dampingFraction: 0.6), value: canReset)
+                            
+                            if !canReset {
+                                Text("You voted on \(formatDate(lastVoteDate))")
+                                    .font(.system(size: 13))
+                                    .foregroundColor(.secondary)
+                                
+                                Text("You can change your vote on \(formatDate(nextVoteDate))")
+                                    .font(.system(size: 13))
+                                    .foregroundColor(.secondary)
                             }
                         }
-                        .padding(.vertical, 8)
-                        Divider()
                     }
-                } else {
-                    Text("No comments yet")
-                        .foregroundColor(.secondary)
-                        .padding()
+                    .padding(.horizontal)
                 }
             }
-            .padding(.top)
+        }
+        .alert("Reset Vote", isPresented: $showResetConfirmation) {
+            Button("Cancel", role: .cancel) { }
+            Button("Reset", role: .destructive) {
+                statsViewModel.resetVote()
+            }
+        } message: {
+            Text("This will replace your previous vote. Are you sure?")
         }
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {
@@ -260,6 +311,12 @@ struct SubCategoryStatsView: View {
             print("   - Nay Percentage: \(nayPercentage)%")
             categoryViewModel.fetchCategories()
         }
+    }
+    
+    private func formatDate(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMM d, yyyy"
+        return formatter.string(from: date)
     }
 }
 
@@ -421,7 +478,7 @@ struct SubQuestionRow: View {
                         }
                         
                         // Vote buttons
-                        if !hasVoted && question.totalVotes == 0 {
+                        if !hasVoted && question.totalVotes == 0 && viewModel.hasVoted && viewModel.canVote() {
                             HStack(spacing: 0) {
                                 Button(action: {
                                     withAnimation {
@@ -468,8 +525,8 @@ struct SubQuestionRow: View {
                             }
                         }
                     }
+                    .frame(width: 100, height: 16)
                 }
-                .frame(width: 100, height: 16)
                 
                 // Total votes
                 if question.totalVotes > 0 {
@@ -489,10 +546,5 @@ struct SubQuestionRow: View {
             radius: colorScheme == .dark ? 3 : 3,
             y: colorScheme == .dark ? 1 : 1
         )
-        .alert("Voting Cooldown", isPresented: $viewModel.showCooldownAlert) {
-            Button("OK", role: .cancel) { }
-        } message: {
-            Text("You can vote again in \(viewModel.getCooldownRemaining())")
-        }
     }
 } 
