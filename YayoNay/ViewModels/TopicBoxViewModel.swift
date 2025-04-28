@@ -93,7 +93,7 @@ class TopicBoxViewModel: ObservableObject {
                 description: description,
                 tags: tags,
                 category: category,
-                userImage: userProfile.imageURL ?? "",
+                userImage: userProfile.imageURL ?? "https://firebasestorage.googleapis.com/v0/b/yayonay-e7f58.appspot.com/o/default_profile.png?alt=media",
                 userId: userId
             )
             

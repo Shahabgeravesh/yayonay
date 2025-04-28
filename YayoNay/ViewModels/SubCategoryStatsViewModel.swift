@@ -300,92 +300,46 @@ class SubCategoryStatsViewModel: ObservableObject {
     
     func voteForAttribute(name: String, isYay: Bool) {
         print("DEBUG: Attempting to vote for attribute: \(name)")
+        print("DEBUG: Current lastVoteDate before voting: \(String(describing: lastVoteDate))")
         guard let userId = Auth.auth().currentUser?.uid else {
             print("DEBUG: No authenticated user found")
             return
         }
         
-        print("DEBUG: User ID: \(userId)")
-        print("DEBUG: Current lastVoteDate: \(String(describing: lastVoteDate))")
+        // Record user vote
+        let userVote = UserVote(
+            userId: userId,
+            subCategoryId: self.currentSubCategory.id,
+            subQuestionId: nil,
+            isYay: isYay,
+            itemName: self.currentSubCategory.name,
+            categoryName: name,
+            categoryId: self.currentSubCategory.categoryId,
+            imageURL: self.currentSubCategory.imageURL
+        )
         
-        // First, check for existing votes
-        let votesRef = db.collection("votes")
-            .whereField("userId", isEqualTo: userId)
-            .whereField("subCategoryId", isEqualTo: currentSubCategory.id)
-        
-        print("DEBUG: Checking for existing votes")
-        
-        votesRef.getDocuments { [weak self] (snapshot, error) in
-            guard let self = self else { return }
-            
+        print("DEBUG: Recording user vote in Firestore")
+        self.db.collection("votes").document(userVote.id).setData(userVote.dictionary) { error in
             if let error = error {
-                print("DEBUG: Error checking for existing votes: \(error.localizedDescription)")
-                return
-            }
-            
-            if let documents = snapshot?.documents {
-                print("DEBUG: Found \(documents.count) vote documents")
-                
-                // Find the most recent vote
-                let latestVote = documents.compactMap { UserVote(document: $0) }
-                    .sorted(by: { $0.timestamp > $1.timestamp })
-                    .first
-                
-                if let latestVote = latestVote {
-                    print("DEBUG: Found previous vote from \(latestVote.timestamp)")
-                    self.lastVoteDate = latestVote.timestamp
-                    
-                    let calendar = Calendar.current
-                    let now = Date()
-                    let components = calendar.dateComponents([.day], from: latestVote.timestamp, to: now)
-                    let daysSinceLastVote = components.day ?? 0
-                    
-                    print("DEBUG: Days since last vote: \(daysSinceLastVote)")
-                    
-                    if daysSinceLastVote < 7 {
-                        print("DEBUG: Cannot vote - cooldown period active")
-                        self.showCooldownAlert = true
-                        return
-                    }
-                }
-            }
-            
-            print("DEBUG: Proceeding with vote")
-            
-            // Record user vote
-            let userVote = UserVote(
-                userId: userId,
-                subCategoryId: self.currentSubCategory.id,
-                subQuestionId: nil,
-                isYay: isYay,
-                itemName: self.currentSubCategory.name,
-                categoryName: name,
-                categoryId: self.currentSubCategory.categoryId,
-                imageURL: self.currentSubCategory.imageURL
-            )
-            
-            print("DEBUG: Recording user vote - User: \(userId), SubCategory: \(self.currentSubCategory.id)")
-            
-            self.db.collection("votes").document(userVote.id).setData(userVote.dictionary) { error in
-                if let error = error {
-                    print("DEBUG: Error recording user vote: \(error.localizedDescription)")
-                } else {
-                    print("DEBUG: Successfully recorded user vote")
-                    self.lastVoteDate = Date()
-                    print("DEBUG: Updated lastVoteDate to: \(Date())")
+                print("DEBUG: Error recording user vote: \(error.localizedDescription)")
+            } else {
+                print("DEBUG: Successfully recorded user vote")
+                self.lastVoteDate = Date()
+                // Save to UserDefaults
+                UserDefaults.standard.set(Date(), forKey: "lastVoteDate_\(self.currentSubCategory.id)")
+                print("DEBUG: Updated lastVoteDate to: \(String(describing: self.lastVoteDate))")
             }
         }
         
         // Update the subcategory's vote count
-            let docRef = self.db.collection("subCategories").document(self.currentSubCategory.id)
+        let docRef = self.db.collection("subCategories").document(self.currentSubCategory.id)
         docRef.updateData([
             isYay ? "yayCount" : "nayCount": FieldValue.increment(Int64(1))
         ]) { error in
             if let error = error {
-                    print("DEBUG: Error updating subcategory vote count: \(error.localizedDescription)")
-                } else {
-                    print("DEBUG: Successfully updated subcategory vote count")
-                }
+                print("DEBUG: Error updating subcategory vote count: \(error.localizedDescription)")
+            } else {
+                print("DEBUG: Successfully updated subcategory vote count")
             }
         }
     }
@@ -624,10 +578,12 @@ class SubCategoryStatsViewModel: ObservableObject {
     }
     
     var hasVoted: Bool {
+        print("DEBUG: Checking hasVoted - lastVoteDate is \(String(describing: lastVoteDate))")
         return lastVoteDate != nil
     }
     
     func resetVote() {
+        print("DEBUG: Resetting vote")
         // Remove the vote from UserDefaults
         UserDefaults.standard.removeObject(forKey: "lastVoteDate_\(currentSubCategory.id)")
         UserDefaults.standard.removeObject(forKey: "vote_\(currentSubCategory.id)")
@@ -637,6 +593,7 @@ class SubCategoryStatsViewModel: ObservableObject {
         
         // Update the UI
         objectWillChange.send()
+        print("DEBUG: Vote reset complete - lastVoteDate is now \(String(describing: lastVoteDate))")
     }
     
     func vote(_ isYay: Bool) {
