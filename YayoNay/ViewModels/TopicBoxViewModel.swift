@@ -31,6 +31,7 @@ class TopicBoxViewModel: ObservableObject {
             sortedQuery = baseQuery.order(by: "date", descending: true)
         case .mostPopular:
             sortedQuery = baseQuery.order(by: "upvotes", descending: true)
+                .order(by: "date", descending: true)
         case .saved:
             sortedQuery = baseQuery.order(by: "date", descending: true)
         }
@@ -44,6 +45,17 @@ class TopicBoxViewModel: ObservableObject {
             
             self.topics = documents.compactMap { document in
                 Topic(document: document)
+            }
+            
+            // Additional sorting for Most Popular to ensure proper ordering
+            if self.sortOption == .mostPopular {
+                self.topics.sort { 
+                    if $0.upvotes != $1.upvotes {
+                        return $0.upvotes > $1.upvotes
+                    } else {
+                        return $0.date > $1.date
+                    }
+                }
             }
         }
     }

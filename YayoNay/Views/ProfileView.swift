@@ -22,7 +22,7 @@ struct ProfileView: View {
                         // Cover Image
                         Rectangle()
                             .fill(AppColor.gradient)
-                            .frame(height: 140)
+                            .frame(height: 180)
                             .overlay {
                                 Image(systemName: "camera.fill")
                                     .foregroundStyle(.white.opacity(0.7))
@@ -37,28 +37,28 @@ struct ProfileView: View {
                                        photoLibrary: .shared()) {
                                 profileImage
                             }
-                            .offset(y: 80)
+                            .offset(y: 100)
                             .overlay(
                                 Circle()
                                     .fill(AppColor.gradient)
-                                    .frame(width: 32, height: 32)
+                                    .frame(width: 36, height: 36)
                                     .overlay(
                                         Image(systemName: "camera.fill")
-                                            .font(.system(size: 14, weight: .bold))
+                                            .font(.system(size: 16, weight: .bold))
                                             .foregroundStyle(.white)
                                     )
-                                    .offset(x: 4, y: 84),
+                                    .offset(x: 4, y: 104),
                                 alignment: .bottomTrailing
                             )
                         }
                     }
                     
                     // Profile Info Section
-                    VStack(spacing: 20) {
+                    VStack(spacing: 24) {
                         // Username and Bio
-                        VStack(spacing: 8) {
+                        VStack(spacing: 12) {
                             Text(userManager.currentUser?.username ?? "")
-                                .font(AppFont.bold(28))
+                                .font(AppFont.bold(32))
                                 .foregroundStyle(AppColor.text)
                             
                             if let bio = userManager.currentUser?.bio, !bio.isEmpty {
@@ -66,39 +66,37 @@ struct ProfileView: View {
                                     .font(AppFont.regular(16))
                                     .foregroundStyle(AppColor.secondaryText)
                                     .multilineTextAlignment(.center)
-                                    .padding(.horizontal)
+                                    .padding(.horizontal, 32)
                             }
                         }
-                        .padding(.top, 64) // Account for profile image overlap
+                        .padding(.top, 64)
                         
                         // Action Buttons
-                        VStack(spacing: 12) {
-                            HStack(spacing: 16) {
-                                Button(action: { showEditProfile = true }) {
-                                    HStack {
-                                        Image(systemName: "pencil")
-                                        Text("Edit Profile")
-                                    }
-                                    .font(AppFont.medium(15))
-                                    .foregroundStyle(AppColor.accent)
-                                    .frame(height: 36)
-                                    .frame(maxWidth: .infinity)
-                                    .background(AppColor.accent.opacity(0.1))
-                                    .clipShape(RoundedRectangle(cornerRadius: 18))
+                        HStack(spacing: 16) {
+                            Button(action: { showEditProfile = true }) {
+                                HStack {
+                                    Image(systemName: "pencil")
+                                    Text("Edit Profile")
                                 }
-                                
-                                Button(action: { showingShareSheet = true }) {
-                                    HStack {
-                                        Image(systemName: "person.badge.plus")
-                                        Text("Invite")
-                                    }
-                                    .font(AppFont.medium(15))
-                                    .foregroundStyle(.white)
-                                    .frame(height: 36)
-                                    .frame(maxWidth: .infinity)
-                                    .background(AppColor.gradient)
-                                    .clipShape(RoundedRectangle(cornerRadius: 18))
+                                .font(AppFont.medium(15))
+                                .foregroundStyle(AppColor.accent)
+                                .frame(height: 44)
+                                .frame(maxWidth: .infinity)
+                                .background(AppColor.accent.opacity(0.1))
+                                .clipShape(RoundedRectangle(cornerRadius: 22))
+                            }
+                            
+                            Button(action: { showingShareSheet = true }) {
+                                HStack {
+                                    Image(systemName: "person.badge.plus")
+                                    Text("Invite")
                                 }
+                                .font(AppFont.medium(15))
+                                .foregroundStyle(.white)
+                                .frame(height: 44)
+                                .frame(maxWidth: .infinity)
+                                .background(AppColor.gradient)
+                                .clipShape(RoundedRectangle(cornerRadius: 22))
                             }
                         }
                         .padding(.horizontal, 32)
@@ -116,7 +114,7 @@ struct ProfileView: View {
                         
                         Spacer()
                         
-                        // Sign Out Button at the bottom
+                        // Sign Out Button
                         Button(action: { showSignOutAlert = true }) {
                             HStack {
                                 Image(systemName: "rectangle.portrait.and.arrow.right")
@@ -124,15 +122,14 @@ struct ProfileView: View {
                             }
                             .font(AppFont.medium(15))
                             .foregroundStyle(.red)
-                            .frame(height: 36)
+                            .frame(height: 44)
                             .frame(maxWidth: .infinity)
                             .background(Color.red.opacity(0.1))
-                            .clipShape(RoundedRectangle(cornerRadius: 18))
+                            .clipShape(RoundedRectangle(cornerRadius: 22))
                         }
                         .padding(.horizontal, 32)
-                        .padding(.bottom, 20)
+                        .padding(.bottom, 32)
                     }
-                    .padding(.vertical, 20)
                 }
             }
             .background(AppColor.background)
@@ -148,9 +145,9 @@ struct ProfileView: View {
                     ])
                 }
             }
-            .onChange(of: imageSelection) { newItem in
+            .onChange(of: imageSelection) { oldValue, newValue in
                 Task {
-                    if let data = try? await newItem?.loadTransferable(type: Data.self),
+                    if let data = try? await newValue?.loadTransferable(type: Data.self),
                        let image = UIImage(data: data) {
                         await MainActor.run {
                             selectedImage = image
@@ -201,13 +198,13 @@ struct ProfileView: View {
                 defaultProfileImage
             }
         }
-        .frame(width: 120, height: 120)
+        .frame(width: 140, height: 140)
         .clipShape(Circle())
         .overlay(
             Circle()
                 .stroke(.white, lineWidth: 4)
         )
-        .shadow(radius: 8)
+        .shadow(radius: 10)
     }
     
     private var defaultProfileImage: some View {
@@ -219,20 +216,54 @@ struct ProfileView: View {
     
     private var statsSection: some View {
         VStack(spacing: 24) {
-            // Stats Row - Only Total Votes
-            HStack {
+            // Stats Row
+            HStack(spacing: 20) {
                 StatItem(
                     icon: "checkmark.circle.fill",
                     value: userManager.currentUser?.votesCount ?? 0,
                     label: "Total Votes"
                 )
+                
+                // Interests Display
+                VStack(spacing: 8) {
+                    Image(systemName: "star.fill")
+                        .font(.system(size: 24))
+                        .foregroundStyle(AppColor.gradient)
+                    
+                    if let interests = userManager.currentUser?.topInterests, !interests.isEmpty {
+                        VStack(spacing: 4) {
+                            ForEach(interests.prefix(3), id: \.self) { interest in
+                                Text(interest)
+                                    .font(AppFont.medium(14))
+                                    .foregroundStyle(AppColor.text)
+                            }
+                            if interests.count > 3 {
+                                Text("+\(interests.count - 3) more")
+                                    .font(AppFont.regular(12))
+                                    .foregroundStyle(AppColor.secondaryText)
+                            }
+                        }
+                    } else {
+                        Text("No interests")
+                            .font(AppFont.regular(14))
+                            .foregroundStyle(AppColor.secondaryText)
+                    }
+                    
+                    Text("Interests")
+                        .font(AppFont.regular(14))
+                        .foregroundStyle(AppColor.secondaryText)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 16)
+                .background(AppColor.secondaryBackground)
+                .cornerRadius(16)
             }
             
             // Last Vote Date
             if let lastVoteDate = userManager.currentUser?.lastVoteDate {
                 HStack(spacing: 12) {
                     Image(systemName: "calendar")
-                        .font(.system(size: 18))
+                        .font(.system(size: 20))
                         .foregroundStyle(AppColor.gradient)
                     
                     VStack(alignment: .leading, spacing: 4) {
@@ -247,62 +278,50 @@ struct ProfileView: View {
                     
                     Spacer()
                 }
-                .padding(.horizontal, 8)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
+                .background(AppColor.secondaryBackground)
+                .cornerRadius(16)
             }
         }
-        .padding(.vertical, 24)
-        .padding(.horizontal, 32)
-        .background(Color(.systemBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 20))
-        .shadow(color: Color.black.opacity(0.05), radius: 10, y: 5)
+        .padding(.vertical, 16)
+        .padding(.horizontal, 20)
+        .background(AppColor.secondaryBackground)
+        .cornerRadius(20)
+    }
+    
+    private func interestsSection(interests: [String]) -> some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("Interests")
+                .font(AppFont.bold(18))
+                .foregroundStyle(AppColor.text)
+            
+            FlowLayout(spacing: 12) {
+                ForEach(interests, id: \.self) { interest in
+                    Text(interest)
+                        .font(AppFont.medium(14))
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
+                        .background(AppColor.gradient)
+                        .foregroundStyle(.white)
+                        .clipShape(Capsule())
+                }
+            }
+        }
+        .padding(20)
+        .background(AppColor.secondaryBackground)
+        .cornerRadius(20)
     }
     
     private func formatDate(_ date: Date) -> String {
         let formatter = DateFormatter()
-        formatter.dateStyle = .medium
+        formatter.dateFormat = "MMM d, yyyy"
         return formatter.string(from: date)
     }
     
-    private func interestsSection(interests: [String]) -> some View {
-        VStack(alignment: .leading, spacing: 20) {
-            Text("Interests")
-                .font(AppFont.bold(20))
-                .foregroundStyle(AppColor.text)
-            
-            FlowLayout(spacing: 10) {
-                ForEach(interests, id: \.self) { interest in
-                    Text(interest)
-                        .font(AppFont.medium(15))
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 8)
-                        .background(
-                            Capsule()
-                                .fill(AppColor.gradient.opacity(0.1))
-                        )
-                        .overlay(
-                            Capsule()
-                                .strokeBorder(AppColor.gradient.opacity(0.3), lineWidth: 1)
-                        )
-                        .foregroundStyle(AppColor.accent)
-                }
-            }
-        }
-        .padding(24)
-        .background(Color(.systemBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 20))
-        .shadow(color: Color.black.opacity(0.05), radius: 10, y: 5)
-    }
-    
-    private func createInviteLink() -> URL? {
-        guard let userId = userManager.currentUser?.id,
-              let username = userManager.currentUser?.username else { return nil }
-        
-        let baseURL = "https://yayonay.app/invite"
-        let inviteMessage = "\(username) is inviting you to vote on YayoNay!"
-        let encodedMessage = inviteMessage.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
-        let inviteURL = "\(baseURL)?ref=\(userId)&message=\(encodedMessage)"
-        
-        return URL(string: inviteURL)
+    private func createInviteLink() -> String? {
+        // Implement your invite link generation logic here
+        return "https://yayonay.app/invite/\(userManager.currentUser?.id ?? "")"
     }
 }
 
@@ -316,10 +335,9 @@ struct StatItem: View {
             Image(systemName: icon)
                 .font(.system(size: 24))
                 .foregroundStyle(AppColor.gradient)
-                .padding(.bottom, 4)
             
             Text("\(value)")
-                .font(AppFont.bold(28))
+                .font(AppFont.bold(24))
                 .foregroundStyle(AppColor.text)
             
             Text(label)
@@ -327,6 +345,9 @@ struct StatItem: View {
                 .foregroundStyle(AppColor.secondaryText)
         }
         .frame(maxWidth: .infinity)
+        .padding(.vertical, 16)
+        .background(AppColor.secondaryBackground)
+        .cornerRadius(16)
     }
 }
 

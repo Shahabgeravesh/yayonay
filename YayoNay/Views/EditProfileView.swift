@@ -39,8 +39,8 @@ struct EditProfileView: View {
             .toolbar {
                 toolbarItems
             }
-            .onChange(of: imageSelection) { newItem in
-                handleImageSelection(newItem)
+            .onChange(of: imageSelection) { oldValue, newValue in
+                handleImageSelection(newValue)
             }
         }
     }
