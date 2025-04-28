@@ -7,41 +7,43 @@ struct TopicBoxView: View {
     
     var body: some View {
         NavigationStack {
-            VStack(spacing: 16) {
+            VStack(spacing: 12) {
                 // Submit Button
                 Button(action: {
                     viewModel.showSubmitSheet = true
                 }) {
                     Text("Submit Your Topics Here")
-                        .font(.headline)
+                        .font(.system(size: 15, weight: .medium))
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
-                        .padding(.vertical, 12)
+                        .frame(height: 44)
                         .background(Color.blue)
-                        .cornerRadius(25)
+                        .clipShape(Capsule())
                 }
                 .padding(.horizontal)
                 
                 // Subtitle
                 Text("everyday you can suggest 5 topics for voting")
-                    .font(.caption)
+                    .font(.system(size: 12))
                     .foregroundColor(.secondary)
                 
                 // Sort Options
-                HStack(spacing: 16) {
-                    ForEach(TopicBoxViewModel.SortOption.allCases, id: \.self) { option in
-                        Button(action: { viewModel.sortOption = option }) {
-                            Text(option.rawValue)
-                                .font(.subheadline)
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 8)
-                                .background(viewModel.sortOption == option ? Color.blue : Color.clear)
-                                .foregroundColor(viewModel.sortOption == option ? .white : .primary)
-                                .clipShape(Capsule())
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        ForEach(TopicBoxViewModel.SortOption.allCases, id: \.self) { option in
+                            Button(action: { viewModel.sortOption = option }) {
+                                Text(option.rawValue)
+                                    .font(.system(size: 13, weight: .medium))
+                                    .padding(.horizontal, 12)
+                                    .frame(height: 32)
+                                    .background(viewModel.sortOption == option ? Color.blue : Color.gray.opacity(0.1))
+                                    .foregroundColor(viewModel.sortOption == option ? .white : .primary)
+                                    .clipShape(Capsule())
+                            }
                         }
                     }
+                    .padding(.horizontal)
                 }
-                .padding(.horizontal)
                 
                 // Topics List
                 List {
@@ -58,6 +60,8 @@ struct TopicBoxView: View {
                                 viewModel.shareViaMessage(topic)
                             }
                         )
+                        .listRowSeparator(.hidden)
+                        .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
                     }
                 }
                 .listStyle(.plain)
@@ -89,9 +93,9 @@ struct TopicRow: View {
     }()
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 8) {
             // User and Date Info
-            HStack {
+            HStack(alignment: .center, spacing: 8) {
                 // User Image
                 AsyncImage(url: URL(string: topic.userImage)) { image in
                     image
@@ -101,100 +105,107 @@ struct TopicRow: View {
                     Image(systemName: "person.circle.fill")
                         .resizable()
                 }
-                .frame(width: 40, height: 40)
+                .frame(width: 32, height: 32)
                 .clipShape(Circle())
                 
-                VStack(alignment: .leading, spacing: 4) {
+                VStack(alignment: .leading, spacing: 2) {
                     Text(topic.title)
-                        .font(.headline)
+                        .font(.system(size: 15, weight: .medium))
+                        .lineLimit(1)
                     
-                    HStack {
+                    HStack(spacing: 6) {
                         Text(topic.category)
-                            .font(.caption)
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 4)
+                            .font(.system(size: 11))
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
                             .background(Color.blue.opacity(0.1))
                             .foregroundColor(.blue)
-                            .cornerRadius(8)
+                            .clipShape(Capsule())
                         
                         Text("•")
+                            .font(.system(size: 11))
                             .foregroundStyle(.secondary)
                         
                         Text("Submitted: \(dateFormatter.string(from: topic.date))")
-                            .font(.caption)
+                            .font(.system(size: 11))
                             .foregroundStyle(.secondary)
                     }
-                }
-                
-                Spacer()
-            }
-            
-            // Voting Options and Actions
-            HStack {
-                // Vote counts
-                HStack(spacing: 16) {
-                    // Downvote button
-                    Button(action: { onVote(false) }) {
-                        VStack(spacing: 4) {
-                            Image(systemName: "hand.thumbsdown")
-                                .foregroundColor(topic.userVoteStatus == .downvoted ? .red : .gray)
-                            Text("\(topic.downvotes)")
-                                .font(.caption)
-                                .foregroundColor(topic.userVoteStatus == .downvoted ? .red : .gray)
-                        }
-                    }
-                    .buttonStyle(PlainButtonStyle())
-                    
-                    // Upvote button
-                    Button(action: { onVote(true) }) {
-                        VStack(spacing: 4) {
-                            Image(systemName: "hand.thumbsup")
-                                .foregroundColor(topic.userVoteStatus == .upvoted ? .green : .gray)
-                            Text("\(topic.upvotes)")
-                                .font(.caption)
-                                .foregroundColor(topic.userVoteStatus == .upvoted ? .green : .gray)
-                        }
-                    }
-                    .buttonStyle(PlainButtonStyle())
                 }
                 
                 Spacer()
                 
                 // Share buttons
-                HStack(spacing: 12) {
+                HStack(spacing: 8) {
                     // Text message share button
                     Button(action: onShareViaMessage) {
-                        Image(systemName: "message")
-                            .font(.system(size: 16))
-                            .foregroundStyle(AppColor.secondaryText)
+                        Image(systemName: "message.fill")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(.blue)
+                            .frame(width: 32, height: 32)
+                            .background(Color.blue.opacity(0.1))
+                            .clipShape(Circle())
                     }
                     
                     // General share button
-                    shareButton
+                    Button(action: {
+                        showingShareSheet = true
+                    }) {
+                        Image(systemName: "square.and.arrow.up")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(.gray)
+                            .frame(width: 32, height: 32)
+                            .background(Color.gray.opacity(0.1))
+                            .clipShape(Circle())
+                    }
+                    .sheet(isPresented: $showingShareSheet) {
+                        if let url = URL(string: "https://yayonay.app/topic/\(topic.id)") {
+                            ShareSheet(activityItems: [url])
+                        }
+                    }
                 }
             }
-        }
-        .padding()
-        .background(AppColor.secondaryBackground.opacity(0.5))
-        .cornerRadius(12)
-    }
-    
-    private var shareButton: some View {
-        Button(action: {
-            showingShareSheet = true
-        }) {
-            Image(systemName: "square.and.arrow.up")
-                .font(.system(size: 16, weight: .medium))
-                .foregroundColor(.gray)
-                .frame(width: 32, height: 32)
-                .background(AppColor.secondaryBackground.opacity(0.5))
-                .cornerRadius(12)
-        }
-        .sheet(isPresented: $showingShareSheet) {
-            if let url = URL(string: "https://yayonay.app/topic/\(topic.id)") {
-                ShareSheet(activityItems: [url])
+            
+            // Voting Options
+            HStack(spacing: 16) {
+                // Downvote button
+                Button(action: { onVote(false) }) {
+                    HStack(spacing: 4) {
+                        Image(systemName: "hand.thumbsdown")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(topic.userVoteStatus == .downvoted ? .red : .gray)
+                        Text("\(topic.downvotes)")
+                            .font(.system(size: 12))
+                            .foregroundColor(topic.userVoteStatus == .downvoted ? .red : .gray)
+                    }
+                    .frame(height: 32)
+                    .padding(.horizontal, 8)
+                    .background(topic.userVoteStatus == .downvoted ? Color.red.opacity(0.1) : Color.clear)
+                    .clipShape(Capsule())
+                }
+                .buttonStyle(PlainButtonStyle())
+                
+                // Upvote button
+                Button(action: { onVote(true) }) {
+                    HStack(spacing: 4) {
+                        Image(systemName: "hand.thumbsup")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(topic.userVoteStatus == .upvoted ? .green : .gray)
+                        Text("\(topic.upvotes)")
+                            .font(.system(size: 12))
+                            .foregroundColor(topic.userVoteStatus == .upvoted ? .green : .gray)
+                    }
+                    .frame(height: 32)
+                    .padding(.horizontal, 8)
+                    .background(topic.userVoteStatus == .upvoted ? Color.green.opacity(0.1) : Color.clear)
+                    .clipShape(Capsule())
+                }
+                .buttonStyle(PlainButtonStyle())
             }
         }
+        .padding(12)
+        .background(Color(.systemBackground))
+        .cornerRadius(12)
+        .shadow(color: .black.opacity(0.05), radius: 2, y: 1)
     }
 }
 
