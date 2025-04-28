@@ -23,6 +23,7 @@ struct SubCategoryStatsView: View {
     @State private var newComment = ""
     @State private var showShareSheet = false
     @State private var showResetConfirmation = false
+    @Environment(\.colorScheme) private var colorScheme
     
     init(subCategory: SubCategory) {
         print("🔍 DEBUG: Initializing SubCategoryStatsView")
@@ -81,15 +82,6 @@ struct SubCategoryStatsView: View {
                 VStack(spacing: 16) {
                     // Vote Distribution
                     HStack(spacing: 32) {
-                        // Yay Stats
-                        VStack(spacing: 4) {
-                            Text("\(Int(yayPercentage))%")
-                                .font(.title2)
-                                .fontWeight(.bold)
-                                .foregroundColor(.green)
-                        }
-                        .frame(maxWidth: .infinity)
-                        
                         // Nay Stats
                         VStack(spacing: 4) {
                             Text("\(Int(nayPercentage))%")
@@ -98,21 +90,30 @@ struct SubCategoryStatsView: View {
                                 .foregroundColor(.red)
                         }
                         .frame(maxWidth: .infinity)
+                        
+                        // Yay Stats
+                        VStack(spacing: 4) {
+                            Text("\(Int(yayPercentage))%")
+                                .font(.title2)
+                                .fontWeight(.bold)
+                                .foregroundColor(.green)
+                        }
+                        .frame(maxWidth: .infinity)
                     }
                     .padding(.top, 8)
                     
                     // Vote Bar
                     GeometryReader { geometry in
                         HStack(spacing: 2) {
-                            // Yay portion
-                            Rectangle()
-                                .fill(Color.green.opacity(0.7))
-                                .frame(width: geometry.size.width * CGFloat(yayPercentage / 100))
-                            
                             // Nay portion
                             Rectangle()
                                 .fill(Color.red.opacity(0.7))
                                 .frame(width: geometry.size.width * CGFloat(nayPercentage / 100))
+                            
+                            // Yay portion
+                            Rectangle()
+                                .fill(Color.green.opacity(0.7))
+                                .frame(width: geometry.size.width * CGFloat(yayPercentage / 100))
                         }
                     }
                     .frame(height: 12)
@@ -144,8 +145,115 @@ struct SubCategoryStatsView: View {
                 .clipShape(Capsule())
                 .shadow(color: .black.opacity(0.05), radius: 2, y: 1)
                 
-                // Add Social Sharing
-                SocialSharingView(subCategory: statsViewModel.currentSubCategory)
+                // Social Sharing Section
+                VStack(spacing: 16) {
+                    Text("Share")
+                        .font(.headline)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal)
+                    
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 12) {
+                            // Facebook
+                            Button(action: {
+                                if let url = URL(string: "https://www.facebook.com/sharer/sharer.php?u=\(statsViewModel.currentSubCategory.imageURL)") {
+                                    UIApplication.shared.open(url)
+                                }
+                            }) {
+                                HStack(spacing: 6) {
+                                    Image(systemName: "square.and.arrow.up")
+                                        .font(.system(size: 16, weight: .medium))
+                                    Text("Facebook")
+                                        .font(.system(size: 14, weight: .medium))
+                                }
+                                .frame(minWidth: 44, minHeight: 44)
+                                .padding(.horizontal, 12)
+                                .background(Color(red: 0.23, green: 0.35, blue: 0.60).opacity(0.1))
+                                .foregroundColor(Color(red: 0.23, green: 0.35, blue: 0.60))
+                                .clipShape(Capsule())
+                            }
+                            
+                            // Twitter/X
+                            Button(action: {
+                                let shareText = "Check out \(statsViewModel.currentSubCategory.name) on YayoNay! \(statsViewModel.currentSubCategory.yayCount) people voted Yay and \(statsViewModel.currentSubCategory.nayCount) voted Nay. What do you think? #YayoNay"
+                                if let url = URL(string: "https://twitter.com/intent/tweet?text=\(shareText.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")") {
+                                    UIApplication.shared.open(url)
+                                }
+                            }) {
+                                HStack(spacing: 6) {
+                                    Image(systemName: "square.and.arrow.up")
+                                        .font(.system(size: 16, weight: .medium))
+                                    Text("Twitter")
+                                        .font(.system(size: 14, weight: .medium))
+                                }
+                                .frame(minWidth: 44, minHeight: 44)
+                                .padding(.horizontal, 12)
+                                .background(Color.black.opacity(0.1))
+                                .foregroundColor(.black)
+                                .clipShape(Capsule())
+                            }
+                            
+                            // Instagram
+                            Button(action: {
+                                if let url = URL(string: "instagram://app") {
+                                    if UIApplication.shared.canOpenURL(url) {
+                                        UIApplication.shared.open(url)
+                                    } else {
+                                        if let webURL = URL(string: "https://www.instagram.com/") {
+                                            UIApplication.shared.open(webURL)
+                                        }
+                                    }
+                                }
+                            }) {
+                                HStack(spacing: 6) {
+                                    Image(systemName: "square.and.arrow.up")
+                                        .font(.system(size: 16, weight: .medium))
+                                    Text("Instagram")
+                                        .font(.system(size: 14, weight: .medium))
+                                }
+                                .frame(minWidth: 44, minHeight: 44)
+                                .padding(.horizontal, 12)
+                                .background(Color(red: 0.83, green: 0.18, blue: 0.42).opacity(0.1))
+                                .foregroundColor(Color(red: 0.83, green: 0.18, blue: 0.42))
+                                .clipShape(Capsule())
+                            }
+                            
+                            // Message
+                            Button(action: {
+                                let shareText = "Check out \(statsViewModel.currentSubCategory.name) on YayoNay! \(statsViewModel.currentSubCategory.yayCount) people voted Yay and \(statsViewModel.currentSubCategory.nayCount) voted Nay. What do you think? #YayoNay"
+                                let activityVC = UIActivityViewController(
+                                    activityItems: [shareText, URL(string: statsViewModel.currentSubCategory.imageURL) as Any],
+                                    applicationActivities: nil
+                                )
+                                
+                                if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+                                   let window = windowScene.windows.first,
+                                   let rootVC = window.rootViewController {
+                                    rootVC.present(activityVC, animated: true)
+                                }
+                            }) {
+                                HStack(spacing: 6) {
+                                    Image(systemName: "message.fill")
+                                        .font(.system(size: 16, weight: .medium))
+                                    Text("Message")
+                                        .font(.system(size: 14, weight: .medium))
+                                }
+                                .frame(minWidth: 44, minHeight: 44)
+                                .padding(.horizontal, 12)
+                                .background(Color.blue.opacity(0.1))
+                                .foregroundColor(.blue)
+                                .clipShape(Capsule())
+                            }
+                        }
+                        .padding(.horizontal)
+                    }
+                }
+                .padding(.vertical)
+                .background(Color(.systemBackground))
+                .cornerRadius(12)
+                .shadow(color: colorScheme == .dark ? .black.opacity(0.2) : .black.opacity(0.05),
+                        radius: colorScheme == .dark ? 3 : 3,
+                        y: colorScheme == .dark ? 1 : 1)
                 
                 // Sub-Questions Section
                 if !statsViewModel.subQuestions.isEmpty {
@@ -335,23 +443,23 @@ struct AttributeVoteRow: View {
                 // Show results
                 VStack(spacing: 8) {
                     HStack {
-                        Text("Yay: \(votes.yayCount)")
-                            .foregroundColor(.green)
-                        Spacer()
                         Text("Nay: \(votes.nayCount)")
                             .foregroundColor(.red)
+                        Spacer()
+                        Text("Yay: \(votes.yayCount)")
+                            .foregroundColor(.green)
                     }
                     .font(.subheadline)
                     
                     GeometryReader { geometry in
                         HStack(spacing: 0) {
                             Rectangle()
-                                .fill(Color.green.opacity(0.3))
-                                .frame(width: geometry.size.width * CGFloat(votes.yayPercentage / 100))
-                            
-                            Rectangle()
                                 .fill(Color.red.opacity(0.3))
                                 .frame(width: geometry.size.width * CGFloat((100 - votes.yayPercentage) / 100))
+                            
+                            Rectangle()
+                                .fill(Color.green.opacity(0.3))
+                                .frame(width: geometry.size.width * CGFloat(votes.yayPercentage / 100))
                         }
                     }
                     .frame(height: 8)
@@ -547,4 +655,4 @@ struct SubQuestionRow: View {
             y: colorScheme == .dark ? 1 : 1
         )
     }
-} 
+}
