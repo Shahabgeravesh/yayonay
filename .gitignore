@@ -115,4 +115,4 @@ GoogleService-Info.plist
 .idea/
 .vscode/
 *.swp
-*.swo
+*.swoserviceAccountKey.json

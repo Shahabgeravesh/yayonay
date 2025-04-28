@@ -8,7 +8,6 @@ struct CategoryDetailView: View {
     @State private var offset: CGFloat = 0
     @State private var backgroundColor: Color = .white
     @State private var isLoading = true
-    @State private var showingImportAlert = false
     @State private var isRefreshing = false
     @State private var isAnimatingCard = false
     @State private var showingCooldownAlert = false
@@ -67,20 +66,6 @@ struct CategoryDetailView: View {
                 }
             }
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(action: { showingImportAlert = true }) {
-                        Image(systemName: "square.and.arrow.down")
-                            .imageScale(.large)
-                    }
-                }
-            }
-            .alert("Import Items", isPresented: $showingImportAlert) {
-                Button("Import", role: .none) { importSubcategories() }
-                Button("Cancel", role: .cancel) { }
-            } message: {
-                Text("Would you like to import sample items for this category?")
-            }
             .alert("Vote Cooldown", isPresented: $showingCooldownAlert) {
                 Button("OK", role: .cancel) { }
             } message: {
@@ -154,7 +139,6 @@ struct CategoryDetailView: View {
                 DispatchQueue.main.async {
                     // Save vote and update count
                     self.saveVote(for: subCategory, isYay: isYay)
-                    self.viewModel.vote(for: subCategory, isYay: isYay)
             
             // Animate card off screen
             withAnimation(.interpolatingSpring(stiffness: 180, damping: 100)) {
@@ -382,58 +366,6 @@ struct CategoryDetailView: View {
         }
     }
     
-    private func importSubcategories() {
-        print("⭐️ Starting import for category:", category.name)
-        print("⭐️ Category ID:", category.id)
-        isLoading = true
-        
-        switch category.name.lowercased() {
-        case "fruit":
-            SubCategoryImporter.shared.importFruitSubcategories(categoryId: category.id) { success in
-                if success { refreshAfterImport() }
-            }
-        case "food":
-            SubCategoryImporter.shared.importFoodSubcategories(categoryId: category.id) { success in
-                if success { refreshAfterImport() }
-            }
-        case "drink":
-            SubCategoryImporter.shared.importDrinkSubcategories(categoryId: category.id) { success in
-                if success { refreshAfterImport() }
-            }
-        case "dessert":
-            SubCategoryImporter.shared.importDessertSubcategories(categoryId: category.id) { success in
-                if success { refreshAfterImport() }
-            }
-        case "sports":
-            SubCategoryImporter.shared.importSportsSubcategories(categoryId: category.id) { success in
-                if success { refreshAfterImport() }
-            }
-        case "hike":
-            SubCategoryImporter.shared.importHikeSubcategories(categoryId: category.id) { success in
-                if success { refreshAfterImport() }
-            }
-        case "travel":
-            SubCategoryImporter.shared.importTravelSubcategories(categoryId: category.id) { success in
-                if success { refreshAfterImport() }
-            }
-        case "art":
-            SubCategoryImporter.shared.importArtSubcategories(categoryId: category.id) { success in
-                if success { refreshAfterImport() }
-            }
-        default:
-            print("❌ No subcategories defined for category: \(category.name)")
-            isLoading = false
-        }
-    }
-    
-    private func refreshAfterImport() {
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-            print("🔄 Refreshing data after import")
-            viewModel.fetchSubCategories(for: category.id)
-            isLoading = false
-        }
-    }
-    
     private var emptyState: some View {
         VStack(spacing: 24) {
             Image(systemName: "photo.stack")
@@ -444,15 +376,6 @@ struct CategoryDetailView: View {
             Text("No items yet")
                 .font(.title2.weight(.semibold))
                 .foregroundStyle(.secondary)
-            
-            Button(action: { showingImportAlert = true }) {
-                Label("Import Items", systemImage: "square.and.arrow.down")
-                    .font(.headline)
-                    .padding(.horizontal, 24)
-                    .padding(.vertical, 12)
-            }
-            .buttonStyle(.borderedProminent)
-            .tint(.blue)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color(.systemGroupedBackground))

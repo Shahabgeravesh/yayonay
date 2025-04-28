@@ -8,7 +8,6 @@
 
 /* Begin PBXBuildFile section */
 		BA2984202DB06E6300D5CBBF /* FirebaseMessaging in Frameworks */ = {isa = PBXBuildFile; productRef = BA29841F2DB06E6300D5CBBF /* FirebaseMessaging */; };
-		BA6C207B2DBC47E30063E70A /* serviceAccountKey.json in Resources */ = {isa = PBXBuildFile; fileRef = BA6C207A2DBC47E30063E70A /* serviceAccountKey.json */; };
 		BAE90E602D869B810067F715 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = BAE90E5F2D869B810067F715 /* FirebaseAuth */; };
 		BAE90E622D869B810067F715 /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = BAE90E612D869B810067F715 /* FirebaseFirestore */; };
 		BAE90E642D869B810067F715 /* FirebaseStorage in Frameworks */ = {isa = PBXBuildFile; productRef = BAE90E632D869B810067F715 /* FirebaseStorage */; };
@@ -35,7 +34,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		BA6C207A2DBC47E30063E70A /* serviceAccountKey.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = serviceAccountKey.json; sourceTree = "<group>"; };
+		BA0A4DEB2DBF01B00031508B /* serviceAccountKey.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = serviceAccountKey.json; sourceTree = "<group>"; };
 		BAE90E212D8699540067F715 /* YayoNay.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = YayoNay.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		BAE90E322D8699550067F715 /* YayoNayTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = YayoNayTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		BAE90E3C2D8699550067F715 /* YayoNayUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = YayoNayUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -112,7 +111,6 @@
 				BAE90E3F2D8699550067F715 /* YayoNayUITests */,
 				BAE90E222D8699540067F715 /* Products */,
 				BAE90F322D893CF80067F715 /* GoogleService-Info.plist */,
-				BA6C207A2DBC47E30063E70A /* serviceAccountKey.json */,
 			);
 			sourceTree = "<group>";
 		};
@@ -122,6 +120,7 @@
 				BAE90E212D8699540067F715 /* YayoNay.app */,
 				BAE90E322D8699550067F715 /* YayoNayTests.xctest */,
 				BAE90E3C2D8699550067F715 /* YayoNayUITests.xctest */,
+				BA0A4DEB2DBF01B00031508B /* serviceAccountKey.json */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -256,7 +255,6 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				BA6C207B2DBC47E30063E70A /* serviceAccountKey.json in Resources */,
 				BAE90F332D893CF80067F715 /* GoogleService-Info.plist in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

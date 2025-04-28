@@ -597,17 +597,15 @@ class SubCategoryStatsViewModel: ObservableObject {
                     
                     guard let documents = snapshot?.documents else { return }
                     
-                    let batch = self?.db.batch()
-                    
                     // Add each reply to the batch delete
                     for document in documents {
-                        batch?.deleteDocument(document.reference)
+                        batch.deleteDocument(document.reference)
                     }
                     
-                    // Commit the batch delete
-                    batch?.commit { error in
+                    // Commit the batch delete (includes both parent and replies)
+                    batch.commit { error in
                         if let error = error {
-                            print("DEBUG: Error deleting replies: \(error.localizedDescription)")
+                            print("DEBUG: Error deleting comment and replies: \(error.localizedDescription)")
                         } else {
                             print("DEBUG: Successfully deleted comment and its replies")
                         }

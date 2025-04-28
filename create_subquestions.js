@@ -18,13 +18,45 @@ const categoryQuestions = {
     "Service",
     "Ambiance"
   ],
-  "Movies": [
-    "Plot",
-    "Acting",
-    "Cinematography",
-    "Soundtrack",
-    "Pacing",
-    "Ending"
+  "Drinks": [
+    "Taste",
+    "Presentation",
+    "Quality",
+    "Value",
+    "Service",
+    "Atmosphere"
+  ],
+  "Dessert": [
+    "Taste",
+    "Presentation",
+    "Sweetness",
+    "Texture",
+    "Portion Size",
+    "Value"
+  ],
+  "Sports": [
+    "Skill Level",
+    "Entertainment Value",
+    "Athleticism",
+    "Strategy",
+    "Teamwork",
+    "Competition"
+  ],
+  "Travel": [
+    "Location",
+    "Accessibility",
+    "Cleanliness",
+    "Atmosphere",
+    "Facilities",
+    "Value"
+  ],
+  "Art": [
+    "Creativity",
+    "Technique",
+    "Originality",
+    "Emotional Impact",
+    "Aesthetics",
+    "Message"
   ],
   "Music": [
     "Melody",
@@ -34,6 +66,14 @@ const categoryQuestions = {
     "Instrumentation",
     "Vibe"
   ],
+  "Movies": [
+    "Plot",
+    "Acting",
+    "Cinematography",
+    "Soundtrack",
+    "Pacing",
+    "Ending"
+  ],
   "Books": [
     "Writing Style",
     "Character Development",
@@ -41,6 +81,46 @@ const categoryQuestions = {
     "Pacing",
     "World Building",
     "Ending"
+  ],
+  "Technology": [
+    "Functionality",
+    "Design",
+    "Performance",
+    "User Experience",
+    "Innovation",
+    "Value"
+  ],
+  "Fashion": [
+    "Style",
+    "Quality",
+    "Fit",
+    "Trendiness",
+    "Versatility",
+    "Value"
+  ],
+  "Pets": [
+    "Temperament",
+    "Trainability",
+    "Health",
+    "Grooming Needs",
+    "Compatibility",
+    "Lifespan"
+  ],
+  "Home Decor": [
+    "Style",
+    "Quality",
+    "Functionality",
+    "Aesthetics",
+    "Durability",
+    "Value"
+  ],
+  "Fitness": [
+    "Effectiveness",
+    "Difficulty",
+    "Equipment Needs",
+    "Time Commitment",
+    "Results",
+    "Enjoyment"
   ],
   "Gaming": [
     "Gameplay",
@@ -50,13 +130,53 @@ const categoryQuestions = {
     "Replay Value",
     "Multiplayer"
   ],
-  "Travel": [
-    "Location",
-    "Accessibility",
-    "Cleanliness",
-    "Atmosphere",
-    "Facilities",
+  "Beauty": [
+    "Quality",
+    "Results",
+    "Application",
+    "Packaging",
+    "Ingredients",
     "Value"
+  ],
+  "Cars": [
+    "Performance",
+    "Design",
+    "Comfort",
+    "Reliability",
+    "Features",
+    "Value"
+  ],
+  "Photography": [
+    "Composition",
+    "Lighting",
+    "Subject",
+    "Technical Quality",
+    "Creativity",
+    "Impact"
+  ],
+  "Nature": [
+    "Beauty",
+    "Accessibility",
+    "Wildlife",
+    "Conservation",
+    "Educational Value",
+    "Experience"
+  ],
+  "DIY": [
+    "Difficulty",
+    "Cost",
+    "Time Required",
+    "Results",
+    "Learning Value",
+    "Satisfaction"
+  ],
+  "Politics": [
+    "Policy",
+    "Leadership",
+    "Integrity",
+    "Communication",
+    "Experience",
+    "Vision"
   ]
 };
 
