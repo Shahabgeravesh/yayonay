@@ -20,7 +20,21 @@ class TopicBoxViewModel: ObservableObject {
     enum SortOption: String, CaseIterable {
         case date = "Date"
         case mostPopular = "Most Popular"
-        case saved = "Saved"
+    }
+    
+    var sortedTopics: [Topic] {
+        switch sortOption {
+        case .date:
+            return topics.sorted { $0.date > $1.date }
+        case .mostPopular:
+            return topics.sorted {
+                if $0.upvotes != $1.upvotes {
+                    return $0.upvotes > $1.upvotes
+                } else {
+                    return $0.date > $1.date
+                }
+            }
+        }
     }
     
     func fetchTopics() {
@@ -28,18 +42,7 @@ class TopicBoxViewModel: ObservableObject {
         
         let baseQuery = db.collection("topics")
         
-        let sortedQuery: Query
-        switch sortOption {
-        case .date:
-            sortedQuery = baseQuery.order(by: "date", descending: true)
-        case .mostPopular:
-            sortedQuery = baseQuery.order(by: "upvotes", descending: true)
-                .order(by: "date", descending: true)
-        case .saved:
-            sortedQuery = baseQuery.order(by: "date", descending: true)
-        }
-        
-        listener = sortedQuery.addSnapshotListener { [weak self] snapshot, error in
+        listener = baseQuery.addSnapshotListener { [weak self] snapshot, error in
             guard let self = self,
                   let documents = snapshot?.documents else {
                 print("Error fetching topics: \(error?.localizedDescription ?? "Unknown error")")
@@ -48,17 +51,6 @@ class TopicBoxViewModel: ObservableObject {
             
             self.topics = documents.compactMap { document in
                 Topic(document: document)
-            }
-            
-            // Additional sorting for Most Popular to ensure proper ordering
-            if self.sortOption == .mostPopular {
-                self.topics.sort { 
-                    if $0.upvotes != $1.upvotes {
-                        return $0.upvotes > $1.upvotes
-                    } else {
-                        return $0.date > $1.date
-                    }
-                }
             }
         }
         

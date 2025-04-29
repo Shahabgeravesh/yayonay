@@ -60,7 +60,7 @@ struct TopicBoxView: View {
                 
                 // Topics List
                 List {
-                    ForEach(viewModel.topics) { topic in
+                    ForEach(viewModel.sortedTopics) { topic in
                         TopicRow(
                             topic: topic,
                             onVote: { isUpvote in
@@ -111,15 +111,6 @@ struct TopicRow: View {
     let onShare: () -> Void
     let onShareViaMessage: () -> Void
     
-    @State private var showingShareSheet = false
-    
-    private let dateFormatter: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.dateStyle = .medium
-        formatter.timeStyle = .short
-        return formatter
-    }()
-    
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             // User and Date Info
@@ -162,35 +153,16 @@ struct TopicRow: View {
                 
                 Spacer()
                 
-                // Share buttons
-                HStack(spacing: 8) {
-                    // Text message share button
-                    Button(action: onShareViaMessage) {
-                        Image(systemName: "message.fill")
-                            .font(.system(size: 14, weight: .medium))
-                            .foregroundColor(.blue)
-                            .frame(width: 32, height: 32)
-                            .background(Color.blue.opacity(0.1))
-                            .clipShape(Circle())
-                    }
-                    
-                    // General share button
-                    Button(action: {
-                        showingShareSheet = true
-                    }) {
-                        Image(systemName: "square.and.arrow.up")
-                            .font(.system(size: 14, weight: .medium))
-                            .foregroundColor(.gray)
-                            .frame(width: 32, height: 32)
-                            .background(Color.gray.opacity(0.1))
-                            .clipShape(Circle())
-                    }
-                    .sheet(isPresented: $showingShareSheet) {
-                        if let url = URL(string: "https://yayonay.app/topic/\(topic.id)") {
-                            ShareSheet(activityItems: [url])
-                        }
-                    }
+                // Share button
+                Button(action: onShare) {
+                    Image(systemName: "square.and.arrow.up")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.gray)
+                        .frame(width: 32, height: 32)
+                        .background(Color.gray.opacity(0.1))
+                        .clipShape(Circle())
                 }
+                .buttonStyle(PlainButtonStyle())
             }
             
             // Voting Options
@@ -235,6 +207,13 @@ struct TopicRow: View {
         .cornerRadius(12)
         .shadow(color: .black.opacity(0.05), radius: 2, y: 1)
     }
+    
+    private let dateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .short
+        return formatter
+    }()
 }
 
 #Preview {
