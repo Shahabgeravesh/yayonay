@@ -157,25 +157,25 @@ struct CategoryDetailView: View {
                 DispatchQueue.main.async {
                     // Save vote and update count
                     self.saveVote(for: subCategory, isYay: isYay)
-                    
+            
                     // Add to voted subcategories
                     self.votedSubCategoryIds.insert(subCategory.id)
                     
-                    // Animate card off screen
-                    withAnimation(.interpolatingSpring(stiffness: 180, damping: 100)) {
-                        self.offset = offset > 0 ? 1000 : -1000
+            // Animate card off screen
+            withAnimation(.interpolatingSpring(stiffness: 180, damping: 100)) {
+                self.offset = offset > 0 ? 1000 : -1000
                         self.backgroundColor = .white
-                    }
-                    
-                    // Move to next item immediately but delay resetting the card position
+            }
+            
+            // Move to next item immediately but delay resetting the card position
                     self.viewModel.nextItem()
-                    
-                    // Reset card position and animation state
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                        withAnimation(nil) {
-                            self.offset = 0
-                        }
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            
+            // Reset card position and animation state
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                withAnimation(nil) {
+                    self.offset = 0
+                }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                             self.isAnimatingCard = false
                         }
                     }
@@ -194,7 +194,7 @@ struct CategoryDetailView: View {
         guard let userId = Auth.auth().currentUser?.uid else { return }
         
         let db = Firestore.firestore()
-        let batch = db.batch()
+                    let batch = db.batch()
         
         // Create vote document
         let voteData: [String: Any] = [
@@ -202,8 +202,8 @@ struct CategoryDetailView: View {
             "imageURL": subCategory.imageURL,
             "isYay": isYay,
             "date": Timestamp(date: Date()),
-            "categoryName": self.category.name,
-            "categoryId": self.category.id,
+                "categoryName": self.category.name,
+                "categoryId": self.category.id,
             "subCategoryId": subCategory.id,
             "userId": userId
         ]

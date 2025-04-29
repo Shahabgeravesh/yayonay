@@ -84,7 +84,7 @@ class TopicBoxViewModel: ObservableObject {
                 if calendar.isDateInToday(lastSubmissionDate) {
                     self.dailySubmissionCount = data["dailySubmissionCount"] as? Int ?? 0
                     self.lastSubmissionDate = lastSubmissionDate
-                } else {
+                    } else {
                     // Reset count if last submission was not today
                     self.dailySubmissionCount = 0
                     self.lastSubmissionDate = nil

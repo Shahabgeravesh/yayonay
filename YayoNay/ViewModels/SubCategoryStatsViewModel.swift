@@ -645,7 +645,7 @@ class SubCategoryStatsViewModel: ObservableObject {
                     completion(false)
                 } else {
                     print("DEBUG: Successfully reset votes")
-                    // Update the UI
+        // Update the UI
                     self.objectWillChange.send()
                     completion(true)
                 }

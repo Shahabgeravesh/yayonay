@@ -14,7 +14,7 @@ struct TopicBoxView: View {
                     if viewModel.dailySubmissionCount >= viewModel.DAILY_SUBMISSION_LIMIT {
                         showErrorAlert = true
                     } else {
-                        viewModel.showSubmitSheet = true
+                    viewModel.showSubmitSheet = true
                     }
                 }) {
                     Text("Submit Your Topics Here")
@@ -35,7 +35,7 @@ struct TopicBoxView: View {
                     
                     if viewModel.dailySubmissionCount >= viewModel.DAILY_SUBMISSION_LIMIT {
                         Text("(Limit reached)")
-                            .font(.system(size: 12))
+                    .font(.system(size: 12))
                             .foregroundColor(.red)
                     }
                 }
@@ -155,13 +155,13 @@ struct TopicRow: View {
                 
                 // Share button
                 Button(action: onShare) {
-                    Image(systemName: "square.and.arrow.up")
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(.gray)
-                        .frame(width: 32, height: 32)
-                        .background(Color.gray.opacity(0.1))
-                        .clipShape(Circle())
-                }
+                        Image(systemName: "square.and.arrow.up")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(.gray)
+                            .frame(width: 32, height: 32)
+                            .background(Color.gray.opacity(0.1))
+                            .clipShape(Circle())
+                    }
                 .buttonStyle(PlainButtonStyle())
             }
             

@@ -382,48 +382,48 @@ struct SubCategoryStatsView: View {
                 
                 // Update Vote Reset Button section
                 VStack(spacing: 12) {
-                    if let lastVoteDate = statsViewModel.lastVoteDate {
-                        let nextVoteDate = Calendar.current.date(byAdding: .day, value: 7, to: lastVoteDate) ?? Date()
+                        if let lastVoteDate = statsViewModel.lastVoteDate {
+                            let nextVoteDate = Calendar.current.date(byAdding: .day, value: 7, to: lastVoteDate) ?? Date()
                         let canReset = timerState.timeRemaining <= 0
-                        
-                        Button(action: {
-                            if canReset {
-                                HapticManager.shared.buttonPress()
-                                showResetConfirmation = true
-                            }
-                        }) {
-                            HStack(spacing: 8) {
-                                Image(systemName: canReset ? "arrow.clockwise.circle.fill" : "clock.fill")
-                                    .font(.system(size: 18))
-                                Text(canReset ? "Change My Vote" : "Time Remaining: \(formatTimeRemaining(timerState.timeRemaining))")
-                                    .font(.system(size: 15, weight: .semibold))
-                            }
-                            .foregroundColor(canReset ? .white : .secondary)
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 12)
-                            .background(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .fill(canReset ? Color.blue : Color.gray.opacity(0.2))
-                            )
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .stroke(canReset ? Color.blue : Color.gray.opacity(0.3), lineWidth: 1)
-                            )
-                            .shadow(color: canReset ? Color.blue.opacity(0.3) : Color.clear, radius: 4, x: 0, y: 2)
-                        }
-                        .disabled(!canReset)
-                        .scaleEffect(canReset ? 1.0 : 0.95)
-                        .animation(.spring(response: 0.3, dampingFraction: 0.6), value: canReset)
-                        
-                        if !canReset {
-                            Text("You voted on \(formatDate(lastVoteDate))")
-                                .font(.system(size: 13))
-                                .foregroundColor(.secondary)
                             
-                            Text("You can change your vote on \(formatDate(nextVoteDate))")
-                                .font(.system(size: 13))
-                                .foregroundColor(.secondary)
-                        }
+                            Button(action: {
+                                if canReset {
+                                HapticManager.shared.buttonPress()
+                                    showResetConfirmation = true
+                                }
+                            }) {
+                                HStack(spacing: 8) {
+                                Image(systemName: canReset ? "arrow.clockwise.circle.fill" : "clock.fill")
+                                        .font(.system(size: 18))
+                                Text(canReset ? "Change My Vote" : "Time Remaining: \(formatTimeRemaining(timerState.timeRemaining))")
+                                        .font(.system(size: 15, weight: .semibold))
+                                }
+                                .foregroundColor(canReset ? .white : .secondary)
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 12)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .fill(canReset ? Color.blue : Color.gray.opacity(0.2))
+                                )
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .stroke(canReset ? Color.blue : Color.gray.opacity(0.3), lineWidth: 1)
+                                )
+                                .shadow(color: canReset ? Color.blue.opacity(0.3) : Color.clear, radius: 4, x: 0, y: 2)
+                            }
+                            .disabled(!canReset)
+                            .scaleEffect(canReset ? 1.0 : 0.95)
+                            .animation(.spring(response: 0.3, dampingFraction: 0.6), value: canReset)
+                            
+                            if !canReset {
+                                Text("You voted on \(formatDate(lastVoteDate))")
+                                    .font(.system(size: 13))
+                                    .foregroundColor(.secondary)
+                                
+                                Text("You can change your vote on \(formatDate(nextVoteDate))")
+                                    .font(.system(size: 13))
+                                    .foregroundColor(.secondary)
+                            }
                     } else {
                         // Show disabled button when no vote exists
                         Button(action: {}) {
@@ -444,7 +444,7 @@ struct SubCategoryStatsView: View {
                                 RoundedRectangle(cornerRadius: 12)
                                     .stroke(Color.gray.opacity(0.3), lineWidth: 1)
                             )
-                        }
+                }
                         .disabled(true)
                     }
                 }
@@ -852,15 +852,15 @@ struct SubQuestionRow: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 8) {
-                // Question text
-                Text(question.question)
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundColor(AppColor.text)
-                    .lineLimit(1)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                
-                // Vote Bar with Percentage and Total Votes
+        HStack(spacing: 8) {
+            // Question text
+            Text(question.question)
+                .font(.system(size: 12, weight: .medium))
+                .foregroundColor(AppColor.text)
+                .lineLimit(1)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            
+            // Vote Bar with Percentage and Total Votes
                 VStack(alignment: .trailing, spacing: 4) {
                     Text("\(question.totalVotes) votes")
                         .font(.system(size: 10))
@@ -881,49 +881,49 @@ struct SubQuestionRow: View {
                     }
                     .frame(width: 50)
                 }
-            }
-            
+                        }
+                        
             // Voting buttons or status
             if !hasVoted && canVote {
                 HStack(spacing: 12) {
-                    Button(action: { 
+                                Button(action: {
                         HapticManager.shared.voteSuccess()
-                        onVote(true) 
-                    }) {
+                                        onVote(true)
+                                }) {
                         HStack {
                             Image(systemName: "hand.thumbsup.fill")
-                            Text("Yay")
+                                    Text("Yay")
                         }
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 8)
                         .background(Color.green.opacity(0.1))
                         .foregroundColor(.green)
                         .cornerRadius(8)
-                    }
-                    
-                    Button(action: { 
+                                }
+                                
+                                Button(action: {
                         HapticManager.shared.voteSuccess()
-                        onVote(false) 
-                    }) {
+                                        onVote(false)
+                                }) {
                         HStack {
                             Image(systemName: "hand.thumbsdown.fill")
-                            Text("Nay")
+                                    Text("Nay")
                         }
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 8)
                         .background(Color.red.opacity(0.1))
                         .foregroundColor(.red)
                         .cornerRadius(8)
-                    }
-                }
-            } else {
-                HStack {
+                                }
+                            }
+                        } else {
+                            HStack {
                     Text(hasVoted ? "You voted" : "Can't vote yet")
                         .font(.system(size: 12))
                         .foregroundColor(.secondary)
-                    
-                    Spacer()
-                    
+                                
+                                Spacer()
+                                
                     if let nextDate = nextVoteDate {
                         Text("Next vote: \(formatDate(nextDate))")
                             .font(.system(size: 12))
@@ -936,7 +936,7 @@ struct SubQuestionRow: View {
         .background(Color(.systemBackground))
         .cornerRadius(12)
         .shadow(color: colorScheme == .dark ? .black.opacity(0.2) : .black.opacity(0.05),
-                radius: colorScheme == .dark ? 3 : 3,
+            radius: colorScheme == .dark ? 3 : 3,
                 y: colorScheme == .dark ? 1 : 1)
     }
     

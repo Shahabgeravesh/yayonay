@@ -5,6 +5,12 @@ import FirebaseAuth
 struct VotingView: View {
     @StateObject private var viewModel: VotingViewModel
     @EnvironmentObject var userManager: UserManager
+    @State private var offset: CGSize = .zero
+    @State private var scale: CGFloat = 1.0
+    @State private var rotation: Double = 0
+    @State private var showVoteFeedback = false
+    @State private var voteChoice: String = ""
+    @State private var isAnimating = false
     
     init(category: String) {
         _viewModel = StateObject(wrappedValue: VotingViewModel(category: category))
@@ -15,26 +21,110 @@ struct VotingView: View {
     }
     
     var body: some View {
-        VStack(spacing: 20) {
-            // Topic Display
-            Text(viewModel.topic.title)
-                .font(AppFont.bold(24))
-                .multilineTextAlignment(.center)
-                .padding(.horizontal)
+        ZStack {
+            // Background
+            Color(.systemGroupedBackground)
+                .ignoresSafeArea()
             
-            // Options
-            VStack(spacing: 16) {
-                // Option A
-                voteButton(choice: viewModel.topic.optionA)
+            VStack(spacing: 0) {
+                // Topic Card
+                ZStack {
+                    // Card
+                    VStack(spacing: 24) {
+                        // Topic Title
+                        Text(viewModel.topic.title)
+                            .font(.system(size: 32, weight: .bold))
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 32)
+                            .padding(.top, 40)
+                        
+                        Spacer()
+                        
+                        // Vote Buttons
+                        HStack(spacing: 24) {
+                            // Nay Button
+                            voteButton(choice: viewModel.topic.optionB, isYay: false)
+                            
+                            // Yay Button
+                            voteButton(choice: viewModel.topic.optionA, isYay: true)
+                        }
+                        .padding(.bottom, 40)
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(
+                        RoundedRectangle(cornerRadius: 30)
+                            .fill(Color(.systemBackground))
+                            .shadow(color: Color.black.opacity(0.1), radius: 20, x: 0, y: 10)
+                    )
+                    .offset(offset)
+                    .scaleEffect(scale)
+                    .rotationEffect(.degrees(rotation))
+                    .gesture(
+                        DragGesture()
+                            .onChanged { gesture in
+                                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                    offset = gesture.translation
+                                    rotation = Double(gesture.translation.width / 20)
+                                    scale = 1.0 - abs(gesture.translation.width / 1000)
+                                }
+                            }
+                            .onEnded { gesture in
+                                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                    if abs(gesture.translation.width) > 100 {
+                                        let isYay = gesture.translation.width > 0
+                                        handleSwipe(isYay: isYay)
+                                    } else {
+                                        offset = .zero
+                                        rotation = 0
+                                        scale = 1.0
+                                    }
+                                }
+                            }
+                    )
+                    
+                    // Vote Feedback
+                    if showVoteFeedback {
+                        VStack {
+                            Image(systemName: voteChoice == viewModel.topic.optionA ? "hand.thumbsup.fill" : "hand.thumbsdown.fill")
+                                .font(.system(size: 60))
+                                .foregroundColor(voteChoice == viewModel.topic.optionA ? .green : .red)
+                                .padding()
+                                .background(
+                                    Circle()
+                                        .fill(.ultraThinMaterial)
+                                        .shadow(color: Color.black.opacity(0.2), radius: 10, x: 0, y: 5)
+                                )
+                        }
+                        .transition(.scale.combined(with: .opacity))
+                    }
+                }
+                .padding()
                 
-                // Option B
-                voteButton(choice: viewModel.topic.optionB)
-            }
-            .padding()
-            
-            if viewModel.isLoading {
-                ProgressView()
-                    .scaleEffect(1.5)
+                // Navigation Buttons
+                HStack(spacing: 24) {
+                    Button(action: viewModel.previousTopic) {
+                        Image(systemName: "arrow.left.circle.fill")
+                            .font(.system(size: 44))
+                            .foregroundColor(.gray)
+                            .background(
+                                Circle()
+                                    .fill(.ultraThinMaterial)
+                                    .frame(width: 50, height: 50)
+                            )
+                    }
+                    
+                    Button(action: viewModel.nextTopic) {
+                        Image(systemName: "arrow.right.circle.fill")
+                            .font(.system(size: 44))
+                            .foregroundColor(.gray)
+                            .background(
+                                Circle()
+                                    .fill(.ultraThinMaterial)
+                                    .frame(width: 50, height: 50)
+                            )
+                    }
+                }
+                .padding(.top, 20)
             }
         }
         .alert("Error", isPresented: .constant(viewModel.error != nil)) {
@@ -46,30 +136,65 @@ struct VotingView: View {
         }
     }
     
-    private func voteButton(choice: String) -> some View {
+    private func voteButton(choice: String, isYay: Bool) -> some View {
         Button(action: { handleVote(choice: choice) }) {
-            Text(choice)
-                .font(AppFont.medium(16))
-                .frame(maxWidth: .infinity)
-                .padding()
-                .background(AppColor.secondaryBackground)
-                .foregroundStyle(AppColor.text)
-                .cornerRadius(12)
+            VStack(spacing: 12) {
+                Image(systemName: isYay ? "hand.thumbsup.fill" : "hand.thumbsdown.fill")
+                    .font(.system(size: 28))
+                Text(choice)
+                    .font(.system(size: 18, weight: .medium))
+            }
+            .frame(maxWidth: .infinity)
+            .padding()
+            .background(
+                RoundedRectangle(cornerRadius: 20)
+                    .fill(isYay ? Color.green.opacity(0.1) : Color.red.opacity(0.1))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 20)
+                            .stroke(
+                                LinearGradient(
+                                    gradient: Gradient(colors: [
+                                        isYay ? Color.green.opacity(0.3) : Color.red.opacity(0.3),
+                                        isYay ? Color.green.opacity(0.1) : Color.red.opacity(0.1)
+                                    ]),
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                ),
+                                lineWidth: 1
+                            )
+                    )
+            )
+            .foregroundColor(isYay ? .green : .red)
         }
         .disabled(viewModel.isLoading)
     }
     
+    private func handleSwipe(isYay: Bool) {
+        let choice = isYay ? viewModel.topic.optionA : viewModel.topic.optionB
+        voteChoice = choice
+        showVoteFeedback = true
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            handleVote(choice: choice)
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                offset = CGSize(width: isYay ? 500 : -500, height: 0)
+                rotation = isYay ? 15 : -15
+            }
+            
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                viewModel.nextTopic()
+                offset = .zero
+                rotation = 0
+                scale = 1.0
+                showVoteFeedback = false
+            }
+        }
+    }
+    
     private func handleVote(choice: String) {
-        print("🎯 Starting vote submission for choice: \(choice)")
         viewModel.submitVote(choice: choice) { success in
             if success {
-                print("✅ Vote submission completed successfully")
-                // Remove redundant calls since we're handling these in the batch write
-                // userManager.incrementVoteCount()
-                // userManager.addRecentActivity(
-                //     type: "vote",
-                //     itemId: viewModel.topic.id
-                // )
+                print("✅ Vote submitted successfully")
             } else {
                 print("❌ Vote submission failed")
             }
