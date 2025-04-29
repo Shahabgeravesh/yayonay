@@ -23,7 +23,13 @@ class VotesViewModel: ObservableObject {
     }
     
     func fetchVotes() {
+        guard let userId = Auth.auth().currentUser?.uid else {
+            print("Error: No authenticated user")
+            return
+        }
+        
         db.collection("votes")
+            .whereField("userId", isEqualTo: userId)
             .order(by: "date", descending: true)
             .addSnapshotListener { [weak self] snapshot, error in
                 if let error = error {

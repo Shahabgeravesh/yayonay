@@ -857,118 +857,83 @@ struct SubQuestionRow: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                 
                 // Vote Bar with Percentage and Total Votes
-                VStack(spacing: 2) {
-                    GeometryReader { geometry in
-                        ZStack(alignment: .leading) {
-                            // Background
-                            RoundedRectangle(cornerRadius: 4)
-                                .fill(colorScheme == .dark ? Color.gray.opacity(0.3) : Color.gray.opacity(0.2))
-                                .frame(height: 16)
-                            
-                            // Yay portion
-                            if question.yayPercentage > 0 {
-                                RoundedRectangle(cornerRadius: 4)
-                                    .fill(Color.green.opacity(colorScheme == .dark ? 0.6 : 0.7))
-                                    .frame(width: geometry.size.width * CGFloat(question.yayPercentage / 100), height: 16)
-                            }
-                            
-                            // Nay portion
-                            if question.nayPercentage > 0 {
-                                RoundedRectangle(cornerRadius: 4)
-                                    .fill(Color.red.opacity(colorScheme == .dark ? 0.6 : 0.7))
-                                    .frame(width: geometry.size.width * CGFloat(question.nayPercentage / 100), height: 16)
-                                    .offset(x: geometry.size.width * CGFloat(question.yayPercentage / 100))
-                            }
-                            
-                            // Vote buttons
-                            if !hasVoted && canVote {
-                                HStack(spacing: 0) {
-                                    Button(action: {
-                                        withAnimation {
-                                            onVote(true)
-                                        }
-                                    }) {
-                                        Text("Yay")
-                                            .font(.system(size: 10, weight: .medium))
-                                            .foregroundColor(.white)
-                                            .frame(width: geometry.size.width / 2, height: 16)
-                                    }
-                                    
-                                    Button(action: {
-                                        withAnimation {
-                                            onVote(false)
-                                        }
-                                    }) {
-                                        Text("Nay")
-                                            .font(.system(size: 10, weight: .medium))
-                                            .foregroundColor(.white)
-                                            .frame(width: geometry.size.width / 2, height: 16)
-                                    }
-                                }
-                            } else {
-                                // Show percentages
-                                HStack {
-                                    if question.yayPercentage > 0 {
-                                        Text("\(Int(question.yayPercentage))%")
-                                            .font(.system(size: 10, weight: .bold))
-                                            .foregroundColor(.white)
-                                            .padding(.leading, 4)
-                                    }
-                                    
-                                    Spacer()
-                                    
-                                    if question.nayPercentage > 0 {
-                                        Text("\(Int(question.nayPercentage))%")
-                                            .font(.system(size: 10, weight: .bold))
-                                            .foregroundColor(.white)
-                                            .padding(.trailing, 4)
-                                    }
-                                }
-                            }
-                        }
-                        .frame(width: 100, height: 16)
-                    }
+                VStack(alignment: .trailing, spacing: 4) {
+                    Text("\(question.totalVotes) votes")
+                        .font(.system(size: 10))
+                        .foregroundColor(.secondary)
                     
-                    // Total votes
-                    if question.totalVotes > 0 {
-                        Text("\(question.totalVotes)")
-                            .font(.system(size: 8))
-                            .foregroundStyle(.secondary)
-                            .frame(width: 100, alignment: .center)
+                    HStack(spacing: 0) {
+                        // Yay bar
+                        Rectangle()
+                            .fill(Color.green)
+                            .frame(width: CGFloat(question.yayPercentage) * 0.5, height: 4)
+                            .cornerRadius(2)
+                        
+                        // Nay bar
+                        Rectangle()
+                            .fill(Color.red)
+                            .frame(width: CGFloat(question.nayPercentage) * 0.5, height: 4)
+                            .cornerRadius(2)
                     }
+                    .frame(width: 50)
                 }
             }
             
-            // Voting information
-            if hasVoted {
-                if let nextVoteDate = nextVoteDate {
-                    let now = Date()
-                    if now < nextVoteDate {
-                        Text("You can vote again on \(formatDate(nextVoteDate))")
-                            .font(.system(size: 10))
+            // Voting buttons or status
+            if !hasVoted && canVote {
+                HStack(spacing: 12) {
+                    Button(action: { onVote(true) }) {
+                        HStack {
+                            Image(systemName: "hand.thumbsup.fill")
+                            Text("Yay")
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 8)
+                        .background(Color.green.opacity(0.1))
+                        .foregroundColor(.green)
+                        .cornerRadius(8)
+                    }
+                    
+                    Button(action: { onVote(false) }) {
+                        HStack {
+                            Image(systemName: "hand.thumbsdown.fill")
+                            Text("Nay")
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 8)
+                        .background(Color.red.opacity(0.1))
+                        .foregroundColor(.red)
+                        .cornerRadius(8)
+                    }
+                }
+            } else {
+                HStack {
+                    Text(hasVoted ? "You voted" : "Can't vote yet")
+                        .font(.system(size: 12))
+                        .foregroundColor(.secondary)
+                    
+                    Spacer()
+                    
+                    if let nextDate = nextVoteDate {
+                        Text("Next vote: \(formatDate(nextDate))")
+                            .font(.system(size: 12))
                             .foregroundColor(.secondary)
-                    } else {
-                        Text("You can vote now")
-                            .font(.system(size: 10))
-                            .foregroundColor(.green)
                     }
                 }
             }
         }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 4)
-        .background(AppColor.adaptiveSecondaryBackground(for: colorScheme))
-        .cornerRadius(6)
-        .shadow(
-            color: colorScheme == .dark ? .black.opacity(0.2) : .black.opacity(0.05),
-            radius: colorScheme == .dark ? 3 : 3,
-            y: colorScheme == .dark ? 1 : 1
-        )
+        .padding(12)
+        .background(Color(.systemBackground))
+        .cornerRadius(12)
+        .shadow(color: colorScheme == .dark ? .black.opacity(0.2) : .black.opacity(0.05),
+                radius: colorScheme == .dark ? 3 : 3,
+                y: colorScheme == .dark ? 1 : 1)
     }
     
     private func formatDate(_ date: Date) -> String {
         let formatter = DateFormatter()
-        formatter.dateFormat = "MMM d, yyyy"
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .none
         return formatter.string(from: date)
     }
 }
