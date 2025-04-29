@@ -13,6 +13,7 @@ class UserManager: NSObject, ObservableObject {
     @Published var isLoading = false
     @Published var error: Error?
     @Published var needsOnboarding = false
+    @Published var hasCompletedTutorial = false
     
     private let auth = Auth.auth()
     private let storage = Storage.storage()
@@ -25,6 +26,8 @@ class UserManager: NSObject, ObservableObject {
     override init() {
         super.init()
         setupAuthStateListener()
+        // Load tutorial state from UserDefaults
+        hasCompletedTutorial = UserDefaults.standard.bool(forKey: "hasCompletedTutorial")
     }
     
     deinit {
@@ -45,6 +48,7 @@ class UserManager: NSObject, ObservableObject {
                     self.isAuthenticated = false
                     self.currentUser = nil
                     self.needsOnboarding = false
+                    // Don't reset tutorial state on sign out
                     self.listener?.remove()
                     self.listener = nil
                 }
@@ -74,6 +78,11 @@ class UserManager: NSObject, ObservableObject {
                     // User has a profile
                     self.currentUser = UserProfile(document: snapshot)
                     self.needsOnboarding = false
+                    // Check if this is a new user
+                    if let isNewUser = snapshot.data()?["isNewUser"] as? Bool, isNewUser {
+                        self.hasCompletedTutorial = false
+                        UserDefaults.standard.set(false, forKey: "hasCompletedTutorial")
+                    }
                     
                     // Print debug information
                     print("Profile updated via listener:")
@@ -83,6 +92,9 @@ class UserManager: NSObject, ObservableObject {
                     print("⚠️ No profile document found for user: \(userId)")
                     // User needs to create a profile
                     self.needsOnboarding = true
+                    // New users need to see the tutorial
+                    self.hasCompletedTutorial = false
+                    UserDefaults.standard.set(false, forKey: "hasCompletedTutorial")
                 }
             }
         }
@@ -243,6 +255,7 @@ class UserManager: NSObject, ObservableObject {
     func signOut() {
         do {
             try auth.signOut()
+            // Don't reset tutorial state on sign out
         } catch {
             self.error = error
         }
@@ -596,6 +609,38 @@ class UserManager: NSObject, ObservableObject {
             DispatchQueue.main.async {
                 // The real-time listener will update the currentUser
                 self?.isAuthenticated = true
+            }
+        }
+    }
+    
+    func completeTutorial() {
+        hasCompletedTutorial = true
+        UserDefaults.standard.set(true, forKey: "hasCompletedTutorial")
+        
+        // Update Firestore to mark user as not new
+        if let userId = auth.currentUser?.uid {
+            db.collection("users").document(userId).updateData([
+                "isNewUser": false
+            ])
+        }
+    }
+    
+    // Add new public method to check if user is new
+    func checkIfUserIsNew(userId: String, completion: @escaping (Bool) -> Void) {
+        db.collection("users").document(userId).getDocument { snapshot, error in
+            if let error = error {
+                print("Error checking if user is new: \(error.localizedDescription)")
+                completion(false)
+                return
+            }
+            
+            if let snapshot = snapshot, !snapshot.exists {
+                // This is a new user
+                self.hasCompletedTutorial = false
+                UserDefaults.standard.set(false, forKey: "hasCompletedTutorial")
+                completion(true)
+            } else {
+                completion(false)
             }
         }
     }

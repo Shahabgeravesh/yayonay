@@ -388,7 +388,7 @@ struct SubCategoryStatsView: View {
                         
                         Button(action: {
                             if canReset {
-                                print("🔄 DEBUG: Reset button pressed")
+                                HapticManager.shared.buttonPress()
                                 showResetConfirmation = true
                             }
                         }) {
@@ -453,18 +453,18 @@ struct SubCategoryStatsView: View {
         }
         .alert("Reset Vote", isPresented: $showResetConfirmation) {
             Button("Cancel", role: .cancel) {
-                print("❌ DEBUG: Reset cancelled")
+                HapticManager.shared.buttonPress()
                 showResetConfirmation = false
             }
             Button("Reset", role: .destructive) {
-                print("✅ DEBUG: Reset confirmed")
+                HapticManager.shared.voteReset()
                 statsViewModel.resetVote { success in
                     if success {
-                        print("✅ DEBUG: Vote reset successful")
+                        HapticManager.shared.success()
                         self.showResetConfirmation = false
                         self.startCooldownTimer()
                     } else {
-                        print("❌ DEBUG: Vote reset failed")
+                        HapticManager.shared.error()
                     }
                 }
             }
@@ -513,6 +513,7 @@ struct SubCategoryStatsView: View {
     }
     
     private func shareToFacebook() {
+        HapticManager.shared.buttonPress()
         guard let username = Auth.auth().currentUser?.displayName ?? Auth.auth().currentUser?.email else {
             print("Error: No user found for sharing")
             return
@@ -543,6 +544,7 @@ struct SubCategoryStatsView: View {
     }
     
     private func shareToTwitter() {
+        HapticManager.shared.buttonPress()
         guard let username = Auth.auth().currentUser?.displayName ?? Auth.auth().currentUser?.email else {
             print("Error: No user found for sharing")
             return
@@ -573,6 +575,7 @@ struct SubCategoryStatsView: View {
     }
     
     private func shareToInstagram() {
+        HapticManager.shared.buttonPress()
         guard let username = Auth.auth().currentUser?.displayName ?? Auth.auth().currentUser?.email else {
             print("Error: No user found for sharing")
             return
@@ -681,6 +684,7 @@ struct SubCategoryStatsView: View {
     }
     
     private func shareToMessage() {
+        HapticManager.shared.buttonPress()
         guard let username = Auth.auth().currentUser?.displayName ?? Auth.auth().currentUser?.email else {
             print("Error: No user found for sharing")
             return
@@ -752,7 +756,7 @@ struct AttributeVoteRow: View {
                 // Show voting buttons
                 HStack(spacing: 12) {
                     Button(action: {
-                        print("DEBUG: Voting Nay for attribute: \(name)")
+                        HapticManager.shared.voteSuccess()
                         hasVoted = true
                         onVote(false)
                     }) {
@@ -765,7 +769,7 @@ struct AttributeVoteRow: View {
                     }
                     
                     Button(action: {
-                        print("DEBUG: Voting Yay for attribute: \(name)")
+                        HapticManager.shared.voteSuccess()
                         hasVoted = true
                         onVote(true)
                     }) {
@@ -882,7 +886,10 @@ struct SubQuestionRow: View {
             // Voting buttons or status
             if !hasVoted && canVote {
                 HStack(spacing: 12) {
-                    Button(action: { onVote(true) }) {
+                    Button(action: { 
+                        HapticManager.shared.voteSuccess()
+                        onVote(true) 
+                    }) {
                         HStack {
                             Image(systemName: "hand.thumbsup.fill")
                             Text("Yay")
@@ -894,7 +901,10 @@ struct SubQuestionRow: View {
                         .cornerRadius(8)
                     }
                     
-                    Button(action: { onVote(false) }) {
+                    Button(action: { 
+                        HapticManager.shared.voteSuccess()
+                        onVote(false) 
+                    }) {
                         HStack {
                             Image(systemName: "hand.thumbsdown.fill")
                             Text("Nay")

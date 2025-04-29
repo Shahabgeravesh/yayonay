@@ -166,7 +166,10 @@ struct FilterButton: View {
     let action: () -> Void
     
     var body: some View {
-        Button(action: action) {
+        Button(action: {
+            HapticManager.shared.selection()
+            action()
+        }) {
             Text(title)
                 .font(.subheadline)
                 .fontWeight(.medium)
@@ -185,7 +188,10 @@ struct SortButton: View {
     let action: () -> Void
     
     var body: some View {
-        Button(action: action) {
+        Button(action: {
+            HapticManager.shared.selection()
+            action()
+        }) {
             HStack(spacing: 4) {
                 Text(title)
                 Image(systemName: "arrow.up.arrow.down")
@@ -270,6 +276,12 @@ struct VoteCard: View {
                     voteContent
                 }
                 .buttonStyle(.plain)
+                .simultaneousGesture(
+                    LongPressGesture(minimumDuration: 0.5)
+                        .onEnded { _ in
+                            HapticManager.shared.longPress()
+                        }
+                )
             } else {
                 voteContent
             }
