@@ -10,9 +10,12 @@ class TopicBoxViewModel: ObservableObject {
     @Published var newTopicTitle = ""
     @Published var error: Error?
     @Published var isLoading = false
+    @Published var dailySubmissionCount = 0
+    @Published var lastSubmissionDate: Date?
     
     private let db = Firestore.firestore()
     private var listener: ListenerRegistration?
+    let DAILY_SUBMISSION_LIMIT = 5
     
     enum SortOption: String, CaseIterable {
         case date = "Date"
@@ -58,6 +61,50 @@ class TopicBoxViewModel: ObservableObject {
                 }
             }
         }
+        
+        // Load user's submission count
+        loadUserSubmissionCount()
+    }
+    
+    private func loadUserSubmissionCount() {
+        guard let userId = Auth.auth().currentUser?.uid else { return }
+        
+        // Get today's date at midnight
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+        
+        // Get user's document
+        db.collection("users").document(userId).getDocument { [weak self] snapshot, error in
+            guard let self = self else { return }
+            
+            if let error = error {
+                print("Error loading user document: \(error.localizedDescription)")
+                return
+            }
+            
+            guard let data = snapshot?.data() else { return }
+            
+            // Get last submission date and count
+            if let lastSubmissionTimestamp = data["lastSubmissionDate"] as? Timestamp {
+                let lastSubmissionDate = lastSubmissionTimestamp.dateValue()
+                
+                // If last submission was today, use stored count
+                if calendar.isDateInToday(lastSubmissionDate) {
+                    self.dailySubmissionCount = data["dailySubmissionCount"] as? Int ?? 0
+                    self.lastSubmissionDate = lastSubmissionDate
+                } else {
+                    // Reset count if last submission was not today
+                    self.dailySubmissionCount = 0
+                    self.lastSubmissionDate = nil
+                    
+                    // Update Firestore with reset values
+                    self.db.collection("users").document(userId).updateData([
+                        "dailySubmissionCount": 0,
+                        "lastSubmissionDate": Timestamp(date: today)
+                    ])
+                }
+            }
+        }
     }
     
     func submitTopic(title: String, mediaURL: String, tags: [String], category: String, description: String) {
@@ -65,6 +112,18 @@ class TopicBoxViewModel: ObservableObject {
               let userId = Auth.auth().currentUser?.uid else { return }
         
         isLoading = true
+        
+        // First check if user has reached daily limit
+        let calendar = Calendar.current
+        if let lastDate = lastSubmissionDate,
+           calendar.isDateInToday(lastDate),
+           dailySubmissionCount >= DAILY_SUBMISSION_LIMIT {
+            DispatchQueue.main.async {
+                self.error = NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: "You have reached your daily limit of 5 topic submissions. Please try again tomorrow."])
+                self.isLoading = false
+            }
+            return
+        }
         
         // First get the user profile to get the username and image
         db.collection("users").document(userId).getDocument { [weak self] snapshot, error in
@@ -97,8 +156,23 @@ class TopicBoxViewModel: ObservableObject {
                 userId: userId
             )
             
-            // Add to Firestore
-            self.db.collection("topics").document(topic.id).setData(topic.dictionary) { [weak self] error in
+            // Create a batch write to update both the topic and user's submission count
+            let batch = self.db.batch()
+            
+            // Add topic document
+            let topicRef = self.db.collection("topics").document(topic.id)
+            batch.setData(topic.dictionary, forDocument: topicRef)
+            
+            // Update user's submission count
+            let userRef = self.db.collection("users").document(userId)
+            let newCount = self.dailySubmissionCount + 1
+            batch.updateData([
+                "dailySubmissionCount": newCount,
+                "lastSubmissionDate": Timestamp(date: Date())
+            ], forDocument: userRef)
+            
+            // Commit the batch
+            batch.commit { [weak self] error in
                 guard let self = self else { return }
                 
                 DispatchQueue.main.async {
@@ -106,6 +180,9 @@ class TopicBoxViewModel: ObservableObject {
                     if let error = error {
                         self.error = error
                     } else {
+                        // Update local state
+                        self.dailySubmissionCount = newCount
+                        self.lastSubmissionDate = Date()
                         self.showSubmitSheet = false
                     }
                 }

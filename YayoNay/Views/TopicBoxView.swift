@@ -4,13 +4,18 @@ import FirebaseFirestore
 struct TopicBoxView: View {
     @StateObject private var viewModel = TopicBoxViewModel()
     @State private var showNewTopicSheet = false
+    @State private var showErrorAlert = false
     
     var body: some View {
         NavigationStack {
             VStack(spacing: 12) {
                 // Submit Button
                 Button(action: {
-                    viewModel.showSubmitSheet = true
+                    if viewModel.dailySubmissionCount >= viewModel.DAILY_SUBMISSION_LIMIT {
+                        showErrorAlert = true
+                    } else {
+                        viewModel.showSubmitSheet = true
+                    }
                 }) {
                     Text("Submit Your Topics Here")
                         .font(.system(size: 15, weight: .medium))
@@ -22,10 +27,18 @@ struct TopicBoxView: View {
                 }
                 .padding(.horizontal)
                 
-                // Subtitle
-                Text("everyday you can suggest 5 topics for voting")
-                    .font(.system(size: 12))
-                    .foregroundColor(.secondary)
+                // Subtitle with remaining submissions
+                HStack {
+                    Text("Daily submissions: \(viewModel.dailySubmissionCount)/\(viewModel.DAILY_SUBMISSION_LIMIT)")
+                        .font(.system(size: 12))
+                        .foregroundColor(viewModel.dailySubmissionCount >= viewModel.DAILY_SUBMISSION_LIMIT ? .red : .secondary)
+                    
+                    if viewModel.dailySubmissionCount >= viewModel.DAILY_SUBMISSION_LIMIT {
+                        Text("(Limit reached)")
+                            .font(.system(size: 12))
+                            .foregroundColor(.red)
+                    }
+                }
                 
                 // Sort Options
                 ScrollView(.horizontal, showsIndicators: false) {
@@ -69,6 +82,21 @@ struct TopicBoxView: View {
             .navigationTitle("Topic Box")
             .sheet(isPresented: $viewModel.showSubmitSheet) {
                 SubmitTopicSheet(viewModel: viewModel)
+            }
+            .alert("Submission Limit Reached", isPresented: $showErrorAlert) {
+                Button("OK", role: .cancel) { }
+            } message: {
+                Text("You have reached your daily limit of 5 topic submissions. Please try again tomorrow.")
+            }
+            .alert("Error", isPresented: Binding(
+                get: { viewModel.error != nil },
+                set: { if !$0 { viewModel.error = nil } }
+            )) {
+                Button("OK", role: .cancel) { }
+            } message: {
+                if let error = viewModel.error {
+                    Text(error.localizedDescription)
+                }
             }
         }
         .onAppear {
