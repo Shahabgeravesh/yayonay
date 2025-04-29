@@ -67,5 +67,7 @@
         <string>sms</string>
         <string>message</string>
     </array>
+    <key>NSPhotoLibraryAddUsageDescription</key>
+    <string>YayoNay needs access to save images to your photo library when sharing to Instagram Stories.</string>
 </dict>
 </plist> 

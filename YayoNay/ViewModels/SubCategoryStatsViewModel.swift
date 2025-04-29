@@ -9,17 +9,20 @@ class SubCategoryStatsViewModel: ObservableObject {
     @Published var subQuestions: [SubQuestion] = []
     @Published var showCooldownAlert = false
     @Published private(set) var lastVoteDate: Date?
+    @Published private var subQuestionVoteDates: [String: Date] = [:] // Track vote dates for each sub-question
     private let db = Firestore.firestore()
     private var attributeListener: ListenerRegistration?
     private var subCategoryListener: ListenerRegistration?
     private var commentsListener: ListenerRegistration?
     private var subQuestionsListener: ListenerRegistration?
     private var userVotesListener: ListenerRegistration?
+    private var userSubQuestionVotes: [String: Bool] = [:] // Track votes for each sub-question
     
     init(subCategory: SubCategory) {
         print("DEBUG: Initializing SubCategoryStatsViewModel for subCategory: \(subCategory.id)")
         self.currentSubCategory = subCategory
         self.lastVoteDate = UserDefaults.standard.object(forKey: "lastVoteDate_\(subCategory.id)") as? Date
+        print("DEBUG: Initial lastVoteDate from UserDefaults: \(String(describing: self.lastVoteDate))")
         setupListeners()
         setupCommentsListener()
         setupSubQuestionsListener()
@@ -219,22 +222,22 @@ class SubCategoryStatsViewModel: ObservableObject {
             if let documents = snapshot?.documents {
                 print("DEBUG: Found \(documents.count) vote documents")
                 
-                // Find the most recent vote
-                let latestVote = documents.compactMap { UserVote(document: $0) }
-                    .sorted(by: { $0.timestamp > $1.timestamp })
-                    .first
+                // Reset the vote dates dictionary
+                self.subQuestionVoteDates = [:]
                 
-                if let latestVote = latestVote {
-                    print("DEBUG: Found previous vote from \(latestVote.timestamp)")
-                    print("DEBUG: Vote details - User: \(latestVote.userId), SubCategory: \(latestVote.subCategoryId)")
-                    self.lastVoteDate = latestVote.timestamp
-                } else {
-                    print("DEBUG: No previous votes found for this user and subcategory")
-                    self.lastVoteDate = nil
+                // Process each vote document
+                for document in documents {
+                    let data = document.data()
+                    if let subQuestionId = data["subQuestionId"] as? String,
+                       let timestamp = data["timestamp"] as? Timestamp {
+                        self.subQuestionVoteDates[subQuestionId] = timestamp.dateValue()
+                    }
                 }
+                
+                print("DEBUG: Updated sub-question vote dates: \(self.subQuestionVoteDates)")
             } else {
                 print("DEBUG: No vote documents found")
-                self.lastVoteDate = nil
+                self.subQuestionVoteDates = [:]
             }
         }
         
@@ -251,15 +254,23 @@ class SubCategoryStatsViewModel: ObservableObject {
             if let documents = snapshot?.documents {
                 print("DEBUG: Vote listener found \(documents.count) documents")
                 
-                // Find the most recent vote
-                let latestVote = documents.compactMap { UserVote(document: $0) }
-                    .sorted(by: { $0.timestamp > $1.timestamp })
-                    .first
+                // Reset the votes dictionary
+                self.userSubQuestionVotes = [:]
+                self.subQuestionVoteDates = [:]
                 
-                if let latestVote = latestVote {
-                    print("DEBUG: Updated last vote date to: \(latestVote.timestamp)")
-                    self.lastVoteDate = latestVote.timestamp
+                // Process each vote document
+                for document in documents {
+                    let data = document.data()
+                    if let subQuestionId = data["subQuestionId"] as? String,
+                       let isYay = data["isYay"] as? Bool,
+                       let timestamp = data["timestamp"] as? Timestamp {
+                        self.userSubQuestionVotes[subQuestionId] = isYay
+                        self.subQuestionVoteDates[subQuestionId] = timestamp.dateValue()
+                    }
                 }
+                
+                print("DEBUG: Updated user sub-question votes: \(self.userSubQuestionVotes)")
+                print("DEBUG: Updated sub-question vote dates: \(self.subQuestionVoteDates)")
             }
         }
     }
@@ -401,6 +412,7 @@ class SubCategoryStatsViewModel: ObservableObject {
                             print("DEBUG: Error updating vote: \(error.localizedDescription)")
                         } else {
                             print("DEBUG: Successfully updated vote")
+                            self.subQuestionVoteDates[question.id] = Date()
                         }
                     }
                     return
@@ -437,6 +449,7 @@ class SubCategoryStatsViewModel: ObservableObject {
                     print("DEBUG: Error recording vote: \(error.localizedDescription)")
                 } else {
                     print("DEBUG: Successfully recorded new vote")
+                    self.subQuestionVoteDates[question.id] = Date()
                 }
             }
         }
@@ -582,18 +595,96 @@ class SubCategoryStatsViewModel: ObservableObject {
         return lastVoteDate != nil
     }
     
-    func resetVote() {
-        print("DEBUG: Resetting vote")
-        // Remove the vote from UserDefaults
-        UserDefaults.standard.removeObject(forKey: "lastVoteDate_\(currentSubCategory.id)")
-        UserDefaults.standard.removeObject(forKey: "vote_\(currentSubCategory.id)")
+    func resetVote(completion: @escaping (Bool) -> Void) {
+        print("DEBUG: Resetting sub-question votes for user")
         
-        // Update the stored property
-        lastVoteDate = nil
+        guard let userId = Auth.auth().currentUser?.uid else {
+            print("DEBUG: No authenticated user found")
+            completion(false)
+            return
+        }
         
-        // Update the UI
-        objectWillChange.send()
-        print("DEBUG: Vote reset complete - lastVoteDate is now \(String(describing: lastVoteDate))")
+        // Get all votes for this user and subcategory
+        let votesRef = db.collection("votes")
+            .whereField("userId", isEqualTo: userId)
+            .whereField("subCategoryId", isEqualTo: currentSubCategory.id)
+            .whereField("subQuestionId", isNotEqualTo: NSNull())
+        
+        votesRef.getDocuments { [weak self] (snapshot, error) in
+            guard let self = self else {
+                completion(false)
+                return
+            }
+            
+            if let error = error {
+                print("DEBUG: Error fetching votes: \(error.localizedDescription)")
+                completion(false)
+                return
+            }
+            
+            guard let documents = snapshot?.documents, !documents.isEmpty else {
+                print("DEBUG: No votes found to reset")
+                completion(true)
+                return
+            }
+            
+            let batch = self.db.batch()
+            
+            // Update each vote to have a new timestamp
+            for document in documents {
+                let voteRef = self.db.collection("votes").document(document.documentID)
+                batch.updateData([
+                    "timestamp": Timestamp(date: Date())
+                ], forDocument: voteRef)
+            }
+            
+            // Commit the batch update
+            batch.commit { error in
+                if let error = error {
+                    print("DEBUG: Error updating votes: \(error.localizedDescription)")
+                    completion(false)
+                } else {
+                    print("DEBUG: Successfully reset votes")
+                    // Update the UI
+                    self.objectWillChange.send()
+                    completion(true)
+                }
+            }
+        }
+    }
+    
+    func refreshData(completion: @escaping (Bool) -> Void) {
+        print("DEBUG: Starting data refresh")
+        
+        // Refresh all listeners
+        setupListeners()
+        setupCommentsListener()
+        setupSubQuestionsListener()
+        setupUserVotesListener()
+        
+        // Force a refresh of the current subcategory
+        let docRef = db.collection("subCategories").document(currentSubCategory.id)
+        docRef.getDocument { [weak self] (snapshot, error) in
+            guard let self = self else {
+                completion(false)
+                return
+            }
+            
+            if let error = error {
+                print("DEBUG: Error refreshing subcategory: \(error.localizedDescription)")
+                completion(false)
+                return
+            }
+            
+            if let updatedSubCategory = SubCategory(document: snapshot!) {
+                self.currentSubCategory = updatedSubCategory
+                print("DEBUG: Subcategory refreshed successfully")
+                completion(true)
+            } else {
+                print("DEBUG: Failed to parse refreshed subcategory")
+                completion(false)
+            }
+        }
     }
     
     func vote(_ isYay: Bool) {
@@ -617,5 +708,51 @@ class SubCategoryStatsViewModel: ObservableObject {
         
         // Update the UI
         objectWillChange.send()
+    }
+    
+    func hasVotedForSubQuestion(_ subQuestionId: String) -> Bool {
+        return userSubQuestionVotes[subQuestionId] != nil
+    }
+    
+    func canVoteForSubQuestions() -> Bool {
+        guard let lastVote = subQuestionVoteDates.values.first else {
+            return true
+        }
+        
+        let calendar = Calendar.current
+        let now = Date()
+        let components = calendar.dateComponents([.day], from: lastVote, to: now)
+        
+        let daysSinceLastVote = components.day ?? 0
+        return daysSinceLastVote >= 7
+    }
+    
+    func getNextVoteDateForSubQuestions() -> Date? {
+        guard let lastVote = subQuestionVoteDates.values.first else {
+            return nil
+        }
+        
+        return Calendar.current.date(byAdding: .day, value: 7, to: lastVote)
+    }
+    
+    func canVoteForSubQuestion(_ subQuestionId: String) -> Bool {
+        guard let lastVoteDate = subQuestionVoteDates[subQuestionId] else {
+            return true
+        }
+        
+        let calendar = Calendar.current
+        let now = Date()
+        let components = calendar.dateComponents([.day], from: lastVoteDate, to: now)
+        
+        let daysSinceLastVote = components.day ?? 0
+        return daysSinceLastVote >= 7
+    }
+    
+    func getNextVoteDateForSubQuestion(_ subQuestionId: String) -> Date? {
+        guard let lastVote = subQuestionVoteDates[subQuestionId] else {
+            return nil
+        }
+        
+        return Calendar.current.date(byAdding: .day, value: 7, to: lastVote)
     }
 } 
