@@ -13,6 +13,24 @@ class TopicBoxViewModel: ObservableObject {
     @Published var dailySubmissionCount = 0
     @Published var lastSubmissionDate: Date?
     
+    static let availableCategories = [
+        "General",
+        "Technology",
+        "Entertainment",
+        "Sports",
+        "Politics",
+        "Science",
+        "Health",
+        "Education",
+        "Business",
+        "Art",
+        "Food",
+        "Travel",
+        "Fashion",
+        "Gaming",
+        "Music"
+    ]
+    
     private let db = Firestore.firestore()
     private var listener: ListenerRegistration?
     let DAILY_SUBMISSION_LIMIT = 5

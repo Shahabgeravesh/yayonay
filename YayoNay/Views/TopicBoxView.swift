@@ -112,9 +112,9 @@ struct TopicRow: View {
     let onShareViaMessage: () -> Void
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 6) {
             // User and Date Info
-            HStack(alignment: .center, spacing: 8) {
+            HStack(alignment: .center, spacing: 6) {
                 // User Image
                 AsyncImage(url: URL(string: topic.userImage)) { image in
                     image
@@ -124,29 +124,29 @@ struct TopicRow: View {
                     Image(systemName: "person.circle.fill")
                         .resizable()
                 }
-                .frame(width: 32, height: 32)
+                .frame(width: 28, height: 28)
                 .clipShape(Circle())
                 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(topic.title)
-                        .font(.system(size: 15, weight: .medium))
+                        .font(.system(size: 14, weight: .medium))
                         .lineLimit(1)
                     
-                    HStack(spacing: 6) {
+                    HStack(spacing: 4) {
                         Text(topic.category)
-                            .font(.system(size: 11))
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 2)
+                            .font(.system(size: 10))
+                            .padding(.horizontal, 4)
+                            .padding(.vertical, 1)
                             .background(Color.blue.opacity(0.1))
                             .foregroundColor(.blue)
                             .clipShape(Capsule())
                         
                         Text("•")
-                            .font(.system(size: 11))
+                            .font(.system(size: 10))
                             .foregroundStyle(.secondary)
                         
                         Text("Submitted: \(dateFormatter.string(from: topic.date))")
-                            .font(.system(size: 11))
+                            .font(.system(size: 10))
                             .foregroundStyle(.secondary)
                     }
                 }
@@ -155,30 +155,30 @@ struct TopicRow: View {
                 
                 // Share button
                 Button(action: onShare) {
-                        Image(systemName: "square.and.arrow.up")
-                            .font(.system(size: 14, weight: .medium))
-                            .foregroundColor(.gray)
-                            .frame(width: 32, height: 32)
-                            .background(Color.gray.opacity(0.1))
-                            .clipShape(Circle())
-                    }
+                    Image(systemName: "square.and.arrow.up")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(.gray)
+                        .frame(width: 28, height: 28)
+                        .background(Color.gray.opacity(0.1))
+                        .clipShape(Circle())
+                }
                 .buttonStyle(PlainButtonStyle())
             }
             
             // Voting Options
-            HStack(spacing: 16) {
+            HStack(spacing: 12) {
                 // Downvote button
                 Button(action: { onVote(false) }) {
-                    HStack(spacing: 4) {
+                    HStack(spacing: 2) {
                         Image(systemName: "hand.thumbsdown")
-                            .font(.system(size: 14, weight: .medium))
+                            .font(.system(size: 12, weight: .medium))
                             .foregroundColor(topic.userVoteStatus == .downvoted ? .red : .gray)
                         Text("\(topic.downvotes)")
-                            .font(.system(size: 12))
+                            .font(.system(size: 11))
                             .foregroundColor(topic.userVoteStatus == .downvoted ? .red : .gray)
                     }
-                    .frame(height: 32)
-                    .padding(.horizontal, 8)
+                    .frame(height: 28)
+                    .padding(.horizontal, 6)
                     .background(topic.userVoteStatus == .downvoted ? Color.red.opacity(0.1) : Color.clear)
                     .clipShape(Capsule())
                 }
@@ -186,25 +186,25 @@ struct TopicRow: View {
                 
                 // Upvote button
                 Button(action: { onVote(true) }) {
-                    HStack(spacing: 4) {
+                    HStack(spacing: 2) {
                         Image(systemName: "hand.thumbsup")
-                            .font(.system(size: 14, weight: .medium))
+                            .font(.system(size: 12, weight: .medium))
                             .foregroundColor(topic.userVoteStatus == .upvoted ? .green : .gray)
                         Text("\(topic.upvotes)")
-                            .font(.system(size: 12))
+                            .font(.system(size: 11))
                             .foregroundColor(topic.userVoteStatus == .upvoted ? .green : .gray)
                     }
-                    .frame(height: 32)
-                    .padding(.horizontal, 8)
+                    .frame(height: 28)
+                    .padding(.horizontal, 6)
                     .background(topic.userVoteStatus == .upvoted ? Color.green.opacity(0.1) : Color.clear)
                     .clipShape(Capsule())
                 }
                 .buttonStyle(PlainButtonStyle())
             }
         }
-        .padding(12)
+        .padding(10)
         .background(Color(.systemBackground))
-        .cornerRadius(12)
+        .cornerRadius(10)
         .shadow(color: .black.opacity(0.05), radius: 2, y: 1)
     }
     

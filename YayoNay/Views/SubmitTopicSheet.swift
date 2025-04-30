@@ -7,7 +7,7 @@ struct SubmitTopicSheet: View {
     @State private var title = ""
     @State private var mediaURL = ""
     @State private var tags = ""
-    @State private var category = ""
+    @State private var selectedCategory = TopicBoxViewModel.availableCategories[0]
     @State private var description = ""
     @State private var showError = false
     @State private var errorMessage = ""
@@ -15,71 +15,174 @@ struct SubmitTopicSheet: View {
     private var isValid: Bool {
         !title.isEmpty &&
         !mediaURL.isEmpty &&
-        !tags.isEmpty &&
-        !category.isEmpty
+        !tags.isEmpty
     }
     
     var body: some View {
-        VStack(spacing: 20) {
-            // Close Button
-            HStack {
-                Spacer()
-                Button(action: { dismiss() }) {
-                    Image(systemName: "xmark")
-                        .font(.system(size: 20, weight: .medium))
+        NavigationStack {
+            ScrollView {
+                VStack(spacing: 24) {
+                    // Header
+                    VStack(spacing: 8) {
+                        Text("Submit a New Topic")
+                            .font(.title2)
+                            .fontWeight(.bold)
+                        
+                        Text("Share your thoughts with the community")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                    }
+                    .padding(.top, 8)
+                    
+                    // Input Fields
+                    VStack(spacing: 20) {
+                        // Title
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("Title")
+                                .font(.headline)
+                                .foregroundColor(.primary)
+                            
+                            TextField("Enter your topic title", text: $title)
+                                .textFieldStyle(RoundedTextFieldStyle(isRequired: true, isEmpty: title.isEmpty))
+                        }
+                        
+                        // Media URL
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("Media URL")
+                                .font(.headline)
+                                .foregroundColor(.primary)
+                            
+                            TextField("Enter media link (optional)", text: $mediaURL)
+                                .textFieldStyle(RoundedTextFieldStyle(isRequired: true, isEmpty: mediaURL.isEmpty))
+                                .keyboardType(.URL)
+                                .textInputAutocapitalization(.never)
+                        }
+                        
+                        // Tags
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("Tags")
+                                .font(.headline)
+                                .foregroundColor(.primary)
+                            
+                            TextField("Enter tags (comma separated)", text: $tags)
+                                .textFieldStyle(RoundedTextFieldStyle(isRequired: true, isEmpty: tags.isEmpty))
+                                .textInputAutocapitalization(.never)
+                                .onChange(of: tags) { newValue in
+                                    // Automatically add hashtags to tags
+                                    let tagList = newValue.components(separatedBy: ",")
+                                        .map { $0.trimmingCharacters(in: .whitespaces) }
+                                        .filter { !$0.isEmpty }
+                                    
+                                    tags = tagList.map { tag in
+                                        if tag.hasPrefix("#") {
+                                            return tag
+                                        } else {
+                                            return "#" + tag
+                                        }
+                                    }.joined(separator: ", ")
+                                }
+                            
+                            // Preview of tags
+                            if !tags.isEmpty {
+                                ScrollView(.horizontal, showsIndicators: false) {
+                                    HStack(spacing: 8) {
+                                        ForEach(processedTags, id: \.self) { tag in
+                                            Text(tag)
+                                                .font(.system(size: 12))
+                                                .padding(.horizontal, 8)
+                                                .padding(.vertical, 4)
+                                                .background(Color.blue.opacity(0.1))
+                                                .foregroundColor(.blue)
+                                                .clipShape(Capsule())
+                                        }
+                                    }
+                                    .padding(.top, 4)
+                                }
+                            }
+                        }
+                        
+                        // Category
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("Category")
+                                .font(.headline)
+                                .foregroundColor(.primary)
+                            
+                            Picker("Category", selection: $selectedCategory) {
+                                ForEach(TopicBoxViewModel.availableCategories, id: \.self) { category in
+                                    Text(category).tag(category)
+                                }
+                            }
+                            .pickerStyle(.menu)
+                            .padding()
+                            .background(Color(.systemGray6))
+                            .cornerRadius(10)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 10)
+                                    .stroke(Color(.systemGray4), lineWidth: 1)
+                            )
+                        }
+                        
+                        // Description
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("Description")
+                                .font(.headline)
+                                .foregroundColor(.primary)
+                            
+                            TextEditor(text: $description)
+                                .frame(height: 100)
+                                .padding(8)
+                                .background(Color(.systemGray6))
+                                .cornerRadius(10)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 10)
+                                        .stroke(Color(.systemGray4), lineWidth: 1)
+                                )
+                        }
+                    }
+                    .padding(.horizontal)
+                    
+                    if showError {
+                        Text(errorMessage)
+                            .foregroundColor(.red)
+                            .font(.subheadline)
+                            .padding(.horizontal)
+                    }
+                    
+                    // Submit Button
+                    Button(action: validateAndSubmit) {
+                        HStack {
+                            Text("Submit Topic")
+                                .font(.headline)
+                            Image(systemName: "arrow.up.circle.fill")
+                        }
                         .foregroundColor(.white)
-                        .padding(12)
-                        .background(Color.blue.opacity(0.8))
-                        .clipShape(Circle())
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(isValid ? Color.blue : Color.gray)
+                        .cornerRadius(12)
+                    }
+                    .disabled(!isValid)
+                    .padding(.horizontal)
+                    .padding(.bottom, 24)
                 }
-                .padding()
             }
-            
-            // Input Fields
-            VStack(spacing: 16) {
-                TextField("Title *", text: $title)
-                    .textFieldStyle(RoundedTextFieldStyle(isRequired: true, isEmpty: title.isEmpty))
-                
-                TextField("URL (media link) *", text: $mediaURL)
-                    .textFieldStyle(RoundedTextFieldStyle(isRequired: true, isEmpty: mediaURL.isEmpty))
-                    .keyboardType(.URL)
-                    .textInputAutocapitalization(.never)
-                
-                TextField("Tags * (comma separated)", text: $tags)
-                    .textFieldStyle(RoundedTextFieldStyle(isRequired: true, isEmpty: tags.isEmpty))
-                    .textInputAutocapitalization(.never)
-                
-                TextField("Category *", text: $category)
-                    .textFieldStyle(RoundedTextFieldStyle(isRequired: true, isEmpty: category.isEmpty))
-                
-                TextField("Description (optional)", text: $description)
-                    .textFieldStyle(RoundedTextFieldStyle(isRequired: false, isEmpty: false))
-                    .frame(height: 100)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button(action: { dismiss() }) {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.system(size: 20))
+                            .foregroundColor(.gray)
+                    }
+                }
             }
-            .padding(.horizontal)
-            
-            if showError {
-                Text(errorMessage)
-                    .foregroundColor(.red)
-                    .font(.caption)
-            }
-            
-            Spacer()
-            
-            // Submit Button
-            Button(action: validateAndSubmit) {
-                Text("Submit")
-                    .font(.headline)
-                    .foregroundColor(.white)
-                    .frame(width: 200)
-                    .padding()
-                    .background(isValid ? Color.blue : Color.gray)
-                    .cornerRadius(25)
-            }
-            .disabled(!isValid)
-            .padding(.bottom)
         }
-        .background(Color(.systemBackground))
+    }
+    
+    private var processedTags: [String] {
+        tags.components(separatedBy: ",")
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .filter { !$0.isEmpty }
     }
     
     private func validateAndSubmit() {
@@ -95,9 +198,7 @@ struct SubmitTopicSheet: View {
         }
         
         // Validate tags format
-        let tagList = tags.components(separatedBy: ",")
-            .map { $0.trimmingCharacters(in: .whitespaces) }
-            .filter { !$0.isEmpty }
+        let tagList = processedTags
         
         if tagList.isEmpty {
             showError = true
@@ -110,7 +211,7 @@ struct SubmitTopicSheet: View {
             title: title,
             mediaURL: mediaURL,
             tags: tagList,
-            category: category,
+            category: selectedCategory,
             description: description
         )
         dismiss()
@@ -123,16 +224,14 @@ struct RoundedTextFieldStyle: TextFieldStyle {
     let isEmpty: Bool
     
     func _body(configuration: TextField<Self._Label>) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            configuration
-                .padding()
-                .background(Color(.systemGray6))
-                .cornerRadius(10)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 10)
-                        .stroke(borderColor, lineWidth: 1)
-                )
-        }
+        configuration
+            .padding()
+            .background(Color(.systemGray6))
+            .cornerRadius(10)
+            .overlay(
+                RoundedRectangle(cornerRadius: 10)
+                    .stroke(borderColor, lineWidth: 1)
+            )
     }
     
     private var borderColor: Color {
