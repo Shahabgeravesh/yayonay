@@ -334,9 +334,14 @@ struct CategoryCard: View {
 class ExploreViewModel: ObservableObject {
     @Published var categories: [Category] = []
     private let db = Firestore.firestore()
+    private var listenerRegistration: ListenerRegistration?
     
     func fetchCategories() {
-        db.collection("categories")
+        // Remove any existing listener
+        listenerRegistration?.remove()
+        
+        // Add new listener and store the registration
+        listenerRegistration = db.collection("categories")
             .order(by: "order")
             .addSnapshotListener { [weak self] snapshot, error in
                 if let error = error {
@@ -348,6 +353,11 @@ class ExploreViewModel: ObservableObject {
                     Category(document: document)
                 } ?? []
             }
+    }
+    
+    deinit {
+        // Clean up the listener when the view model is deallocated
+        listenerRegistration?.remove()
     }
 }
 
