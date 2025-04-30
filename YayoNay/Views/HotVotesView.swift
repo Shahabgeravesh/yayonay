@@ -134,8 +134,8 @@ class HotVotesViewModel: ObservableObject {
     }
     
     func fetchTopCategories() {
-        // First get all votes to count by category
-        db.collection("votes")
+        // First get all subcategories to count votes by category
+        db.collection("subCategories")
             .getDocuments { [weak self] snapshot, error in
                 if let error = error {
                     print("Error fetching top categories: \(error)")
@@ -148,9 +148,11 @@ class HotVotesViewModel: ObservableObject {
                 snapshot?.documents.forEach { doc in
                     let data = doc.data()
                     if let categoryId = data["categoryId"] as? String,
-                       let categoryName = data["categoryName"] as? String {
+                       let yayCount = data["yayCount"] as? Int,
+                       let nayCount = data["nayCount"] as? Int {
+                        let totalVotes = yayCount + nayCount
                         let current = categoryVotes[categoryId]?.votes ?? 0
-                        categoryVotes[categoryId] = (categoryName, current + 1)
+                        categoryVotes[categoryId] = (name: "", current + totalVotes)
                     }
                 }
                 
