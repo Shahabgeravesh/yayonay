@@ -171,7 +171,10 @@ class HotVotesViewModel: ObservableObject {
     private func fetchTodaysTopVotes() {
         let calendar = Calendar.current
         let startOfDay = calendar.startOfDay(for: Date())
-        let endOfDay = calendar.date(byAdding: .day, value: 1, to: startOfDay)!
+        guard let endOfDay = calendar.date(byAdding: .day, value: 1, to: startOfDay) else {
+            print("Error: Could not calculate end of day")
+            return
+        }
         
         // First get all categories to map IDs to names
         db.collection("categories").getDocuments { [weak self] categorySnapshot, error in

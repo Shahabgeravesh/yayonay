@@ -17,41 +17,28 @@ struct ProfileView: View {
         NavigationStack {
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 0) {
-                    // Cover Image & Profile Section
-                    ZStack(alignment: .top) {
-                        // Cover Image
-                        Rectangle()
-                            .fill(AppColor.gradient)
-                            .frame(height: 180)
-                            .overlay {
-                                Image(systemName: "camera.fill")
-                                    .foregroundStyle(.white.opacity(0.7))
-                                    .font(.system(size: 24))
-                            }
-                        
-                        // Profile Content
-                        VStack(spacing: 0) {
-                            // Profile Image
-                            PhotosPicker(selection: $imageSelection,
-                                       matching: .images,
-                                       photoLibrary: .shared()) {
-                                profileImage
-                            }
-                            .offset(y: 100)
-                            .overlay(
-                                Circle()
-                                    .fill(AppColor.gradient)
-                                    .frame(width: 36, height: 36)
-                                    .overlay(
-                                        Image(systemName: "camera.fill")
-                                            .font(.system(size: 16, weight: .bold))
-                                            .foregroundStyle(.white)
-                                    )
-                                    .offset(x: 4, y: 104),
-                                alignment: .bottomTrailing
-                            )
+                    // Profile Content
+                    VStack(spacing: 0) {
+                        // Profile Image
+                        PhotosPicker(selection: $imageSelection,
+                                   matching: .images,
+                                   photoLibrary: .shared()) {
+                            profileImage
                         }
+                        .overlay(
+                            Circle()
+                                .fill(AppColor.gradient)
+                                .frame(width: 36, height: 36)
+                                .overlay(
+                                    Image(systemName: "camera.fill")
+                                        .font(.system(size: 16, weight: .bold))
+                                        .foregroundStyle(.white)
+                                )
+                                .offset(x: 4, y: 4),
+                            alignment: .bottomTrailing
+                        )
                     }
+                    .padding(.top, 32)
                     
                     // Profile Info Section
                     VStack(spacing: 24) {
@@ -69,7 +56,7 @@ struct ProfileView: View {
                                     .padding(.horizontal, 32)
                             }
                         }
-                        .padding(.top, 64)
+                        .padding(.top, 24)
                         
                         // Action Buttons
                         HStack(spacing: 16) {
@@ -395,4 +382,4 @@ struct FlowLayout: Layout {
 
 #Preview {
     ProfileView()
-} 
+}
