@@ -2,6 +2,16 @@ import SwiftUI
 import FirebaseFirestore
 import FirebaseAuth
 import Charts
+import Photos
+
+// Helper class for image saving
+fileprivate class ImageSaver: NSObject {
+    var completion: ((Error?) -> Void)?
+    
+    @objc func image(_ image: UIImage, didFinishSavingWithError error: Error?, contextInfo: UnsafeRawPointer) {
+        completion?(error)
+    }
+}
 
 struct AttributeVotes: Codable, Equatable {
     var yayCount: Int = 0
@@ -25,6 +35,9 @@ struct SubCategoryStatsView: View {
     @State private var showResetConfirmation = false
     @State private var timeRemaining: TimeInterval = 0
     @State private var timer: Timer?
+    @State private var showPhotoPermissionAlert = false
+    @State private var showSaveErrorAlert = false
+    @State private var errorMessage = ""
     @Environment(\.colorScheme) private var colorScheme
     
     // Timer state
@@ -473,6 +486,21 @@ struct SubCategoryStatsView: View {
         } message: {
             Text("This will replace your previous vote. Are you sure?")
         }
+        .alert("Photo Library Access Required", isPresented: $showPhotoPermissionAlert) {
+            Button("Cancel", role: .cancel) { }
+            Button("Open Settings") {
+                if let settingsURL = URL(string: UIApplication.openSettingsURLString) {
+                    UIApplication.shared.open(settingsURL)
+                }
+            }
+        } message: {
+            Text(errorMessage)
+        }
+        .alert("Error", isPresented: $showSaveErrorAlert) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text(errorMessage)
+        }
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {
             print("🔄 DEBUG: SubCategoryStatsView onAppear called")
@@ -516,10 +544,7 @@ struct SubCategoryStatsView: View {
     
     private func shareToFacebook() {
         HapticManager.shared.buttonPress()
-        guard let username = Auth.auth().currentUser?.displayName ?? Auth.auth().currentUser?.email else {
-            print("Error: No user found for sharing")
-            return
-        }
+        let username = Auth.auth().currentUser?.displayName ?? "a friend"
         
         // Create deep link URL for the specific subcategory
         let deepLinkURL = "yayonay://subcategory/\(statsViewModel.currentSubCategory.id)"
@@ -547,10 +572,7 @@ struct SubCategoryStatsView: View {
     
     private func shareToTwitter() {
         HapticManager.shared.buttonPress()
-        guard let username = Auth.auth().currentUser?.displayName ?? Auth.auth().currentUser?.email else {
-            print("Error: No user found for sharing")
-            return
-        }
+        let username = Auth.auth().currentUser?.displayName ?? "a friend"
         
         // Create deep link URL for the specific subcategory
         let deepLinkURL = "yayonay://subcategory/\(statsViewModel.currentSubCategory.id)"
@@ -578,10 +600,7 @@ struct SubCategoryStatsView: View {
     
     private func shareToInstagram() {
         HapticManager.shared.buttonPress()
-        guard let username = Auth.auth().currentUser?.displayName ?? Auth.auth().currentUser?.email else {
-            print("Error: No user found for sharing")
-            return
-        }
+        let username = Auth.auth().currentUser?.displayName ?? "a friend"
         
         // Create deep link URL for the specific subcategory
         let deepLinkURL = "yayonay://subcategory/\(statsViewModel.currentSubCategory.id)"
@@ -589,41 +608,80 @@ struct SubCategoryStatsView: View {
         let shareText = "\(username) wants you to vote on \(statsViewModel.currentSubCategory.name) on YayoNay! \(statsViewModel.currentSubCategory.yayCount) people voted Yay and \(statsViewModel.currentSubCategory.nayCount) voted Nay. What do you think? #YayoNay\n\nVote now: \(deepLinkURL)\n\nDownload YayoNay: \(appStoreURL)"
         
         DispatchQueue.main.async {
-            // Create the share image
-            let image = createShareImage(text: shareText)
+            // Check photo library authorization status
+            let status = PHPhotoLibrary.authorizationStatus(for: .addOnly)
             
-            // Save the image to the photo library
-            UIImageWriteToSavedPhotosAlbum(image, nil, nil, nil)
-            
-            // Create a URL scheme for Instagram
-            if let instagramURL = URL(string: "instagram://app") {
-                if UIApplication.shared.canOpenURL(instagramURL) {
-                    // Share to Instagram Stories
-                    let pasteboardItems: [String: Any] = [
-                        "com.instagram.sharedSticker.stickerImage": image,
-                        "com.instagram.sharedSticker.backgroundTopColor": "#000000",
-                        "com.instagram.sharedSticker.backgroundBottomColor": "#000000",
-                        "com.instagram.sharedSticker.contentURL": appStoreURL
-                    ]
-                    
-                    UIPasteboard.general.setItems([pasteboardItems], options: [
-                        UIPasteboard.OptionsKey.expirationDate: Date().addingTimeInterval(300)
-                    ])
-                    
-                    // Open Instagram
-                    UIApplication.shared.open(instagramURL, options: [:]) { success in
-                        if !success {
-                            print("Error: Could not open Instagram URL")
-                            // Fallback to Instagram web with App Store link
-                            if let webURL = URL(string: "https://www.instagram.com/") {
-                                UIApplication.shared.open(webURL, options: [:])
+            switch status {
+            case .authorized, .limited:
+                // Create and save the share image
+                let image = createShareImage(text: shareText)
+                let imageSaver = ImageSaver()
+                imageSaver.completion = { error in
+                    if let error = error {
+                        self.errorMessage = "Failed to save image: \(error.localizedDescription)"
+                        self.showSaveErrorAlert = true
+                        return
+                    }
+                    self.openInstagram(with: image, appStoreURL: appStoreURL)
+                }
+                UIImageWriteToSavedPhotosAlbum(image, imageSaver, #selector(ImageSaver.image(_:didFinishSavingWithError:contextInfo:)), nil)
+                
+            case .notDetermined:
+                // Request permission
+                PHPhotoLibrary.requestAuthorization(for: .addOnly) { newStatus in
+                    DispatchQueue.main.async {
+                        if newStatus == .authorized || newStatus == .limited {
+                            let image = self.createShareImage(text: shareText)
+                            let imageSaver = ImageSaver()
+                            imageSaver.completion = { error in
+                                if let error = error {
+                                    self.errorMessage = "Failed to save image: \(error.localizedDescription)"
+                                    self.showSaveErrorAlert = true
+                                    return
+                                }
+                                self.openInstagram(with: image, appStoreURL: appStoreURL)
                             }
+                            UIImageWriteToSavedPhotosAlbum(image, imageSaver, #selector(ImageSaver.image(_:didFinishSavingWithError:contextInfo:)), nil)
+                        } else {
+                            self.errorMessage = "Please allow photo library access in Settings to share to Instagram."
+                            self.showPhotoPermissionAlert = true
                         }
                     }
-                } else {
-                    // Fallback to Instagram web with App Store link
-                    if let webURL = URL(string: "https://www.instagram.com/") {
-                        UIApplication.shared.open(webURL, options: [:])
+                }
+                
+            case .denied, .restricted:
+                self.errorMessage = "Please enable photo library access in Settings to share to Instagram."
+                self.showPhotoPermissionAlert = true
+                
+            @unknown default:
+                self.errorMessage = "Unable to access photo library. Please try again."
+                self.showPhotoPermissionAlert = true
+            }
+        }
+    }
+    
+    private func openInstagram(with image: UIImage?, appStoreURL: String) {
+        guard let image = image else { return }
+        
+        // Share to Instagram Stories
+        let pasteboardItems: [String: Any] = [
+            "com.instagram.sharedSticker.stickerImage": image,
+            "com.instagram.sharedSticker.backgroundTopColor": "#000000",
+            "com.instagram.sharedSticker.backgroundBottomColor": "#000000",
+            "com.instagram.sharedSticker.contentURL": appStoreURL
+        ]
+        
+        UIPasteboard.general.setItems([pasteboardItems], options: [
+            UIPasteboard.OptionsKey.expirationDate: Date().addingTimeInterval(300)
+        ])
+        
+        // Try to open Instagram Stories
+        if let instagramURL = URL(string: "instagram-stories://share") {
+            UIApplication.shared.open(instagramURL, options: [:]) { success in
+                if !success {
+                    // If Stories sharing fails, try opening the main app
+                    if let mainURL = URL(string: "instagram://app") {
+                        UIApplication.shared.open(mainURL, options: [:])
                     }
                 }
             }
@@ -658,18 +716,25 @@ struct SubCategoryStatsView: View {
                 .paragraphStyle: paragraphStyle
             ]
             
-            // Split text into main text and URL
+            // Split text into components while preserving the deep link
             let components = text.components(separatedBy: "\n\n")
             let mainText = components.first ?? ""
-            let urlText = components.last ?? ""
+            let deepLinkText = components.count > 1 ? components[1] : ""
+            let appStoreText = components.last ?? ""
             
             // Draw main text
-            let mainTextRect = CGRect(x: 40, y: size.height/2 - 150, width: size.width - 80, height: 300)
+            let mainTextRect = CGRect(x: 40, y: size.height/2 - 200, width: size.width - 80, height: 400)
             mainText.draw(in: mainTextRect, withAttributes: mainAttributes)
             
-            // Draw URL text
-            let urlTextRect = CGRect(x: 40, y: size.height/2 + 100, width: size.width - 80, height: 100)
-            urlText.draw(in: urlTextRect, withAttributes: urlAttributes)
+            // Draw deep link text
+            if !deepLinkText.isEmpty {
+                let deepLinkRect = CGRect(x: 40, y: size.height/2 + 50, width: size.width - 80, height: 100)
+                deepLinkText.draw(in: deepLinkRect, withAttributes: urlAttributes)
+            }
+            
+            // Draw App Store text
+            let appStoreRect = CGRect(x: 40, y: size.height/2 + 150, width: size.width - 80, height: 100)
+            appStoreText.draw(in: appStoreRect, withAttributes: urlAttributes)
             
             // Add YayoNay logo or branding if needed
             if let logo = UIImage(named: "YayoNayLogo") {
