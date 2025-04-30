@@ -48,105 +48,181 @@ struct CommentRow: View {
     @ObservedObject var viewModel: SubCategoryStatsViewModel
     @Environment(\.colorScheme) private var colorScheme
     
+    private var backgroundColor: Color {
+        colorScheme == .dark ? Color(.systemGray6) : .white
+    }
+    
+    private var shadowColor: Color {
+        colorScheme == .dark ? .clear : Color.black.opacity(0.1)
+    }
+    
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            // Comment content
-            HStack(alignment: .top, spacing: 12) {
-                // User avatar
-                AsyncImage(url: URL(string: comment.userImage)) { image in
-                    image
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
-                } placeholder: {
-                    Color.gray.opacity(0.2)
-                }
-                .frame(width: 40, height: 40)
-                .clipShape(Circle())
-                
-                // Comment text and metadata
-                VStack(alignment: .leading, spacing: 4) {
-                    // Username and timestamp
-                    HStack {
-                        Text(comment.username)
-                            .font(.system(size: 14, weight: .semibold))
-                        
-                        Text(comment.date, style: .relative)
-                            .font(.system(size: 12))
-                            .foregroundColor(.secondary)
-                    }
-                    
-                    // Comment text
-                    Text(comment.text)
-                        .font(.system(size: 14))
-                        .foregroundColor(AppColor.text)
-                }
-            }
-            
-            // Action buttons
-            if !viewModel.isProcessingCommentAction || viewModel.recentlyDeletedCommentId != comment.id {
-                HStack(spacing: 16) {
-                    Button(action: {
-                        if !viewModel.isProcessingCommentAction {
-                            onLike()
-                        }
-                    }) {
-                        HStack(spacing: 4) {
-                            if viewModel.isProcessingCommentAction {
-                                ProgressView()
-                                    .progressViewStyle(CircularProgressViewStyle(tint: AppColor.secondaryText))
-                                    .scaleEffect(0.8)
-                            } else {
-                                Image(systemName: comment.isLiked ? "heart.fill" : "heart")
-                                    .foregroundColor(comment.isLiked ? .red : AppColor.secondaryText)
+        VStack(alignment: .leading, spacing: 12) {
+            // Comment card
+            VStack(alignment: .leading, spacing: 12) {
+                // Comment content
+                HStack(alignment: .top, spacing: 12) {
+                    // User avatar with fallback
+                    ZStack {
+                        if !comment.userImage.isEmpty {
+                            AsyncImage(url: URL(string: comment.userImage)) { image in
+                                image
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fill)
+                            } placeholder: {
+                                Color.gray.opacity(0.2)
                             }
-                            Text("\(comment.likes)")
-                                .font(.system(size: 14))
-                                .foregroundColor(AppColor.secondaryText)
+                        } else {
+                            // Fallback to initials avatar
+                            Text(comment.username.prefix(1).uppercased())
+                                .font(.system(size: 16, weight: .semibold))
+                                .foregroundColor(.white)
+                                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                                .background(
+                                    LinearGradient(
+                                        gradient: Gradient(colors: [.blue, .purple]),
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    )
+                                )
                         }
                     }
-                    .disabled(viewModel.isProcessingCommentAction)
+                    .frame(width: 40, height: 40)
+                    .clipShape(Circle())
+                    .overlay(
+                        Circle()
+                            .stroke(Color(.systemGray5), lineWidth: 1)
+                    )
                     
-                    Button(action: { 
-                        if !viewModel.isProcessingCommentAction {
-                            isReplying = true
+                    // Comment text and metadata
+                    VStack(alignment: .leading, spacing: 6) {
+                        // Username and timestamp
+                        HStack(spacing: 8) {
+                            Text(comment.username)
+                                .font(.system(size: 15, weight: .semibold))
+                            
+                            Text(comment.date, style: .relative)
+                                .font(.system(size: 13))
+                                .foregroundColor(.secondary)
                         }
-                    }) {
-                        HStack(spacing: 4) {
-                            Image(systemName: "arrowshape.turn.up.left")
-                                .foregroundColor(AppColor.secondaryText)
-                            Text("Reply")
-                                .font(.system(size: 14))
-                                .foregroundColor(AppColor.secondaryText)
-                        }
+                        
+                        // Comment text
+                        Text(comment.text)
+                            .font(.system(size: 15))
+                            .foregroundColor(AppColor.text)
+                            .lineSpacing(2)
                     }
-                    .disabled(viewModel.isProcessingCommentAction)
-                    
-                    if comment.userId == Auth.auth().currentUser?.uid {
+                }
+                
+                // Action buttons
+                if !viewModel.isProcessingCommentAction || viewModel.recentlyDeletedCommentId != comment.id {
+                    HStack(spacing: 20) {
                         Button(action: {
                             if !viewModel.isProcessingCommentAction {
-                                showDeleteConfirmation = true
+                                onLike()
                             }
                         }) {
-                            Image(systemName: "trash")
-                                .foregroundColor(.red)
+                            HStack(spacing: 6) {
+                                if viewModel.isProcessingCommentAction {
+                                    ProgressView()
+                                        .progressViewStyle(CircularProgressViewStyle(tint: AppColor.secondaryText))
+                                        .scaleEffect(0.8)
+                                } else {
+                                    Image(systemName: comment.isLiked ? "heart.fill" : "heart")
+                                        .foregroundColor(comment.isLiked ? .red : AppColor.secondaryText)
+                                }
+                                Text("\(comment.likes)")
+                                    .font(.system(size: 14))
+                                    .foregroundColor(AppColor.secondaryText)
+                            }
                         }
                         .disabled(viewModel.isProcessingCommentAction)
+                        
+                        Button(action: { 
+                            if !viewModel.isProcessingCommentAction {
+                                withAnimation(.spring()) {
+                                    isReplying.toggle()
+                                }
+                            }
+                        }) {
+                            HStack(spacing: 6) {
+                                Image(systemName: "arrowshape.turn.up.left")
+                                    .foregroundColor(AppColor.secondaryText)
+                                Text("Reply")
+                                    .font(.system(size: 14))
+                                    .foregroundColor(AppColor.secondaryText)
+                            }
+                        }
+                        .disabled(viewModel.isProcessingCommentAction)
+                        
+                        if comment.userId == Auth.auth().currentUser?.uid {
+                            Button(action: {
+                                if !viewModel.isProcessingCommentAction {
+                                    showDeleteConfirmation = true
+                                }
+                            }) {
+                                Image(systemName: "trash")
+                                    .foregroundColor(.red)
+                            }
+                            .disabled(viewModel.isProcessingCommentAction)
+                        }
                     }
-                }
-            } else if viewModel.recentlyDeletedCommentId == comment.id {
-                // Undo delete button
-                Button(action: {
-                    viewModel.undoDeleteComment()
-                }) {
-                    HStack(spacing: 4) {
-                        Image(systemName: "arrow.uturn.backward")
-                        Text("Undo")
+                    .padding(.top, 4)
+                } else if viewModel.recentlyDeletedCommentId == comment.id {
+                    // Undo delete button
+                    Button(action: {
+                        viewModel.undoDeleteComment()
+                    }) {
+                        HStack(spacing: 6) {
+                            Image(systemName: "arrow.uturn.backward")
+                            Text("Undo")
+                        }
+                        .font(.system(size: 14))
+                        .foregroundColor(.blue)
                     }
-                    .font(.system(size: 14))
-                    .foregroundColor(.blue)
                 }
             }
+            .padding(16)
+            .background(backgroundColor)
+            .clipShape(RoundedRectangle(cornerRadius: 16))
+            .shadow(color: shadowColor, radius: 8, x: 0, y: 2)
+            
+            // Reply input field
+            if isReplying {
+                VStack(spacing: 12) {
+                    TextField("Write a reply...", text: $replyText, axis: .vertical)
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                        .lineLimit(3...6)
+                    
+                    HStack {
+                        Button("Cancel") {
+                            withAnimation(.spring()) {
+                                isReplying = false
+                                replyText = ""
+                            }
+                        }
+                        .foregroundColor(.secondary)
+                        
+                        Spacer()
+                        
+                        Button("Reply") {
+                            if !replyText.isEmpty {
+                                onReply(replyText)
+                                withAnimation(.spring()) {
+                                    isReplying = false
+                                    replyText = ""
+                                }
+                            }
+                        }
+                        .foregroundColor(.blue)
+                        .disabled(replyText.isEmpty)
+                    }
+                }
+                .padding(.leading, 56)
+                .padding(.top, 8)
+            }
         }
+        .padding(.horizontal)
         .alert("Delete Comment", isPresented: $showDeleteConfirmation) {
             Button("Cancel", role: .cancel) { }
             Button("Delete", role: .destructive) {
@@ -159,35 +235,6 @@ struct CommentRow: View {
             Button("OK", role: .cancel) { }
         } message: {
             Text(viewModel.errorMessage ?? "An error occurred")
-        }
-        
-        // Reply input field
-        if isReplying {
-            VStack(spacing: 8) {
-                TextField("Write a reply...", text: $replyText)
-                    .textFieldStyle(RoundedBorderTextFieldStyle())
-                
-                HStack {
-                    Button("Cancel") {
-                        isReplying = false
-                        replyText = ""
-                    }
-                    .foregroundColor(.secondary)
-                    
-                    Spacer()
-                    
-                    Button("Reply") {
-                        if !replyText.isEmpty {
-                            onReply(replyText)
-                            isReplying = false
-                            replyText = ""
-                        }
-                    }
-                    .foregroundColor(.blue)
-                    .disabled(replyText.isEmpty)
-                }
-            }
-            .padding(.top, 8)
         }
     }
 } 
