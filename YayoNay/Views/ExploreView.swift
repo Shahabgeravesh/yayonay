@@ -3,7 +3,6 @@ import FirebaseFirestore
 
 struct ExploreView: View {
     @StateObject private var viewModel = ExploreViewModel()
-    @StateObject private var subCategoryViewModel = SubCategoryViewModel(categoryId: "")
     @State private var selectedCategory: Category?
     @State private var selectedSubCategory: SubCategory?
     @State private var showCategoryDetail = false
@@ -11,6 +10,7 @@ struct ExploreView: View {
     @State private var isSearching = false
     @State private var searchResults: [SubCategory] = []
     @State private var subCategories: [SubCategory] = []
+    @State private var hasLoaded = false
     
     private func updateSearchResults(for searchText: String) {
         if searchText.isEmpty {
@@ -138,8 +138,11 @@ struct ExploreView: View {
             }
         }
         .onAppear {
-            viewModel.fetchCategories()
-            fetchAllSubCategories()
+            if !hasLoaded {
+                viewModel.fetchCategories()
+                fetchAllSubCategories()
+                hasLoaded = true
+            }
         }
     }
     

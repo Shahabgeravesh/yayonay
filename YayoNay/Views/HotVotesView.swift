@@ -76,6 +76,7 @@ class HotVotesViewModel: ObservableObject {
     @Published var topCategories: [TopCategory] = []
     @Published var todaysTopVotes: [HotVoteItem] = []
     private let db = Firestore.firestore()
+    private var hasLoaded = false
     
     func fetchData() {
         fetchHotVotes()
@@ -119,8 +120,7 @@ class HotVotesViewModel: ObservableObject {
                             categoryName: categoryMap[categoryId] ?? ""
                         )
                     }
-                    .sorted { $0.yayCount > $1.yayCount }
-                    ?? []
+                    ?? []  // Remove redundant sorting since Firestore query is already sorted
                 }
             }
     }
@@ -245,6 +245,7 @@ class HotVotesViewModel: ObservableObject {
 
 struct HotVotesView: View {
     @StateObject private var viewModel = HotVotesViewModel()
+    @State private var hasLoaded = false
     
     var body: some View {
         NavigationStack {
@@ -284,7 +285,10 @@ struct HotVotesView: View {
             .navigationTitle("Hot Votes")
         }
         .onAppear {
-            viewModel.fetchData()
+            if !hasLoaded {
+                viewModel.fetchData()
+                hasLoaded = true
+            }
         }
     }
 }

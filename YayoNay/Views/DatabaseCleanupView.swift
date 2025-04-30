@@ -13,7 +13,7 @@ struct DatabaseCleanupView: View {
     
     // List of all possible collection names to clean up
     private let collectionsToClean = [
-        "users", "votes", "comments", "allTimeBest", "alltimebest", "AllTimeBest", "topics", 
+        "users", "votes", "comments", "allTimeBest", "topics", 
         "topicsBox", "topicBox", "topicComments", "bestTopics",
         "popularTopics", "trendingTopics", "recentTopics",
         "attributeVotes", "attributes", "attributeTopics",
@@ -134,6 +134,7 @@ struct DatabaseCleanupView: View {
     
     private func cleanupCollection(_ collectionName: String, completion: @escaping () -> Void) {
         let db = Firestore.firestore()
+        let batchSize = 500
         
         addStatusMessage("Checking collection: \(collectionName)")
         
@@ -167,24 +168,38 @@ struct DatabaseCleanupView: View {
                 return
             }
             
-            // Create a batch for deleting documents
-            let batch = db.batch()
+            // Process documents in chunks
+            let chunks = stride(from: 0, to: documents.count, by: batchSize)
+            let group = DispatchGroup()
             
-            // Add each document to the batch for deletion
-            for document in documents {
-                batch.deleteDocument(document.reference)
+            for chunkStart in chunks {
+                group.enter()
+                let chunkEnd = min(chunkStart + batchSize, documents.count)
+                let chunk = Array(documents[chunkStart..<chunkEnd])
+                
+                // Create a batch for deleting documents
+                let batch = db.batch()
+                
+                // Add each document to the batch for deletion
+                for document in chunk {
+                    batch.deleteDocument(document.reference)
+                }
+                
+                // Commit the batch
+                batch.commit { error in
+                    if let error = error {
+                        addStatusMessage("❌ Error deleting documents from \(collectionName): \(error.localizedDescription)")
+                        showError(message: error.localizedDescription)
+                    } else {
+                        addStatusMessage("✅ Successfully deleted \(chunk.count) documents from \(collectionName)")
+                    }
+                    group.leave()
+                }
             }
             
-            // Commit the batch
-            batch.commit { error in
-                if let error = error {
-                    addStatusMessage("❌ Error deleting documents from \(collectionName): \(error.localizedDescription)")
-                    showError(message: error.localizedDescription)
-                    isCleaning = false
-                } else {
-                    addStatusMessage("✅ Successfully deleted \(documents.count) documents from \(collectionName)!")
-                    completion()
-                }
+            group.notify(queue: .main) {
+                addStatusMessage("✅ Completed processing all documents in \(collectionName)")
+                completion()
             }
         }
     }
