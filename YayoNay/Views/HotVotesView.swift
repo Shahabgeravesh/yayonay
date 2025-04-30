@@ -261,7 +261,7 @@ struct HotVotesView: View {
                         SectionHeader(title: "Today's Trending", subtitle: "Most popular in the last 24 hours")
                         
                         ForEach(Array(viewModel.todaysTopVotes.enumerated()), id: \.element.id) { index, item in
-                            HotVoteCard(index: index + 1, item: item)
+                            HotVoteCard(item: item, index: index + 1)
                         }
                     }
                     
@@ -270,7 +270,7 @@ struct HotVotesView: View {
                         SectionHeader(title: "All-Time Best", subtitle: "Highest rated items ever")
                         
                         ForEach(Array(viewModel.hotVotes.enumerated()), id: \.element.id) { index, item in
-                            HotVoteCard(index: index + 1, item: item)
+                            HotVoteCard(item: item, index: index + 1)
                         }
                     }
                 }
@@ -350,113 +350,106 @@ struct TopCategoryRow: View {
 }
 
 struct HotVoteCard: View {
-    let index: Int
     let item: HotVoteItem
-    
-    private var category: Category {
-        Category(
-            id: item.categoryId,
-            name: item.categoryName,
-            isTopCategory: true,
-            order: index
-        )
-    }
+    let index: Int
+    @State private var selectedSubCategory: SubCategory?
     
     var body: some View {
-        NavigationLink(destination: CategoryDetailView(category: Category(id: item.categoryId, name: item.categoryName, isTopCategory: true, order: index), initialSubCategoryId: item.id)) {
-            VStack(spacing: 12) {
-                HStack(spacing: 16) {
-                    // Rank and Image
-                    ZStack(alignment: .topLeading) {
-                        AsyncImage(url: URL(string: item.imageURL)) { image in
-                            image
-                                .resizable()
-                                .aspectRatio(contentMode: .fill)
-                        } placeholder: {
-                            Color.gray.opacity(0.2)
-                        }
-                        .frame(width: 80, height: 80)
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                        .accessibilityHidden(true) // Hide from VoiceOver since we describe it in the label
-                        
-                        // Rank Badge
-                        Text("\(index)")
-                            .font(.system(size: 13, weight: .bold))
-                            .foregroundColor(.white)
-                            .frame(width: 24, height: 24)
-                            .background(
-                                Circle()
-                                    .fill(Color.blue)
-                                    .shadow(radius: 2)
-                            )
-                            .offset(x: -8, y: -8)
-                            .accessibilityHidden(true) // Hide from VoiceOver since we include it in the label
-                    }
+        NavigationLink(destination: Group {
+            if let subCategory = selectedSubCategory {
+                CategoryDetailView(
+                    category: Category(
+                        id: item.categoryId,
+                        name: item.categoryName,
+                        isTopCategory: true,
+                        order: index
+                    ),
+                    initialSubCategoryId: subCategory.id
+                )
+            } else {
+                ProgressView()
+            }
+        }) {
+            HStack(spacing: 16) {
+                // Rank Circle
+                ZStack {
+                    Circle()
+                        .fill(getRankColor(index))
+                        .frame(width: 32, height: 32)
                     
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text(item.name)
-                            .font(.system(size: 17, weight: .semibold))
-                        
-                        HStack {
-                            Text("\(item.yayCount) yays")
-                                .font(.system(size: 15, weight: .medium))
-                                .foregroundStyle(.green)
-                            Text("(\(item.totalVotes) total)")
-                                .font(.system(size: 13))
-                                .foregroundStyle(.secondary)
-                        }
+                    Text("\(index)")
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundColor(.white)
+                }
+                .accessibilityHidden(true)
+                
+                // Item Image and Name
+                HStack(spacing: 12) {
+                    AsyncImage(url: URL(string: item.imageURL)) { image in
+                        image
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                    } placeholder: {
+                        Color.gray.opacity(0.1)
                     }
+                    .frame(width: 40, height: 40)
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
                     
-                    Spacer()
+                    Text(item.name)
+                        .font(.system(size: 17, weight: .semibold))
+                        .lineLimit(1)
                 }
                 
-                // Vote Progress Bar
-                VStack(spacing: 6) {
-                    GeometryReader { geometry in
-                        ZStack(alignment: .leading) {
-                            // Background
-                            RoundedRectangle(cornerRadius: 8)
-                                .fill(Color.red.opacity(0.3))
-                                .frame(height: 16)
-                            
-                            // Yay Progress
-                            RoundedRectangle(cornerRadius: 8)
-                                .fill(Color.green.opacity(0.7))
-                                .frame(width: geometry.size.width * CGFloat(item.yayPercentage) / 100, height: 16)
-                        }
-                    }
-                    .frame(height: 16)
-                    .accessibilityHidden(true) // Hide from VoiceOver since we describe it in the label
-                    
-                    // Vote Stats
-                    HStack {
-                        HStack(spacing: 4) {
-                            Image(systemName: "hand.thumbsdown.fill")
-                            Text("\(Int(item.nayPercentage))%")
-                        }
-                        .foregroundStyle(.red)
-                        
-                        Spacer()
-                        
-                        HStack(spacing: 4) {
-                            Text("\(Int(item.yayPercentage))%")
-                            Image(systemName: "hand.thumbsup.fill")
-                        }
-                        .foregroundStyle(.green)
-                    }
-                    .font(.system(size: 13, weight: .medium))
-                }
+                Spacer()
+                
+                // Vote Count
+                Text("\(item.totalVotes) votes")
+                    .font(.system(size: 15))
+                    .foregroundStyle(.secondary)
             }
             .padding()
             .background(Color(.systemBackground))
             .clipShape(RoundedRectangle(cornerRadius: 16))
-            .shadow(color: Color.black.opacity(0.05), radius: 8, y: 4)
+            .shadow(color: Color.black.opacity(0.1), radius: 5, y: 2)
+            .onAppear {
+                // Fetch subcategory details
+                let db = Firestore.firestore()
+                db.collection("subCategories").document(item.id).getDocument { snapshot, error in
+                    if let data = snapshot?.data(),
+                       let name = data["name"] as? String,
+                       let imageURL = data["imageURL"] as? String,
+                       let categoryId = data["categoryId"] as? String,
+                       let order = data["order"] as? Int,
+                       let yayCount = data["yayCount"] as? Int,
+                       let nayCount = data["nayCount"] as? Int {
+                        
+                        selectedSubCategory = SubCategory(
+                            id: item.id,
+                            name: name,
+                            imageURL: imageURL,
+                            categoryId: categoryId,
+                            order: order,
+                            yayCount: yayCount,
+                            nayCount: nayCount,
+                            attributes: [:]
+                        )
+                    }
+                }
+            }
         }
         .buttonStyle(PlainButtonStyle())
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(index). \(item.name)")
-        .accessibilityValue("\(item.yayCount) yays, \(item.nayCount) nays. \(Int(item.yayPercentage))% positive")
+        .accessibilityLabel("\(index). \(item.name), \(item.totalVotes) votes")
         .accessibilityHint("Double tap to view and vote on this item")
+    }
+    
+    private func getRankColor(_ rank: Int) -> Color {
+        switch rank {
+        case 1: return .yellow // Gold
+        case 2: return .gray // Silver
+        case 3: return .brown // Bronze
+        default: return .secondary
+        }
     }
 }
 
