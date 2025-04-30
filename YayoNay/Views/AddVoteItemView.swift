@@ -1,3 +1,10 @@
+// MARK: - Add Vote Item View
+// This view allows users to add new items for voting, including:
+// 1. Item information input
+// 2. Category and subcategory selection
+// 3. Image upload
+// 4. Item details and description
+
 import SwiftUI
 import PhotosUI
 import FirebaseStorage

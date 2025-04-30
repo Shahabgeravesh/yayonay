@@ -1,3 +1,10 @@
+// MARK: - Interest Toggle Component
+// This component provides a toggle switch for interest selection, including:
+// 1. Visual toggle state
+// 2. Interest label
+// 3. Selection feedback
+// 4. Accessibility support
+
 import SwiftUI
 
 struct InterestToggle: View {

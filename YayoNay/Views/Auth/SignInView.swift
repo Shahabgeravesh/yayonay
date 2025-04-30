@@ -1,3 +1,10 @@
+// MARK: - Sign In View
+// This view handles user sign-in functionality, including:
+// 1. Email and password login
+// 2. Social media sign-in options
+// 3. Password recovery
+// 4. New user registration navigation
+
 import SwiftUI
 
 struct SignInView: View {

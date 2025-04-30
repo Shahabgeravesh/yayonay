@@ -1,3 +1,10 @@
+// MARK: - Hot Votes View
+// This view displays the trending content in the app, including:
+// 1. Top Categories - Shows the most voted categories
+// 2. Today's Trending - Displays items with the most votes in the last 24 hours
+// 3. All-Time Best - Shows the highest rated items ever
+// This is one of the main tabs in the app's bottom navigation.
+
 import SwiftUI
 import FirebaseFirestore
 

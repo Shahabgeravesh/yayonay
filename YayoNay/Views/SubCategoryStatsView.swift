@@ -1,3 +1,10 @@
+// MARK: - Subcategory Statistics View
+// This view displays detailed statistics for a specific subcategory, including:
+// 1. Voting trends and patterns
+// 2. User engagement metrics
+// 3. Historical voting data
+// 4. Comparative analysis with other subcategories
+
 import SwiftUI
 import FirebaseFirestore
 import FirebaseAuth

@@ -1,3 +1,10 @@
+// MARK: - Explore View
+// This view allows users to browse and discover content by:
+// 1. Viewing all available categories
+// 2. Searching for specific topics
+// 3. Filtering content by interests
+// This is one of the main tabs in the app's bottom navigation.
+
 import SwiftUI
 import FirebaseFirestore
 

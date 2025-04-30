@@ -1,4 +1,9 @@
-//This is My Votes tab in the app.
+// MARK: - Votes View
+// This view displays the user's voting activity, including:
+// 1. Recent votes cast by the user
+// 2. Vote statistics and history
+// 3. Ability to view and manage past votes
+// This is one of the main tabs in the app's bottom navigation.
 
 import SwiftUI
 import FirebaseFirestore

@@ -1,3 +1,10 @@
+// MARK: - Authentication View
+// This view manages user authentication in the app, including:
+// 1. User login and registration
+// 2. Password recovery
+// 3. Authentication state management
+// 4. Social media login integration
+
 import SwiftUI
 import AuthenticationServices
 

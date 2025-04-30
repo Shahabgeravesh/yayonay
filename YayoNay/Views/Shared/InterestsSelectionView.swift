@@ -1,3 +1,10 @@
+// MARK: - Interests Selection View
+// This view allows users to select their interests, including:
+// 1. Category preferences
+// 2. Topic interests
+// 3. Voting preferences
+// 4. Content customization
+
 import SwiftUI
 
 struct InterestsSelectionView: View {

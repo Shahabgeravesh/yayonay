@@ -1,3 +1,10 @@
+// MARK: - Random View
+// This view provides a random voting experience, including:
+// 1. Random selection of items to vote on
+// 2. Surprise voting options
+// 3. Discovery of new content
+// 4. Quick voting interface
+
 import SwiftUI
 import FirebaseFirestore
 

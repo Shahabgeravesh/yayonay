@@ -1,3 +1,10 @@
+// MARK: - Tutorial View
+// This view provides an interactive tutorial for new users, including:
+// 1. App features walkthrough
+// 2. Voting mechanics explanation
+// 3. Navigation guidance
+// 4. Best practices and tips
+
 import SwiftUI
 
 struct TutorialView: View {

@@ -1,3 +1,10 @@
+// MARK: - Voting View
+// This view provides the main voting interface where users can:
+// 1. View items to vote on
+// 2. Cast Yay or Nay votes
+// 3. See voting statistics and results
+// 4. Navigate through different voting categories
+
 import SwiftUI
 import FirebaseFirestore
 import FirebaseAuth

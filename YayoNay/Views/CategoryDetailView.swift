@@ -1,3 +1,10 @@
+// MARK: - Category Detail View
+// This view displays detailed information about a specific category, including:
+// 1. List of subcategories within the category
+// 2. Voting statistics for each subcategory
+// 3. Ability to vote on subcategories
+// 4. Category-specific information and details
+
 import SwiftUI
 import FirebaseFirestore
 import FirebaseAuth

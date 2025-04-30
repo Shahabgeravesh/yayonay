@@ -1,3 +1,10 @@
+// MARK: - Social Sharing View
+// This view enables users to share content from the app, including:
+// 1. Vote results and statistics
+// 2. Category and subcategory information
+// 3. User achievements and activity
+// 4. Custom sharing options
+
 import SwiftUI
 
 struct SocialSharingView: View {

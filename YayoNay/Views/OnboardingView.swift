@@ -1,3 +1,10 @@
+// MARK: - Onboarding View
+// This view provides the initial user experience when first launching the app, including:
+// 1. Welcome screens and app introduction
+// 2. User registration and login options
+// 3. Initial preferences and interests selection
+// 4. Tutorial and app usage guidance
+
 import SwiftUI
 import PhotosUI
 import FirebaseAuth

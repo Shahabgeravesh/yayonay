@@ -1,3 +1,10 @@
+// MARK: - Comment Row View
+// This view displays individual comments in the app, including:
+// 1. User information
+// 2. Comment content
+// 3. Timestamp
+// 4. Interaction options
+
 import SwiftUI
 import FirebaseAuth
 import FirebaseFirestore

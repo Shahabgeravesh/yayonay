@@ -1,3 +1,10 @@
+// MARK: - Sign Up View
+// This view handles new user registration, including:
+// 1. User information collection
+// 2. Account creation
+// 3. Profile setup
+// 4. Initial preferences selection
+
 import SwiftUI
 
 struct SignUpView: View {

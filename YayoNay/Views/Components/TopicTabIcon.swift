@@ -1,3 +1,10 @@
+// MARK: - Topic Tab Icon Component
+// This component provides a visual icon for topic tabs, including:
+// 1. Category-specific icons
+// 2. Selection state
+// 3. Visual feedback
+// 4. Navigation support
+
 import SwiftUI
 
 struct TopicTabIcon: View {
