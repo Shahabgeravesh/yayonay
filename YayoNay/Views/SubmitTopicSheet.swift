@@ -52,7 +52,7 @@ struct SubmitTopicSheet: View {
                                 .font(.headline)
                                 .foregroundColor(.primary)
                             
-                            TextField("Enter media link (optional)", text: $mediaURL)
+                            TextField("Enter media link", text: $mediaURL)
                                 .textFieldStyle(RoundedTextFieldStyle(isRequired: true, isEmpty: mediaURL.isEmpty))
                                 .keyboardType(.URL)
                                 .textInputAutocapitalization(.never)
@@ -191,11 +191,32 @@ struct SubmitTopicSheet: View {
         errorMessage = ""
         
         // Validate URL format
-        guard let url = URL(string: mediaURL) else {
+        guard !mediaURL.isEmpty else {
             showError = true
-            errorMessage = "Please enter a valid URL"
+            errorMessage = "Please enter a media URL"
             return
         }
+        
+        // Clean up the URL
+        var cleanedURL = mediaURL.trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        // Add https:// if no scheme is present
+        if !cleanedURL.hasPrefix("http://") && !cleanedURL.hasPrefix("https://") {
+            cleanedURL = "https://" + cleanedURL
+        }
+        
+        // Validate URL format
+        guard let url = URL(string: cleanedURL),
+              url.scheme != nil,
+              url.host != nil,
+              url.host!.contains(".") else {
+            showError = true
+            errorMessage = "Please enter a valid URL (e.g., https://example.com)"
+            return
+        }
+        
+        // Update the mediaURL with the cleaned version
+        mediaURL = cleanedURL
         
         // Validate tags format
         let tagList = processedTags
