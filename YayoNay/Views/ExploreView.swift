@@ -5,10 +5,11 @@ struct ExploreView: View {
     @StateObject private var viewModel = ExploreViewModel()
     @StateObject private var subCategoryViewModel = SubCategoryViewModel(categoryId: "")
     @State private var selectedCategory: Category?
+    @State private var selectedSubCategory: SubCategory?
     @State private var showCategoryDetail = false
     @State private var searchText = ""
     @State private var isSearching = false
-    @State private var searchResults: [Category] = []
+    @State private var searchResults: [SubCategory] = []
     @State private var subCategories: [SubCategory] = []
     
     private func updateSearchResults(for searchText: String) {
@@ -17,46 +18,43 @@ struct ExploreView: View {
             return
         }
         
-        // First search through categories
-        let categoryMatches = viewModel.categories.filter { category in
-            category.name.localizedCaseInsensitiveContains(searchText)
-        }
-        
-        // Then search through subcategories
-        let subCategoryMatches = subCategories.filter { subCategory in
+        // Search through subcategories
+        let matches = subCategories.filter { subCategory in
             subCategory.name.localizedCaseInsensitiveContains(searchText)
         }
         
-        // Get unique categories from subcategory matches
-        let categoriesFromSubCategories = subCategoryMatches.compactMap { subCategory in
-            viewModel.categories.first { $0.id == subCategory.categoryId }
-        }
-        
-        // Combine and remove duplicates
-        searchResults = Array(Set(categoryMatches + categoriesFromSubCategories))
+        searchResults = matches
     }
     
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(spacing: 32) {
+                VStack(spacing: 24) {
                     // Search Bar
                     HStack {
                         Image(systemName: "magnifyingglass")
-                            .foregroundColor(.gray)
-                        TextField("Search subcategories...", text: $searchText)
-                            .font(.system(size: 16))
+                            .foregroundStyle(.secondary)
+                        
+                        TextField("Search for items", text: $searchText)
                             .onChange(of: searchText) { newValue in
                                 updateSearchResults(for: newValue)
                             }
+                        
+                        if !searchText.isEmpty {
+                            Button(action: {
+                                searchText = ""
+                            }) {
+                                Image(systemName: "xmark.circle.fill")
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
                     }
                     .padding(12)
                     .background(Color(.systemGray6))
-                    .cornerRadius(12)
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
                     .padding(.horizontal)
                     
                     if !searchResults.isEmpty {
-                        // Search Results
                         VStack(alignment: .leading, spacing: 16) {
                             Text("Search Results")
                                 .font(.system(size: 24, weight: .bold))
@@ -66,11 +64,12 @@ struct ExploreView: View {
                                 GridItem(.flexible(), spacing: 16),
                                 GridItem(.flexible(), spacing: 16)
                             ], spacing: 16) {
-                                ForEach(searchResults) { category in
-                                    CategoryCard(category: category)
+                                ForEach(searchResults) { subCategory in
+                                    SubCategoryCard(subCategory: subCategory)
                                         .onTapGesture {
-                                            withAnimation(.spring()) {
+                                            if let category = viewModel.categories.first(where: { $0.id == subCategory.categoryId }) {
                                                 selectedCategory = category
+                                                selectedSubCategory = subCategory
                                                 showCategoryDetail = true
                                             }
                                         }
@@ -118,10 +117,10 @@ struct ExploreView: View {
                                                 selectedCategory = category
                                                 showCategoryDetail = true
                                             }
+                                        }
+                                }
                             }
-                        }
-                    }
-                    .padding(.horizontal)
+                            .padding(.horizontal)
                         }
                     }
                 }
@@ -131,30 +130,79 @@ struct ExploreView: View {
             .navigationTitle("Explore")
             .navigationDestination(isPresented: $showCategoryDetail) {
                 if let category = selectedCategory {
-                    CategoryDetailView(category: category)
+                    CategoryDetailView(
+                        category: category,
+                        initialSubCategoryId: selectedSubCategory?.id
+                    )
                 }
             }
         }
         .onAppear {
             viewModel.fetchCategories()
             fetchAllSubCategories()
+        }
     }
-}
-
+    
     private func fetchAllSubCategories() {
         let db = Firestore.firestore()
-        
-        // Get all subcategories
-        db.collection("subcategories").getDocuments { snapshot, error in
+        db.collection("subCategories").getDocuments { snapshot, error in
             if let error = error {
-                print("Error fetching subcategories: \(error.localizedDescription)")
+                print("Error fetching subcategories: \(error)")
                 return
             }
             
             if let documents = snapshot?.documents {
-                subCategories = documents.compactMap { SubCategory(document: $0) }
+                subCategories = documents.compactMap { document in
+                    let data = document.data()
+                    guard let name = data["name"] as? String,
+                          let imageURL = data["imageURL"] as? String,
+                          let categoryId = data["categoryId"] as? String,
+                          let yayCount = data["yayCount"] as? Int,
+                          let nayCount = data["nayCount"] as? Int else {
+                        return nil
+                    }
+                    
+                    return SubCategory(
+                        id: document.documentID,
+                        name: name,
+                        imageURL: imageURL,
+                        categoryId: categoryId,
+                        order: 0,
+                        yayCount: yayCount,
+                        nayCount: nayCount,
+                        attributes: [:]
+                    )
+                }
             }
         }
+    }
+}
+
+struct SubCategoryCard: View {
+    let subCategory: SubCategory
+    
+    var body: some View {
+        VStack(spacing: 12) {
+            AsyncImage(url: URL(string: subCategory.imageURL)) { image in
+                image
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+            } placeholder: {
+                Color.gray.opacity(0.2)
+            }
+            .frame(height: 120)
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+            
+            Text(subCategory.name)
+                .font(.system(size: 15, weight: .medium))
+                .foregroundColor(.primary)
+                .lineLimit(2)
+                .multilineTextAlignment(.center)
+        }
+        .padding()
+        .background(Color(.systemBackground))
+        .cornerRadius(20)
+        .shadow(color: Color.black.opacity(0.1), radius: 10, x: 0, y: 5)
     }
 }
 

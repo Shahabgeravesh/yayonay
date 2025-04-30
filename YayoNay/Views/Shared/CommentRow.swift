@@ -41,184 +41,153 @@ struct CommentRow: View {
     let onLike: () -> Void
     let onDelete: () -> Void
     let onReply: (String) -> Void
-    
     @State private var isReplying = false
     @State private var replyText = ""
-    @FocusState private var isReplyFieldFocused: Bool
+    @State private var showDeleteConfirmation = false
+    @State private var showUndoDelete = false
+    @ObservedObject var viewModel: SubCategoryStatsViewModel
     @Environment(\.colorScheme) private var colorScheme
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            // Main comment
+        VStack(alignment: .leading, spacing: 8) {
+            // Comment content
             HStack(alignment: .top, spacing: 12) {
                 // User avatar
-                AsyncImage(url: URL(string: comment.userImage)) { phase in
-                    switch phase {
-                    case .empty:
-                        Circle()
-                            .fill(colorScheme == .dark ? Color.gray.opacity(0.3) : Color.gray.opacity(0.2))
-                            .overlay(
-                                Text(comment.username.prefix(1).uppercased())
-                                    .font(.system(size: 16, weight: .medium))
-                                    .foregroundColor(colorScheme == .dark ? .white.opacity(0.7) : .gray)
-                            )
-                    case .success(let image):
-                        image
-                            .resizable()
-                            .aspectRatio(contentMode: .fill)
-                    case .failure:
-                        Circle()
-                            .fill(colorScheme == .dark ? Color.gray.opacity(0.3) : Color.gray.opacity(0.2))
-                            .overlay(
-                                Text(comment.username.prefix(1).uppercased())
-                                    .font(.system(size: 16, weight: .medium))
-                                    .foregroundColor(colorScheme == .dark ? .white.opacity(0.7) : .gray)
-                            )
-                    @unknown default:
-                        Circle()
-                            .fill(colorScheme == .dark ? Color.gray.opacity(0.3) : Color.gray.opacity(0.2))
-                            .overlay(
-                                Text(comment.username.prefix(1).uppercased())
-                                    .font(.system(size: 16, weight: .medium))
-                                    .foregroundColor(colorScheme == .dark ? .white.opacity(0.7) : .gray)
-                            )
-                    }
+                AsyncImage(url: URL(string: comment.userImage)) { image in
+                    image
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                } placeholder: {
+                    Color.gray.opacity(0.2)
                 }
                 .frame(width: 40, height: 40)
                 .clipShape(Circle())
                 
+                // Comment text and metadata
                 VStack(alignment: .leading, spacing: 4) {
                     // Username and timestamp
                     HStack {
                         Text(comment.username)
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundColor(AppColor.text)
-                        Text(comment.date.timeAgoDisplay())
-                            .font(.system(size: 14))
-                            .foregroundColor(AppColor.secondaryText)
+                            .font(.system(size: 14, weight: .semibold))
+                        
+                        Text(comment.date, style: .relative)
+                            .font(.system(size: 12))
+                            .foregroundColor(.secondary)
                     }
                     
                     // Comment text
                     Text(comment.text)
-                        .font(.system(size: 16))
+                        .font(.system(size: 14))
                         .foregroundColor(AppColor.text)
-                        .fixedSize(horizontal: false, vertical: true)
-                    
-                    // Action buttons
-                    HStack(spacing: 16) {
-                        Button(action: {
-                            print("DEBUG: Like button tapped for comment ID: \(comment.id)")
-                            onLike()
-                        }) {
-                            HStack(spacing: 4) {
-                                Image(systemName: comment.isLiked ? "heart.fill" : "heart")
-                                    .foregroundColor(comment.isLiked ? .red : AppColor.secondaryText)
-                                Text("\(comment.likes)")
-                                    .font(.system(size: 14))
-                                    .foregroundColor(AppColor.secondaryText)
-                            }
-                        }
-                        
-                        Button(action: { 
-                            print("DEBUG: Reply button tapped for comment ID: \(comment.id)")
-                            isReplying = true
-                        }) {
-                            HStack(spacing: 4) {
-                                Image(systemName: "arrowshape.turn.up.left")
-                                    .foregroundColor(AppColor.secondaryText)
-                                Text("Reply")
-                                    .font(.system(size: 14))
-                                    .foregroundColor(AppColor.secondaryText)
-                            }
-                        }
-                        
-                        if comment.userId == Auth.auth().currentUser?.uid {
-                            Button(action: {
-                                print("DEBUG: Delete button tapped for comment: \(comment.id)")
-                                onDelete()
-                            }) {
-                                Image(systemName: "trash")
-                                    .foregroundColor(.red)
-                            }
-                        }
-                    }
                 }
             }
             
-            // Reply input field
-            if isReplying {
-                VStack(spacing: 8) {
-                    HStack(spacing: 12) {
-                        TextField("Write a reply...", text: $replyText)
-                            .textFieldStyle(.roundedBorder)
-                            .frame(maxWidth: .infinity)
-                            .focused($isReplyFieldFocused)
-                            .submitLabel(.send)
-                            .onSubmit {
-                                submitReply()
-                            }
-                        
-                        Button(action: {
-                            submitReply()
-                        }) {
-                            Text("Post")
-                                .font(.system(size: 14, weight: .medium))
-                                .foregroundColor(replyText.isEmpty ? AppColor.secondaryText : AppColor.accent)
+            // Action buttons
+            if !viewModel.isProcessingCommentAction || viewModel.recentlyDeletedCommentId != comment.id {
+                HStack(spacing: 16) {
+                    Button(action: {
+                        if !viewModel.isProcessingCommentAction {
+                            onLike()
                         }
-                        .disabled(replyText.isEmpty)
-                    }
-                    
-                    HStack {
-                        Button(action: {
-                            isReplying = false
-                            replyText = ""
-                            isReplyFieldFocused = false
-                        }) {
-                            Text("Cancel")
+                    }) {
+                        HStack(spacing: 4) {
+                            if viewModel.isProcessingCommentAction {
+                                ProgressView()
+                                    .progressViewStyle(CircularProgressViewStyle(tint: AppColor.secondaryText))
+                                    .scaleEffect(0.8)
+                            } else {
+                                Image(systemName: comment.isLiked ? "heart.fill" : "heart")
+                                    .foregroundColor(comment.isLiked ? .red : AppColor.secondaryText)
+                            }
+                            Text("\(comment.likes)")
                                 .font(.system(size: 14))
                                 .foregroundColor(AppColor.secondaryText)
                         }
-                        
-                        Spacer()
-                        
-                        Button(action: {
-                            isReplyFieldFocused = false
-                        }) {
-                            Text("Done")
+                    }
+                    .disabled(viewModel.isProcessingCommentAction)
+                    
+                    Button(action: { 
+                        if !viewModel.isProcessingCommentAction {
+                            isReplying = true
+                        }
+                    }) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "arrowshape.turn.up.left")
+                                .foregroundColor(AppColor.secondaryText)
+                            Text("Reply")
                                 .font(.system(size: 14))
-                                .foregroundColor(AppColor.accent)
+                                .foregroundColor(AppColor.secondaryText)
                         }
                     }
-                    .frame(maxWidth: .infinity)
-                }
-                .padding(.leading, 52)
-                .padding(.trailing, 16)
-                .padding(.vertical, 8)
-                .background(AppColor.adaptiveSecondaryBackground(for: colorScheme))
-                .onAppear {
-                    // Set focus after a short delay to ensure view is ready
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                        isReplyFieldFocused = true
+                    .disabled(viewModel.isProcessingCommentAction)
+                    
+                    if comment.userId == Auth.auth().currentUser?.uid {
+                        Button(action: {
+                            if !viewModel.isProcessingCommentAction {
+                                showDeleteConfirmation = true
+                            }
+                        }) {
+                            Image(systemName: "trash")
+                                .foregroundColor(.red)
+                        }
+                        .disabled(viewModel.isProcessingCommentAction)
                     }
+                }
+            } else if viewModel.recentlyDeletedCommentId == comment.id {
+                // Undo delete button
+                Button(action: {
+                    viewModel.undoDeleteComment()
+                }) {
+                    HStack(spacing: 4) {
+                        Image(systemName: "arrow.uturn.backward")
+                        Text("Undo")
+                    }
+                    .font(.system(size: 14))
+                    .foregroundColor(.blue)
                 }
             }
         }
-        .padding()
-        .background(AppColor.adaptiveBackground(for: colorScheme))
-        .cornerRadius(12)
-        .shadow(
-            color: colorScheme == .dark ? .black.opacity(0.2) : .black.opacity(0.05),
-            radius: colorScheme == .dark ? 3 : 3,
-            y: colorScheme == .dark ? 1 : 1
-        )
-    }
-    
-    private func submitReply() {
-        guard !replyText.isEmpty else { return }
-        print("DEBUG: Submitting reply to comment ID: \(comment.id)")
-        onReply(replyText)
-        replyText = ""
-        isReplying = false
-        isReplyFieldFocused = false
+        .alert("Delete Comment", isPresented: $showDeleteConfirmation) {
+            Button("Cancel", role: .cancel) { }
+            Button("Delete", role: .destructive) {
+                onDelete()
+            }
+        } message: {
+            Text("Are you sure you want to delete this comment?")
+        }
+        .alert("Error", isPresented: $viewModel.showErrorAlert) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text(viewModel.errorMessage ?? "An error occurred")
+        }
+        
+        // Reply input field
+        if isReplying {
+            VStack(spacing: 8) {
+                TextField("Write a reply...", text: $replyText)
+                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                
+                HStack {
+                    Button("Cancel") {
+                        isReplying = false
+                        replyText = ""
+                    }
+                    .foregroundColor(.secondary)
+                    
+                    Spacer()
+                    
+                    Button("Reply") {
+                        if !replyText.isEmpty {
+                            onReply(replyText)
+                            isReplying = false
+                            replyText = ""
+                        }
+                    }
+                    .foregroundColor(.blue)
+                    .disabled(replyText.isEmpty)
+                }
+            }
+            .padding(.top, 8)
+        }
     }
 } 

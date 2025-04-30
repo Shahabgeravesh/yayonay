@@ -10,6 +10,10 @@ class SubCategoryStatsViewModel: ObservableObject {
     @Published var showCooldownAlert = false
     @Published private(set) var lastVoteDate: Date?
     @Published private var subQuestionVoteDates: [String: Date] = [:] // Track vote dates for each sub-question
+    @Published var errorMessage: String?
+    @Published var showErrorAlert = false
+    @Published var isProcessingCommentAction = false
+    @Published var recentlyDeletedCommentId: String?
     private let db = Firestore.firestore()
     private var attributeListener: ListenerRegistration?
     private var subCategoryListener: ListenerRegistration?
@@ -519,6 +523,8 @@ class SubCategoryStatsViewModel: ObservableObject {
     func likeComment(_ comment: Comment) {
         guard let userId = Auth.auth().currentUser?.uid else { return }
         
+        isProcessingCommentAction = true
+        
         let docRef = db.collection("comments").document(comment.id)
         
         if comment.isLiked {
@@ -526,13 +532,29 @@ class SubCategoryStatsViewModel: ObservableObject {
             docRef.updateData([
                 "likes": FieldValue.increment(Int64(-1)),
                 "likedBy.\(userId)": FieldValue.delete()
-            ])
+            ]) { [weak self] error in
+                DispatchQueue.main.async {
+                    self?.isProcessingCommentAction = false
+                    if let error = error {
+                        self?.errorMessage = "Failed to unlike comment: \(error.localizedDescription)"
+                        self?.showErrorAlert = true
+                    }
+                }
+            }
         } else {
             // Like
             docRef.updateData([
                 "likes": FieldValue.increment(Int64(1)),
                 "likedBy.\(userId)": true
-            ])
+            ]) { [weak self] error in
+                DispatchQueue.main.async {
+                    self?.isProcessingCommentAction = false
+                    if let error = error {
+                        self?.errorMessage = "Failed to like comment: \(error.localizedDescription)"
+                        self?.showErrorAlert = true
+                    }
+                }
+            }
         }
     }
     
@@ -542,8 +564,13 @@ class SubCategoryStatsViewModel: ObservableObject {
         guard let userId = Auth.auth().currentUser?.uid,
               comment.userId == userId else {
             print("DEBUG: Delete failed - User not authorized")
+            errorMessage = "You are not authorized to delete this comment"
+            showErrorAlert = true
             return
         }
+        
+        isProcessingCommentAction = true
+        recentlyDeletedCommentId = comment.id
         
         let batch = db.batch()
         let commentRef = db.collection("comments").document(comment.id)
@@ -559,6 +586,12 @@ class SubCategoryStatsViewModel: ObservableObject {
                 .getDocuments { [weak self] snapshot, error in
                     if let error = error {
                         print("DEBUG: Error fetching replies to delete: \(error.localizedDescription)")
+                        DispatchQueue.main.async {
+                            self?.isProcessingCommentAction = false
+                            self?.recentlyDeletedCommentId = nil
+                            self?.errorMessage = "Failed to delete comment: \(error.localizedDescription)"
+                            self?.showErrorAlert = true
+                        }
                         return
                     }
                     
@@ -571,20 +604,70 @@ class SubCategoryStatsViewModel: ObservableObject {
                     
                     // Commit the batch delete (includes both parent and replies)
                     batch.commit { error in
-                        if let error = error {
-                            print("DEBUG: Error deleting comment and replies: \(error.localizedDescription)")
-                        } else {
-                            print("DEBUG: Successfully deleted comment and its replies")
+                        DispatchQueue.main.async {
+                            self?.isProcessingCommentAction = false
+                            if let error = error {
+                                self?.recentlyDeletedCommentId = nil
+                                self?.errorMessage = "Failed to delete comment: \(error.localizedDescription)"
+                                self?.showErrorAlert = true
+                            } else {
+                                print("DEBUG: Successfully deleted comment and its replies")
+                                // Keep the recentlyDeletedCommentId for undo functionality
+                            }
                         }
                     }
                 }
         } else {
             // Just delete the single reply
-            batch.commit { error in
-                if let error = error {
-                    print("DEBUG: Error deleting reply: \(error.localizedDescription)")
-                } else {
-                    print("DEBUG: Successfully deleted reply")
+            batch.commit { [weak self] error in
+                DispatchQueue.main.async {
+                    self?.isProcessingCommentAction = false
+                    if let error = error {
+                        self?.recentlyDeletedCommentId = nil
+                        self?.errorMessage = "Failed to delete reply: \(error.localizedDescription)"
+                        self?.showErrorAlert = true
+                    } else {
+                        print("DEBUG: Successfully deleted reply")
+                        // Keep the recentlyDeletedCommentId for undo functionality
+                    }
+                }
+            }
+        }
+    }
+    
+    func undoDeleteComment() {
+        guard let commentId = recentlyDeletedCommentId else { return }
+        
+        isProcessingCommentAction = true
+        
+        // Restore the comment
+        db.collection("comments").document(commentId).getDocument { [weak self] snapshot, error in
+            if let error = error {
+                DispatchQueue.main.async {
+                    self?.isProcessingCommentAction = false
+                    self?.errorMessage = "Failed to restore comment: \(error.localizedDescription)"
+                    self?.showErrorAlert = true
+                }
+                return
+            }
+            
+            guard let data = snapshot?.data() else {
+                DispatchQueue.main.async {
+                    self?.isProcessingCommentAction = false
+                    self?.recentlyDeletedCommentId = nil
+                }
+                return
+            }
+            
+            // Restore the comment
+            self?.db.collection("comments").document(commentId).setData(data) { error in
+                DispatchQueue.main.async {
+                    self?.isProcessingCommentAction = false
+                    self?.recentlyDeletedCommentId = nil
+                    if let error = error {
+                        self?.errorMessage = "Failed to restore comment: \(error.localizedDescription)"
+                        self?.showErrorAlert = true
+                    }
                 }
             }
         }

@@ -344,7 +344,8 @@ struct SubCategoryStatsView: View {
                                     onReply: { replyText in
                                         print("DEBUG: Adding reply to comment: \(comment.id)")
                                         statsViewModel.addComment(replyText, parentId: comment.id)
-                                    }
+                                    },
+                                    viewModel: statsViewModel
                                 )
                                 .padding(.horizontal)
                                 
@@ -362,7 +363,8 @@ struct SubCategoryStatsView: View {
                                                 },
                                                 onReply: { replyText in
                                                     statsViewModel.addComment(replyText, parentId: comment.id)
-                                                }
+                                                },
+                                                viewModel: statsViewModel
                                             )
                                         }
                                     }
