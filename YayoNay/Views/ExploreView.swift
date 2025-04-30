@@ -3,10 +3,38 @@ import FirebaseFirestore
 
 struct ExploreView: View {
     @StateObject private var viewModel = ExploreViewModel()
+    @StateObject private var subCategoryViewModel = SubCategoryViewModel(categoryId: "")
     @State private var selectedCategory: Category?
     @State private var showCategoryDetail = false
     @State private var searchText = ""
     @State private var isSearching = false
+    @State private var searchResults: [Category] = []
+    @State private var subCategories: [SubCategory] = []
+    
+    private func updateSearchResults(for searchText: String) {
+        if searchText.isEmpty {
+            searchResults = []
+            return
+        }
+        
+        // First search through categories
+        let categoryMatches = viewModel.categories.filter { category in
+            category.name.localizedCaseInsensitiveContains(searchText)
+        }
+        
+        // Then search through subcategories
+        let subCategoryMatches = subCategories.filter { subCategory in
+            subCategory.name.localizedCaseInsensitiveContains(searchText)
+        }
+        
+        // Get unique categories from subcategory matches
+        let categoriesFromSubCategories = subCategoryMatches.compactMap { subCategory in
+            viewModel.categories.first { $0.id == subCategory.categoryId }
+        }
+        
+        // Combine and remove duplicates
+        searchResults = Array(Set(categoryMatches + categoriesFromSubCategories))
+    }
     
     var body: some View {
         NavigationStack {
@@ -16,24 +44,30 @@ struct ExploreView: View {
                     HStack {
                         Image(systemName: "magnifyingglass")
                             .foregroundColor(.gray)
-                        TextField("Search categories...", text: $searchText)
+                        TextField("Search subcategories...", text: $searchText)
                             .font(.system(size: 16))
+                            .onChange(of: searchText) { newValue in
+                                updateSearchResults(for: newValue)
+                            }
                     }
                     .padding(12)
                     .background(Color(.systemGray6))
                     .cornerRadius(12)
                     .padding(.horizontal)
                     
-                    // Featured Section
-                    VStack(alignment: .leading, spacing: 16) {
-                        Text("Featured Categories")
-                            .font(.system(size: 24, weight: .bold))
-                            .padding(.horizontal)
-                        
-                        ScrollView(.horizontal, showsIndicators: false) {
-                            HStack(spacing: 20) {
-                                ForEach(viewModel.categories.prefix(5)) { category in
-                                    FeaturedCategoryCard(category: category)
+                    if !searchResults.isEmpty {
+                        // Search Results
+                        VStack(alignment: .leading, spacing: 16) {
+                            Text("Search Results")
+                                .font(.system(size: 24, weight: .bold))
+                                .padding(.horizontal)
+                            
+                            LazyVGrid(columns: [
+                                GridItem(.flexible(), spacing: 16),
+                                GridItem(.flexible(), spacing: 16)
+                            ], spacing: 16) {
+                                ForEach(searchResults) { category in
+                                    CategoryCard(category: category)
                                         .onTapGesture {
                                             withAnimation(.spring()) {
                                                 selectedCategory = category
@@ -44,29 +78,51 @@ struct ExploreView: View {
                             }
                             .padding(.horizontal)
                         }
-                    }
-                    
-                    // All Categories Section
-                    VStack(alignment: .leading, spacing: 16) {
-                        Text("All Categories")
-                            .font(.system(size: 24, weight: .bold))
-                            .padding(.horizontal)
-                        
-                        LazyVGrid(columns: [
-                            GridItem(.flexible(), spacing: 16),
-                            GridItem(.flexible(), spacing: 16)
-                        ], spacing: 16) {
-                            ForEach(viewModel.categories) { category in
-                                CategoryCard(category: category)
-                                    .onTapGesture {
-                                        withAnimation(.spring()) {
-                                            selectedCategory = category
-                                            showCategoryDetail = true
-                                        }
+                    } else {
+                        // Featured Section
+                        VStack(alignment: .leading, spacing: 16) {
+                            Text("Featured Categories")
+                                .font(.system(size: 24, weight: .bold))
+                                .padding(.horizontal)
+                            
+                            ScrollView(.horizontal, showsIndicators: false) {
+                                HStack(spacing: 20) {
+                                    ForEach(viewModel.categories.prefix(5)) { category in
+                                        FeaturedCategoryCard(category: category)
+                                            .onTapGesture {
+                                                withAnimation(.spring()) {
+                                                    selectedCategory = category
+                                                    showCategoryDetail = true
+                                                }
+                                            }
                                     }
+                                }
+                                .padding(.horizontal)
                             }
                         }
-                        .padding(.horizontal)
+                        
+                        // All Categories Section
+                        VStack(alignment: .leading, spacing: 16) {
+                            Text("All Categories")
+                                .font(.system(size: 24, weight: .bold))
+                                .padding(.horizontal)
+                            
+                            LazyVGrid(columns: [
+                                GridItem(.flexible(), spacing: 16),
+                                GridItem(.flexible(), spacing: 16)
+                            ], spacing: 16) {
+                                ForEach(viewModel.categories) { category in
+                                    CategoryCard(category: category)
+                                        .onTapGesture {
+                                            withAnimation(.spring()) {
+                                                selectedCategory = category
+                                                showCategoryDetail = true
+                                            }
+                            }
+                        }
+                    }
+                    .padding(.horizontal)
+                        }
                     }
                 }
                 .padding(.vertical)
@@ -81,6 +137,23 @@ struct ExploreView: View {
         }
         .onAppear {
             viewModel.fetchCategories()
+            fetchAllSubCategories()
+    }
+}
+
+    private func fetchAllSubCategories() {
+        let db = Firestore.firestore()
+        
+        // Get all subcategories
+        db.collection("subcategories").getDocuments { snapshot, error in
+            if let error = error {
+                print("Error fetching subcategories: \(error.localizedDescription)")
+                return
+            }
+            
+            if let documents = snapshot?.documents {
+                subCategories = documents.compactMap { SubCategory(document: $0) }
+            }
         }
     }
 }
@@ -161,46 +234,46 @@ struct CategoryCard: View {
     
     var body: some View {
         VStack(spacing: 12) {
-            ZStack {
+                    ZStack {
                 RoundedRectangle(cornerRadius: 20)
-                    .fill(
-                        LinearGradient(
-                            gradient: Gradient(colors: [
-                                cardColor.opacity(0.2),
-                                cardColor.opacity(0.1)
-                            ]),
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 20)
-                            .stroke(
+                            .fill(
                                 LinearGradient(
                                     gradient: Gradient(colors: [
-                                        cardColor.opacity(0.3),
+                                        cardColor.opacity(0.2),
                                         cardColor.opacity(0.1)
                                     ]),
                                     startPoint: .topLeading,
                                     endPoint: .bottomTrailing
-                                ),
-                                lineWidth: 1
+                                )
                             )
-                    )
-                
+                            .overlay(
+                        RoundedRectangle(cornerRadius: 20)
+                                    .stroke(
+                                        LinearGradient(
+                                            gradient: Gradient(colors: [
+                                        cardColor.opacity(0.3),
+                                                cardColor.opacity(0.1)
+                                            ]),
+                                            startPoint: .topLeading,
+                                            endPoint: .bottomTrailing
+                                        ),
+                                        lineWidth: 1
+                                    )
+                            )
+                        
                 Image(systemName: category.iconName)
                     .font(.system(size: 28, weight: .medium))
-                    .foregroundColor(cardColor)
-            }
+                            .foregroundColor(cardColor)
+                    }
             .frame(height: 120)
-            
+                    
             Text(category.name)
                 .font(.system(size: 15, weight: .medium))
-                .foregroundColor(.primary)
+                        .foregroundColor(.primary)
                 .lineLimit(2)
-                .multilineTextAlignment(.center)
-        }
-        .padding()
+                        .multilineTextAlignment(.center)
+                }
+                .padding()
         .background(Color(.systemBackground))
         .cornerRadius(20)
         .shadow(color: Color.black.opacity(0.1), radius: 10, x: 0, y: 5)

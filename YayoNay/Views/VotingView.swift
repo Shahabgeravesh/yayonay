@@ -32,14 +32,14 @@ struct VotingView: View {
                     // Card
                     VStack(spacing: 24) {
                         // Topic Title
-                        Text(viewModel.topic.title)
+            Text(viewModel.topic.title)
                             .font(.system(size: 32, weight: .bold))
-                            .multilineTextAlignment(.center)
+                .multilineTextAlignment(.center)
                             .padding(.horizontal, 32)
                             .padding(.top, 40)
                         
                         Spacer()
-                        
+            
                         // Vote Buttons
                         HStack(spacing: 24) {
                             // Nay Button
@@ -97,9 +97,9 @@ struct VotingView: View {
                         }
                         .transition(.scale.combined(with: .opacity))
                     }
-                }
-                .padding()
-                
+            }
+            .padding()
+            
                 // Navigation Buttons
                 HStack(spacing: 24) {
                     Button(action: viewModel.previousTopic) {
@@ -141,11 +141,11 @@ struct VotingView: View {
             VStack(spacing: 12) {
                 Image(systemName: isYay ? "hand.thumbsup.fill" : "hand.thumbsdown.fill")
                     .font(.system(size: 28))
-                Text(choice)
+            Text(choice)
                     .font(.system(size: 18, weight: .medium))
             }
-            .frame(maxWidth: .infinity)
-            .padding()
+                .frame(maxWidth: .infinity)
+                .padding()
             .background(
                 RoundedRectangle(cornerRadius: 20)
                     .fill(isYay ? Color.green.opacity(0.1) : Color.red.opacity(0.1))

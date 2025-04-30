@@ -9,13 +9,13 @@ struct MainTabView: View {
     var body: some View {
         ZStack {
             TabView(selection: $selectedTab) {
-                ExploreView()
+            ExploreView()
                     .tag(0)
-                
-                VotesView()
+            
+            VotesView()
                     .tag(1)
-                
-                HotVotesView()
+            
+            HotVotesView()
                     .tag(2)
                 
                 TopicBoxView()
@@ -50,8 +50,8 @@ struct MainTabView: View {
                                         .font(.system(size: 22, weight: selectedTab == index ? .semibold : .regular))
                                         .foregroundColor(selectedTab == index ? .blue : .gray)
                                         .scaleEffect(selectedTab == index ? 1.1 : 1.0)
-                                }
-                                
+                }
+            
                                 if selectedTab == index {
                                     Circle()
                                         .fill(Color.blue)
@@ -73,7 +73,7 @@ struct MainTabView: View {
                 .padding(.horizontal)
                 .padding(.bottom, 8)
                 .offset(y: isTabBarVisible ? 0 : 100)
-            }
+                }
         }
         .ignoresSafeArea(.keyboard)
     }

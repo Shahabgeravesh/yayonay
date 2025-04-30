@@ -1,7 +1,7 @@
 import Foundation
 import FirebaseFirestore
 
-struct Category: Identifiable, Codable {
+struct Category: Identifiable, Codable, Hashable {
     var id: String
     var name: String
     var imageURL: String?
@@ -57,6 +57,15 @@ struct Category: Identifiable, Codable {
             "featured": featured,
             "votesCount": votesCount
         ]
+    }
+    
+    // Hashable conformance
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
+    }
+    
+    static func == (lhs: Category, rhs: Category) -> Bool {
+        lhs.id == rhs.id
     }
     
     // Computed property to get the appropriate icon name for the category

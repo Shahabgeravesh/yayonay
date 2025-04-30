@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		BA0A508D2DC1BA920031508B /* FirebaseDynamicLinks in Frameworks */ = {isa = PBXBuildFile; productRef = BA0A508C2DC1BA920031508B /* FirebaseDynamicLinks */; };
 		BA2984202DB06E6300D5CBBF /* FirebaseMessaging in Frameworks */ = {isa = PBXBuildFile; productRef = BA29841F2DB06E6300D5CBBF /* FirebaseMessaging */; };
 		BAE90E602D869B810067F715 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = BAE90E5F2D869B810067F715 /* FirebaseAuth */; };
 		BAE90E622D869B810067F715 /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = BAE90E612D869B810067F715 /* FirebaseFirestore */; };
@@ -82,6 +83,7 @@
 				BAE90E602D869B810067F715 /* FirebaseAuth in Frameworks */,
 				BAE90EF72D88DC790067F715 /* GoogleSignIn in Frameworks */,
 				BAE90E622D869B810067F715 /* FirebaseFirestore in Frameworks */,
+				BA0A508D2DC1BA920031508B /* FirebaseDynamicLinks in Frameworks */,
 				BAE90E642D869B810067F715 /* FirebaseStorage in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -151,6 +153,7 @@
 				BAE90EF62D88DC790067F715 /* GoogleSignIn */,
 				BAE90EF82D88DC790067F715 /* GoogleSignInSwift */,
 				BA29841F2DB06E6300D5CBBF /* FirebaseMessaging */,
+				BA0A508C2DC1BA920031508B /* FirebaseDynamicLinks */,
 			);
 			productName = YayoNay;
 			productReference = BAE90E212D8699540067F715 /* YayoNay.app */;
@@ -658,6 +661,11 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		BA0A508C2DC1BA920031508B /* FirebaseDynamicLinks */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = BAE90E5E2D869B810067F715 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseDynamicLinks;
+		};
 		BA29841F2DB06E6300D5CBBF /* FirebaseMessaging */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = BAE90E5E2D869B810067F715 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
