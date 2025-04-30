@@ -6,14 +6,17 @@ import FirebaseAuth
 class SubCategoryViewModel: ObservableObject {
     @Published var subCategories: [SubCategory] = []
     @Published var currentIndex = 0
+    @Published var hasReachedEnd = false
     private let db = Firestore.firestore()
     private var listener: ListenerRegistration?
     private var isProcessingUpdate = false
     private let categoryId: String
+    private let initialSubCategoryId: String?
     
-    init(categoryId: String) {
+    init(categoryId: String, initialSubCategoryId: String? = nil) {
         print("DEBUG: Initializing SubCategoryViewModel with categoryId: \(categoryId)")
         self.categoryId = categoryId
+        self.initialSubCategoryId = initialSubCategoryId
         fetchSubCategories(for: categoryId)
     }
     
@@ -24,7 +27,7 @@ class SubCategoryViewModel: ObservableObject {
     
     func fetchSubCategories(for categoryId: String) {
         print("DEBUG: 🔍 Fetching subcategories for categoryId: \(categoryId)")
-        print("DEBUG: Setting up Firestore listener for subcategories")
+        print("DEBUG: Current hasReachedEnd state: \(hasReachedEnd)")
         
         guard let userId = Auth.auth().currentUser?.uid else {
             print("❌ No user ID available")
@@ -64,28 +67,28 @@ class SubCategoryViewModel: ObservableObject {
                 
                 if let error = error {
                     print("❌ Error fetching subcategories: \(error.localizedDescription)")
-                return
-            }
-            
+                    return
+                }
+                
                 guard let documents = snapshot?.documents else {
                     print("❌ No subcategories found")
-                return
-            }
-            
-            print("DEBUG: 📄 Found \(documents.count) subcategories")
-            
+                    return
+                }
+                
+                print("DEBUG: 📄 Found \(documents.count) subcategories")
+                
                 var validSubCategories: [SubCategory] = []
+                var allItemsVoted = true
                 
                 for document in documents {
                     let data = document.data()
                     
-                    // Skip if this item was recently voted on
-                    if recentlyVotedIds.contains(document.documentID) {
+                    // Skip if this item was recently voted on, unless it's the initial subcategory
+                    if recentlyVotedIds.contains(document.documentID) && document.documentID != self.initialSubCategoryId {
                         print("⏳ Skipping recently voted item: \(data["name"] as? String ?? "Unknown")")
                         continue
                     }
                     
-                    // Rest of the existing validation code...
                     if let name = data["name"] as? String,
                        let imageURL = data["imageURL"] as? String,
                        let categoryId = data["categoryId"] as? String,
@@ -104,15 +107,43 @@ class SubCategoryViewModel: ObservableObject {
                         )
                         
                         validSubCategories.append(subCategory)
+                        allItemsVoted = false
                         print("DEBUG: Processing subcategory - ID: \(document.documentID), Name: \(name)")
                     }
-            }
-            
+                }
+                
                 print("DEBUG: 📦 Processed \(validSubCategories.count) valid subcategories")
-            
+                
                 DispatchQueue.main.async {
+                    // If we have an initial subcategory, make sure it's included
+                    if let initialId = self.initialSubCategoryId,
+                       let initialSubCategory = validSubCategories.first(where: { $0.id == initialId }) {
+                        // Remove it from its current position
+                        validSubCategories.removeAll(where: { $0.id == initialId })
+                        // Add it at the beginning
+                        validSubCategories.insert(initialSubCategory, at: 0)
+                        print("DEBUG: 📍 Added initial subcategory to the beginning: \(initialSubCategory.name)")
+                        allItemsVoted = false
+                    }
+                    
                     self.subCategories = validSubCategories
+                    
+                    // If all items have been voted on, set hasReachedEnd to true
+                    if allItemsVoted {
+                        print("DEBUG: 🎉 All items have been voted on")
+                        self.hasReachedEnd = true
+                    } else {
+                        // If we previously reached the end and there are no new items, keep the end state
+                        if self.hasReachedEnd && validSubCategories.isEmpty {
+                            print("DEBUG: 🔄 Preserving end state - no new items")
+                            return
+                        }
+                        // Otherwise reset the end state
+                        self.hasReachedEnd = false
+                    }
+                    
                     print("DEBUG: ✅ Updating subcategories in ViewModel")
+                    print("DEBUG: New hasReachedEnd state: \(self.hasReachedEnd)")
                 }
             }
         }
@@ -138,17 +169,53 @@ class SubCategoryViewModel: ObservableObject {
     }
     
     func nextItem() {
-        guard currentIndex < subCategories.count - 1,
-              !isProcessingUpdate else { return }
+        print("DEBUG: 🔄 Attempting to move to next item")
+        print("DEBUG: Current index: \(currentIndex), Total items: \(subCategories.count)")
         
-        withAnimation(nil) {
-            currentIndex += 1
+        guard !isProcessingUpdate else {
+            print("DEBUG: ⏳ Skipping - processing update in progress")
+            return
         }
+        
+        isProcessingUpdate = true
+        
+        // If we're at the end of the list, set the flag and return
+        if currentIndex >= subCategories.count - 1 {
+            print("DEBUG: 🏁 Reached end of list")
+            hasReachedEnd = true
+            isProcessingUpdate = false
+            return
+        }
+        
+        // Update index without animation to reduce lag
+        currentIndex += 1
+        print("DEBUG: 📍 Moved to index: \(currentIndex)")
+        
+        // Reset the processing flag immediately
+        isProcessingUpdate = false
     }
     
     func previousItem() {
-        if currentIndex > 0 {
-            currentIndex -= 1
+        print("DEBUG: 🔄 Attempting to move to previous item")
+        print("DEBUG: Current index: \(currentIndex)")
+        
+        guard !isProcessingUpdate else {
+            print("DEBUG: ⏳ Skipping - processing update in progress")
+            return
         }
+        
+        isProcessingUpdate = true
+        
+        if currentIndex > 0 {
+            // Update index without animation to reduce lag
+            currentIndex -= 1
+            hasReachedEnd = false
+            print("DEBUG: 📍 Moved to index: \(currentIndex)")
+        } else {
+            print("DEBUG: ⛔️ Already at first item")
+        }
+        
+        // Reset the processing flag immediately
+        isProcessingUpdate = false
     }
 } 

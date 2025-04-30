@@ -10,8 +10,10 @@ struct HotVoteItem: Identifiable {
     let totalVotes: Int
     let yayPercentage: Double
     let nayPercentage: Double
+    let categoryId: String
+    let categoryName: String
     
-    init(id: String, name: String, imageURL: String, yayCount: Int, nayCount: Int) {
+    init(id: String, name: String, imageURL: String, yayCount: Int, nayCount: Int, categoryId: String, categoryName: String) {
         self.id = id
         self.name = name
         self.imageURL = imageURL
@@ -20,6 +22,8 @@ struct HotVoteItem: Identifiable {
         self.totalVotes = yayCount + nayCount
         self.yayPercentage = Double(yayCount) / Double(max(totalVotes, 1)) * 100
         self.nayPercentage = Double(nayCount) / Double(max(totalVotes, 1)) * 100
+        self.categoryId = categoryId
+        self.categoryName = categoryName
     }
 }
 
@@ -90,25 +94,34 @@ class HotVotesViewModel: ObservableObject {
                     return
                 }
                 
-                self?.hotVotes = snapshot?.documents.compactMap { document in
-                    let data = document.data()
-                    guard let name = data["name"] as? String,
-                          let imageURL = data["imageURL"] as? String,
-                          let yayCount = data["yayCount"] as? Int,
-                          let nayCount = data["nayCount"] as? Int,
-                          yayCount + nayCount > 0  // Double check total votes
-                    else { return nil }
+                // First get all categories to map IDs to names
+                self?.db.collection("categories").getDocuments { categorySnapshot, error in
+                    guard let categoryDocuments = categorySnapshot?.documents else { return }
+                    let categoryMap = Dictionary(uniqueKeysWithValues: categoryDocuments.map { ($0.documentID, $0["name"] as? String ?? "") })
                     
-                    return HotVoteItem(
-                        id: document.documentID,
-                        name: name,
-                        imageURL: imageURL,
-                        yayCount: yayCount,
-                        nayCount: nayCount
-                    )
+                    self?.hotVotes = snapshot?.documents.compactMap { document in
+                        let data = document.data()
+                        guard let name = data["name"] as? String,
+                              let imageURL = data["imageURL"] as? String,
+                              let yayCount = data["yayCount"] as? Int,
+                              let nayCount = data["nayCount"] as? Int,
+                              let categoryId = data["categoryId"] as? String,
+                              yayCount + nayCount > 0  // Double check total votes
+                        else { return nil }
+                        
+                        return HotVoteItem(
+                            id: document.documentID,
+                            name: name,
+                            imageURL: imageURL,
+                            yayCount: yayCount,
+                            nayCount: nayCount,
+                            categoryId: categoryId,
+                            categoryName: categoryMap[categoryId] ?? ""
+                        )
+                    }
+                    .sorted { $0.yayCount > $1.yayCount }
+                    ?? []
                 }
-                .sorted { $0.yayCount > $1.yayCount }
-                ?? []
             }
     }
     
@@ -160,57 +173,70 @@ class HotVotesViewModel: ObservableObject {
         let startOfDay = calendar.startOfDay(for: Date())
         let endOfDay = calendar.date(byAdding: .day, value: 1, to: startOfDay)!
         
-        db.collection("votes")
-            .whereField("date", isGreaterThan: Timestamp(date: startOfDay))
-            .whereField("date", isLessThan: Timestamp(date: endOfDay))
-            .addSnapshotListener { [weak self] snapshot, error in
-                if let error = error {
-                    print("Error fetching today's votes: \(error)")
-                    return
-                }
-                
-                // Count votes by item
-                var itemVotes: [String: (name: String, imageURL: String, yay: Int, nay: Int)] = [:]
-                
-                snapshot?.documents.forEach { doc in
-                    let data = doc.data()
-                    if let itemId = data["subCategoryId"] as? String,
-                       let name = data["itemName"] as? String,
-                       let imageURL = data["imageURL"] as? String,
-                       let isYay = data["isYay"] as? Bool {
-                        if let existing = itemVotes[itemId] {
-                            itemVotes[itemId] = (
-                                name: name,
-                                imageURL: imageURL,
-                                yay: existing.yay + (isYay ? 1 : 0),
-                                nay: existing.nay + (isYay ? 0 : 1)
-                            )
-                        } else {
-                            itemVotes[itemId] = (
-                                name: name,
-                                imageURL: imageURL,
-                                yay: isYay ? 1 : 0,
-                                nay: isYay ? 0 : 1
-                            )
+        // First get all categories to map IDs to names
+        db.collection("categories").getDocuments { [weak self] categorySnapshot, error in
+            guard let categoryDocuments = categorySnapshot?.documents else { return }
+            let categoryMap = Dictionary(uniqueKeysWithValues: categoryDocuments.map { ($0.documentID, $0["name"] as? String ?? "") })
+            
+            self?.db.collection("votes")
+                .whereField("date", isGreaterThan: Timestamp(date: startOfDay))
+                .whereField("date", isLessThan: Timestamp(date: endOfDay))
+                .addSnapshotListener { snapshot, error in
+                    if let error = error {
+                        print("Error fetching today's votes: \(error)")
+                        return
+                    }
+                    
+                    // Count votes by item
+                    var itemVotes: [String: (name: String, imageURL: String, yay: Int, nay: Int, categoryId: String, categoryName: String)] = [:]
+                    
+                    snapshot?.documents.forEach { doc in
+                        let data = doc.data()
+                        if let itemId = data["subCategoryId"] as? String,
+                           let name = data["itemName"] as? String,
+                           let imageURL = data["imageURL"] as? String,
+                           let isYay = data["isYay"] as? Bool,
+                           let categoryId = data["categoryId"] as? String {
+                            if let existing = itemVotes[itemId] {
+                                itemVotes[itemId] = (
+                                    name: name,
+                                    imageURL: imageURL,
+                                    yay: existing.yay + (isYay ? 1 : 0),
+                                    nay: existing.nay + (isYay ? 0 : 1),
+                                    categoryId: categoryId,
+                                    categoryName: categoryMap[categoryId] ?? ""
+                                )
+                            } else {
+                                itemVotes[itemId] = (
+                                    name: name,
+                                    imageURL: imageURL,
+                                    yay: isYay ? 1 : 0,
+                                    nay: isYay ? 0 : 1,
+                                    categoryId: categoryId,
+                                    categoryName: categoryMap[categoryId] ?? ""
+                                )
+                            }
                         }
                     }
+                    
+                    // Convert to HotVoteItem array and sort by yay count instead of total votes
+                    self?.todaysTopVotes = itemVotes
+                        .map { id, info in
+                            HotVoteItem(
+                                id: id,
+                                name: info.name,
+                                imageURL: info.imageURL,
+                                yayCount: info.yay,
+                                nayCount: info.nay,
+                                categoryId: info.categoryId,
+                                categoryName: info.categoryName
+                            )
+                        }
+                        .sorted { $0.yayCount > $1.yayCount }  // Sort by yay count instead of total votes
+                        .prefix(10)
+                        .map { $0 }
                 }
-                
-                // Convert to HotVoteItem array and sort by yay count instead of total votes
-                self?.todaysTopVotes = itemVotes
-                    .map { id, info in
-                        HotVoteItem(
-                            id: id,
-                            name: info.name,
-                            imageURL: info.imageURL,
-                            yayCount: info.yay,
-                            nayCount: info.nay
-                        )
-                    }
-                    .sorted { $0.yayCount > $1.yayCount }  // Sort by yay count instead of total votes
-                    .prefix(10)
-                    .map { $0 }
-            }
+        }
     }
 }
 
@@ -327,98 +353,110 @@ struct HotVoteCard: View {
     let index: Int
     let item: HotVoteItem
     
+    private var category: Category {
+        Category(
+            id: item.categoryId,
+            name: item.categoryName,
+            isTopCategory: true,
+            order: index
+        )
+    }
+    
     var body: some View {
-        VStack(spacing: 12) {
-            HStack(spacing: 16) {
-                // Rank and Image
-                ZStack(alignment: .topLeading) {
-                    AsyncImage(url: URL(string: item.imageURL)) { image in
-                        image
-                            .resizable()
-                            .aspectRatio(contentMode: .fill)
-                    } placeholder: {
-                        Color.gray.opacity(0.2)
-                    }
-                    .frame(width: 80, height: 80)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-                    .accessibilityHidden(true) // Hide from VoiceOver since we describe it in the label
-                    
-                    // Rank Badge
-                    Text("\(index)")
-                        .font(.system(size: 13, weight: .bold))
-                        .foregroundColor(.white)
-                        .frame(width: 24, height: 24)
-                        .background(
-                            Circle()
-                                .fill(Color.blue)
-                                .shadow(radius: 2)
-                        )
-                        .offset(x: -8, y: -8)
-                        .accessibilityHidden(true) // Hide from VoiceOver since we include it in the label
-                }
-                
-                VStack(alignment: .leading, spacing: 8) {
-                    Text(item.name)
-                        .font(.system(size: 17, weight: .semibold))
-                    
-                    HStack {
-                        Text("\(item.yayCount) yays")
-                            .font(.system(size: 15, weight: .medium))
-                            .foregroundStyle(.green)
-                        Text("(\(item.totalVotes) total)")
-                            .font(.system(size: 13))
-                            .foregroundStyle(.secondary)
-                    }
-                }
-                
-                Spacer()
-            }
-            
-            // Vote Progress Bar
-            VStack(spacing: 6) {
-                GeometryReader { geometry in
-                    ZStack(alignment: .leading) {
-                        // Background
-                        RoundedRectangle(cornerRadius: 8)
-                            .fill(Color.red.opacity(0.3))
-                            .frame(height: 16)
+        NavigationLink(destination: CategoryDetailView(category: Category(id: item.categoryId, name: item.categoryName, isTopCategory: true, order: index), initialSubCategoryId: item.id)) {
+            VStack(spacing: 12) {
+                HStack(spacing: 16) {
+                    // Rank and Image
+                    ZStack(alignment: .topLeading) {
+                        AsyncImage(url: URL(string: item.imageURL)) { image in
+                            image
+                                .resizable()
+                                .aspectRatio(contentMode: .fill)
+                        } placeholder: {
+                            Color.gray.opacity(0.2)
+                        }
+                        .frame(width: 80, height: 80)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                        .accessibilityHidden(true) // Hide from VoiceOver since we describe it in the label
                         
-                        // Yay Progress
-                        RoundedRectangle(cornerRadius: 8)
-                            .fill(Color.green.opacity(0.7))
-                            .frame(width: geometry.size.width * CGFloat(item.yayPercentage) / 100, height: 16)
+                        // Rank Badge
+                        Text("\(index)")
+                            .font(.system(size: 13, weight: .bold))
+                            .foregroundColor(.white)
+                            .frame(width: 24, height: 24)
+                            .background(
+                                Circle()
+                                    .fill(Color.blue)
+                                    .shadow(radius: 2)
+                            )
+                            .offset(x: -8, y: -8)
+                            .accessibilityHidden(true) // Hide from VoiceOver since we include it in the label
                     }
-                }
-                .frame(height: 16)
-                .accessibilityHidden(true) // Hide from VoiceOver since we describe it in the label
-                
-                // Vote Stats
-                HStack {
-                    HStack(spacing: 4) {
-                        Image(systemName: "hand.thumbsdown.fill")
-                        Text("\(Int(item.nayPercentage))%")
+                    
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text(item.name)
+                            .font(.system(size: 17, weight: .semibold))
+                        
+                        HStack {
+                            Text("\(item.yayCount) yays")
+                                .font(.system(size: 15, weight: .medium))
+                                .foregroundStyle(.green)
+                            Text("(\(item.totalVotes) total)")
+                                .font(.system(size: 13))
+                                .foregroundStyle(.secondary)
+                        }
                     }
-                    .foregroundStyle(.red)
                     
                     Spacer()
-                    
-                    HStack(spacing: 4) {
-                        Text("\(Int(item.yayPercentage))%")
-                        Image(systemName: "hand.thumbsup.fill")
-                    }
-                    .foregroundStyle(.green)
                 }
-                .font(.system(size: 13, weight: .medium))
+                
+                // Vote Progress Bar
+                VStack(spacing: 6) {
+                    GeometryReader { geometry in
+                        ZStack(alignment: .leading) {
+                            // Background
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(Color.red.opacity(0.3))
+                                .frame(height: 16)
+                            
+                            // Yay Progress
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(Color.green.opacity(0.7))
+                                .frame(width: geometry.size.width * CGFloat(item.yayPercentage) / 100, height: 16)
+                        }
+                    }
+                    .frame(height: 16)
+                    .accessibilityHidden(true) // Hide from VoiceOver since we describe it in the label
+                    
+                    // Vote Stats
+                    HStack {
+                        HStack(spacing: 4) {
+                            Image(systemName: "hand.thumbsdown.fill")
+                            Text("\(Int(item.nayPercentage))%")
+                        }
+                        .foregroundStyle(.red)
+                        
+                        Spacer()
+                        
+                        HStack(spacing: 4) {
+                            Text("\(Int(item.yayPercentage))%")
+                            Image(systemName: "hand.thumbsup.fill")
+                        }
+                        .foregroundStyle(.green)
+                    }
+                    .font(.system(size: 13, weight: .medium))
+                }
             }
+            .padding()
+            .background(Color(.systemBackground))
+            .clipShape(RoundedRectangle(cornerRadius: 16))
+            .shadow(color: Color.black.opacity(0.05), radius: 8, y: 4)
         }
-        .padding()
-        .background(Color(.systemBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 16))
-        .shadow(color: Color.black.opacity(0.05), radius: 8, y: 4)
+        .buttonStyle(PlainButtonStyle())
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(index). \(item.name)")
         .accessibilityValue("\(item.yayCount) yays, \(item.nayCount) nays. \(Int(item.yayPercentage))% positive")
-        .accessibilityHint("Double tap to view details")
+        .accessibilityHint("Double tap to view and vote on this item")
     }
 }
 

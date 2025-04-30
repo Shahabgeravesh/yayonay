@@ -4,6 +4,7 @@ import FirebaseAuth
 
 struct CategoryDetailView: View {
     let category: Category
+    let initialSubCategoryId: String?
     @StateObject private var viewModel: SubCategoryViewModel
     @State private var offset: CGFloat = 0
     @State private var backgroundColor: Color = .white
@@ -12,15 +13,16 @@ struct CategoryDetailView: View {
     @State private var isAnimatingCard = false
     @State private var showingCooldownAlert = false
     @State private var votedSubCategoryIds: Set<String> = []
+    @State private var hasSetInitialIndex = false
     
     // Constants for thresholds and calculations
     private let swipeThreshold: CGFloat = 100.0
     private let maxOpacity: CGFloat = 0.3
     
-    init(category: Category) {
+    init(category: Category, initialSubCategoryId: String? = nil) {
         self.category = category
-        print("📝 Category ID:", category.id)
-        _viewModel = StateObject(wrappedValue: SubCategoryViewModel(categoryId: category.id))
+        self.initialSubCategoryId = initialSubCategoryId
+        _viewModel = StateObject(wrappedValue: SubCategoryViewModel(categoryId: category.id, initialSubCategoryId: initialSubCategoryId))
     }
     
     var filteredSubCategories: [SubCategory] {
@@ -34,32 +36,40 @@ struct CategoryDetailView: View {
                     .ignoresSafeArea()
                     .animation(.easeInOut(duration: 0.3), value: offset)
                 
-                VStack {
-                    if let currentSubCategory = viewModel.subCategories.indices.contains(viewModel.currentIndex) 
-                        ? viewModel.subCategories[viewModel.currentIndex] 
-                        : nil {
-                        
-                        CardView(
-                            subCategory: currentSubCategory,
-                            offset: offset,
-                            swipeThreshold: swipeThreshold
-                        )
-                        .gesture(
-                            DragGesture()
-                                .onChanged { gesture in
-                                    if !isAnimatingCard {
-                                        offset = gesture.translation.height
-                                        updateBackgroundColor(for: offset)
-                                    }
-                                }
-                                .onEnded { gesture in
-                                    if !isAnimatingCard {
-                                        handleSwipe(gesture.translation.height, for: currentSubCategory)
-                                    }
-                                }
-                        )
-                    } else {
+                Group {
+                    if isLoading && !viewModel.hasReachedEnd {
+                        ProgressView()
+                    } else if viewModel.hasReachedEnd {
                         emptyState
+                    } else {
+                        VStack {
+                            if let currentSubCategory = viewModel.subCategories.indices.contains(viewModel.currentIndex) 
+                                ? viewModel.subCategories[viewModel.currentIndex] 
+                                : nil {
+                                
+                                CardView(
+                                    subCategory: currentSubCategory,
+                                    offset: offset,
+                                    swipeThreshold: swipeThreshold
+                                )
+                                .gesture(
+                                    DragGesture()
+                                        .onChanged { gesture in
+                                            if !isAnimatingCard {
+                                                offset = gesture.translation.height
+                                                updateBackgroundColor(for: offset)
+                                            }
+                                        }
+                                        .onEnded { gesture in
+                                            if !isAnimatingCard {
+                                                handleSwipe(gesture.translation.height, for: currentSubCategory)
+                                            }
+                                        }
+                                )
+                            } else {
+                                emptyState
+                            }
+                        }
                     }
                 }
             }
@@ -70,7 +80,29 @@ struct CategoryDetailView: View {
                 Text("You can vote again in 7 days")
             }
             .onAppear {
+                print("DEBUG: 👋 CategoryDetailView appeared")
+                print("DEBUG: Initial hasReachedEnd: \(viewModel.hasReachedEnd)")
+                print("DEBUG: Initial isLoading: \(isLoading)")
                 loadVotedSubCategories()
+            }
+            .onChange(of: viewModel.subCategories) { newSubCategories in
+                print("DEBUG: 📦 SubCategories changed")
+                print("DEBUG: New count: \(newSubCategories.count)")
+                print("DEBUG: Current hasReachedEnd: \(viewModel.hasReachedEnd)")
+                
+                if !newSubCategories.isEmpty && !hasSetInitialIndex {
+                    if let initialId = initialSubCategoryId,
+                       let index = newSubCategories.firstIndex(where: { $0.id == initialId }) {
+                        viewModel.currentIndex = index
+                        print("DEBUG: 📍 Set initial index to: \(index)")
+                    }
+                    hasSetInitialIndex = true
+                    isLoading = false
+                    print("DEBUG: ✅ Initial setup complete")
+                } else if newSubCategories.isEmpty {
+                    isLoading = false
+                    print("DEBUG: ⚠️ No subcategories available")
+                }
             }
         }
     }
@@ -108,11 +140,14 @@ struct CategoryDetailView: View {
     }
     
     private func handleSwipe(_ offset: CGFloat, for subCategory: SubCategory) {
+        print("DEBUG: 👆 Handling swipe for: \(subCategory.name)")
+        print("DEBUG: Current offset: \(offset)")
+        
         if abs(offset) > swipeThreshold && !isAnimatingCard {
+            print("DEBUG: ✅ Swipe threshold reached")
             isAnimatingCard = true
-            let isYay = offset < 0
             
-            // First check for cooldown
+            // Check cooldown first
             let db = Firestore.firestore()
             let votesRef = db.collection("votes")
                 .whereField("userId", isEqualTo: Auth.auth().currentUser?.uid ?? "")
@@ -120,7 +155,8 @@ struct CategoryDetailView: View {
             
             votesRef.getDocuments { (snapshot, error) in
                 if let error = error {
-                    print("Error checking for existing votes: \(error.localizedDescription)")
+                    print("DEBUG: ❌ Error checking cooldown: \(error.localizedDescription)")
+                    self.resetCard()
                     return
                 }
                 
@@ -134,60 +170,70 @@ struct CategoryDetailView: View {
                     }.sorted(by: { $0.date > $1.date }).first
                     
                     if let latestVote = latestVote {
-                        print("⏰ Found previous vote from \(latestVote.date)")
-                        
                         let calendar = Calendar.current
                         let now = Date()
                         let components = calendar.dateComponents([.day], from: latestVote.date, to: now)
                         let daysSinceLastVote = components.day ?? 0
                         
-                        print("📅 Days since last vote: \(daysSinceLastVote)")
-                        
                         if daysSinceLastVote < 7 {
-                            print("⏳ Cannot vote - cooldown period active")
-                            // Show cooldown alert and return without recording vote
+                            print("DEBUG: ⏳ Showing cooldown alert")
                             DispatchQueue.main.async {
                                 self.showingCooldownAlert = true
+                                self.resetCard()
                             }
                             return
                         }
                     }
                 }
                 
-                DispatchQueue.main.async {
-                    // Save vote and update count
-                    self.saveVote(for: subCategory, isYay: isYay)
-            
-                    // Add to voted subcategories
-                    self.votedSubCategoryIds.insert(subCategory.id)
-                    
-            // Animate card off screen
-            withAnimation(.interpolatingSpring(stiffness: 180, damping: 100)) {
-                self.offset = offset > 0 ? 1000 : -1000
-                        self.backgroundColor = .white
-            }
-            
-            // Move to next item immediately but delay resetting the card position
-                    self.viewModel.nextItem()
-            
-            // Reset card position and animation state
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                withAnimation(nil) {
-                    self.offset = 0
+                // If we get here, no cooldown is active
+                let isYay = offset < 0
+                print("DEBUG: Vote type: \(isYay ? "Yay" : "Nay")")
+                
+                // Save vote
+                self.saveVote(for: subCategory, isYay: isYay)
+                print("DEBUG: ✅ Vote saved")
+                
+                // Add to voted subcategories
+                self.votedSubCategoryIds.insert(subCategory.id)
+                print("DEBUG: ✅ Added to voted subcategories")
+                
+                // Animate card off screen
+                withAnimation(.interpolatingSpring(stiffness: 180, damping: 100)) {
+                    self.offset = offset > 0 ? 1000 : -1000
+                    self.backgroundColor = .white
                 }
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                            self.isAnimatingCard = false
-                        }
+                print("DEBUG: ✅ Card animation started")
+                
+                // Move to next item immediately
+                self.viewModel.nextItem()
+                print("DEBUG: ✅ Moved to next item")
+                
+                // Reset card position and animation state
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                    withAnimation(nil) {
+                        self.offset = 0
                     }
+                    self.isAnimatingCard = false
+                    print("DEBUG: ✅ Card animation completed")
                 }
             }
         } else {
+            print("DEBUG: 🔄 Springing back to center")
             // Spring back to center
             withAnimation(.interpolatingSpring(stiffness: 180, damping: 100)) {
                 self.offset = 0
                 self.backgroundColor = .white
             }
         }
+    }
+    
+    private func resetCard() {
+        withAnimation(.interpolatingSpring(stiffness: 180, damping: 100)) {
+            self.offset = 0
+            self.backgroundColor = .white
+        }
+        self.isAnimatingCard = false
     }
     
     private func saveVote(for subCategory: SubCategory, isYay: Bool) {
@@ -261,14 +307,25 @@ struct CategoryDetailView: View {
     
     private var emptyState: some View {
         VStack(spacing: 24) {
-            Image(systemName: "photo.stack")
+            Image(systemName: "checkmark.circle.fill")
                 .font(.system(size: 70))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(.green)
                 .symbolEffect(.bounce)
             
-            Text("No items yet")
+            Text("Great job!")
                 .font(.title2.weight(.semibold))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(.primary)
+            
+            VStack(spacing: 8) {
+                Text("You've voted on all available items")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                
+                Text("Check back later for new items")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+            .multilineTextAlignment(.center)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color(.systemGroupedBackground))
