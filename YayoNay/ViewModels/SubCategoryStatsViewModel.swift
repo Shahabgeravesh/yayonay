@@ -96,13 +96,20 @@ class SubCategoryStatsViewModel: ObservableObject {
     private func setupCommentsListener() {
         print("DEBUG: Setting up comments listener for subCategoryId: \(currentSubCategory.id)")
         
+        // Remove existing listener if any
+        commentsListener?.remove()
+        
         let commentsRef = db.collection("comments")
             .whereField("subCategoryId", isEqualTo: currentSubCategory.id)
             .order(by: "date", descending: true)
         
         commentsListener = commentsRef.addSnapshotListener { [weak self] snapshot, error in
+            guard let self = self else { return }
+            
             if let error = error {
                 print("DEBUG: Error fetching comments: \(error.localizedDescription)")
+                self.errorMessage = "Failed to load comments: \(error.localizedDescription)"
+                self.showErrorAlert = true
                 return
             }
             
@@ -113,8 +120,7 @@ class SubCategoryStatsViewModel: ObservableObject {
             
             print("DEBUG: Fetched \(documents.count) comments from Firestore")
             
-            let allComments = documents.compactMap { [weak self] document -> Comment? in
-                guard let self = self else { return nil }
+            let allComments = documents.compactMap { document -> Comment? in
                 let data = document.data()
                 print("DEBUG: Comment data: \(data)")
                 
@@ -130,7 +136,7 @@ class SubCategoryStatsViewModel: ObservableObject {
                     id: document.documentID,
                     userId: userId,
                     username: username,
-                    userImage: data["userImage"] as? String ?? "https://firebasestorage.googleapis.com/v0/b/yayonay-e7f58.appspot.com/o/default_profile.png?alt=media",
+                    userImage: data["userImage"] as? String ?? "",
                     text: text,
                     date: timestamp.dateValue(),
                     likes: data["likes"] as? Int ?? 0,
@@ -158,11 +164,11 @@ class SubCategoryStatsViewModel: ObservableObject {
                 }
                 
                 // Sort comments by date (newest first)
-                self?.comments = topLevelComments.sorted(by: { $0.date > $1.date })
+                self.comments = topLevelComments.sorted(by: { $0.date > $1.date })
                 
                 print("DEBUG: Organized comments structure:")
-                print("- Top-level comments: \(self?.comments.count ?? 0)")
-                for comment in self?.comments ?? [] {
+                print("- Top-level comments: \(self.comments.count)")
+                for comment in self.comments {
                     print("  - Comment \(comment.id) has \(comment.replies.count) replies")
                 }
             }
