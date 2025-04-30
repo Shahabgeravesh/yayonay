@@ -78,6 +78,10 @@ class HotVotesViewModel: ObservableObject {
     private let db = Firestore.firestore()
     private var hasLoaded = false
     
+    // Store all listener registrations
+    private var hotVotesListener: ListenerRegistration?
+    private var todaysVotesListener: ListenerRegistration?
+    
     func fetchData() {
         fetchHotVotes()
         fetchTopCategories()
@@ -85,7 +89,11 @@ class HotVotesViewModel: ObservableObject {
     }
     
     private func fetchHotVotes() {
-        db.collection("subCategories")
+        // Remove any existing listener
+        hotVotesListener?.remove()
+        
+        // Add new listener and store the registration
+        hotVotesListener = db.collection("subCategories")
             .whereField("yayCount", isGreaterThan: 0)  // Only get items with votes
             .order(by: "yayCount", descending: true)
             .limit(to: 50)
@@ -176,12 +184,16 @@ class HotVotesViewModel: ObservableObject {
             return
         }
         
+        // Remove any existing listener
+        todaysVotesListener?.remove()
+        
         // First get all categories to map IDs to names
         db.collection("categories").getDocuments { [weak self] categorySnapshot, error in
             guard let categoryDocuments = categorySnapshot?.documents else { return }
             let categoryMap = Dictionary(uniqueKeysWithValues: categoryDocuments.map { ($0.documentID, $0["name"] as? String ?? "") })
             
-            self?.db.collection("votes")
+            // Add new listener and store the registration
+            self?.todaysVotesListener = self?.db.collection("votes")
                 .whereField("date", isGreaterThan: Timestamp(date: startOfDay))
                 .whereField("date", isLessThan: Timestamp(date: endOfDay))
                 .addSnapshotListener { snapshot, error in
@@ -240,6 +252,12 @@ class HotVotesViewModel: ObservableObject {
                         .map { $0 }
                 }
         }
+    }
+    
+    deinit {
+        // Clean up all listeners when the view model is deallocated
+        hotVotesListener?.remove()
+        todaysVotesListener?.remove()
     }
 }
 
