@@ -314,25 +314,46 @@ struct CategoryDetailView: View {
     
     private var emptyState: some View {
         VStack(spacing: 24) {
-            Image(systemName: "checkmark.circle.fill")
-                .font(.system(size: 70))
-                .foregroundStyle(.green)
-                .symbolEffect(.bounce)
-            
-            Text("Great job!")
-                .font(.title2.weight(.semibold))
-                .foregroundStyle(.primary)
-            
-            VStack(spacing: 8) {
-                Text("You've voted on all available items")
-                    .font(.subheadline)
+            if viewModel.subCategories.isEmpty {
+                Image(systemName: "tray")
+                    .font(.system(size: 70))
                     .foregroundStyle(.secondary)
                 
-                Text("Check back later for new items")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                Text("No items available")
+                    .font(.title2.weight(.semibold))
+                    .foregroundStyle(.primary)
+                
+                VStack(spacing: 8) {
+                    Text("There are no items to vote on in this category yet")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                    
+                    Text("Check back later for new items")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+                .multilineTextAlignment(.center)
+            } else {
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.system(size: 70))
+                    .foregroundStyle(.green)
+                    .symbolEffect(.bounce)
+                
+                Text("Great job!")
+                    .font(.title2.weight(.semibold))
+                    .foregroundStyle(.primary)
+                
+                VStack(spacing: 8) {
+                    Text("You've voted on all available items")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                    
+                    Text("Check back later for new items")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+                .multilineTextAlignment(.center)
             }
-            .multilineTextAlignment(.center)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color(.systemGroupedBackground))
