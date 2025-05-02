@@ -82,7 +82,10 @@ struct CategoryDetailView: View {
             }
             .navigationBarTitleDisplayMode(.inline)
             .alert("Vote Cooldown", isPresented: $showingCooldownAlert) {
-                Button("OK", role: .cancel) { }
+                Button("Skip") {
+                    // Move to next item
+                    viewModel.nextItem()
+                }
             } message: {
                 Text("You can vote again in 7 days")
             }
