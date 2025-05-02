@@ -97,15 +97,15 @@ const categorySubcategories = {
   "Drinks": [
     {
       name: "Coffee",
-      imageURL: "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=800"
+      imageURL: "https://images.unsplash.com/photo-1495474472287-4d1b19feb1f5?w=800"
     },
     {
       name: "Tea",
-      imageURL: "https://images.unsplash.com/photo-1544787219-7f47ccb76574?w=800"
+      imageURL: "https://images.unsplash.com/photo-1564890369478-c89ca6d9cde9?w=800"
     },
     {
       name: "Cocktails",
-      imageURL: "https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?w=800"
+      imageURL: "https://images.unsplash.com/photo-1551538827-9c037cb4f32a?w=800"
     },
     {
       name: "Wine",
@@ -113,69 +113,69 @@ const categorySubcategories = {
     },
     {
       name: "Beer",
-      imageURL: "https://images.unsplash.com/photo-1535958636474-b021ee887b13?w=800"
+      imageURL: "https://images.unsplash.com/photo-1513309914637-65c20a5962e1?w=800"
     },
     {
       name: "Smoothies",
       imageURL: "https://images.unsplash.com/photo-1502741224143-90386d7f8c82?w=800"
     },
     {
-      name: "Juice",
-      imageURL: "https://images.unsplash.com/photo-1613478223719-2ab802602423?w=800"
+      name: "Juices",
+      imageURL: "https://images.unsplash.com/photo-1603569283847-aa295f0d016a?w=800"
+    },
+    {
+      name: "Soda",
+      imageURL: "https://images.unsplash.com/photo-1624552184280-9e9631bbeee9?w=800"
+    },
+    {
+      name: "Water",
+      imageURL: "https://images.unsplash.com/photo-1541696433207-acbf4a195875?w=800"
     },
     {
       name: "Energy Drinks",
-      imageURL: "https://images.unsplash.com/photo-1622543925917-763c34d1a86e?w=800"
-    },
-    {
-      name: "Soft Drinks",
-      imageURL: "https://images.unsplash.com/photo-1581006852262-e4307cf6283a?w=800"
-    },
-    {
-      name: "Mocktails",
-      imageURL: "https://images.unsplash.com/photo-1604178280816-55e5a3d5e767?w=800"
+      imageURL: "https://images.unsplash.com/photo-1625772452859-1c03d5bf1137?w=800"
     }
   ],
   "Dessert": [
-    {
-      name: "Ice Cream",
-      imageURL: "https://images.unsplash.com/photo-1497034825429-c343d7c6a68f?w=800"
-    },
     {
       name: "Cakes",
       imageURL: "https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=800"
     },
     {
+      name: "Ice Cream",
+      imageURL: "https://images.unsplash.com/photo-1497034825429-c343d7c6a68f?w=800"
+    },
+    {
       name: "Cookies",
-      imageURL: "https://images.unsplash.com/photo-1499636136210-6f4ee915583e?w=800"
-    },
-    {
-      name: "Pastries",
-      imageURL: "https://images.unsplash.com/photo-1517433670267-08bbd4be890f?w=800"
-    },
-    {
-      name: "Chocolate",
-      imageURL: "https://images.unsplash.com/photo-1511381939415-e44015466834?w=800"
+      imageURL: "https://images.unsplash.com/photo-1558963675-41940de4a85a?w=800"
     },
     {
       name: "Pies",
-      imageURL: "https://images.unsplash.com/photo-1519915028121-7d3463d20b13?w=800"
+      imageURL: "https://images.unsplash.com/photo-1562007908-859b4ba9a1a2?w=800"
     },
     {
-      name: "Puddings",
-      imageURL: "https://images.unsplash.com/photo-1516684163977-84cc7de8c7c8?w=800"
+      name: "Chocolate",
+      imageURL: "https://images.unsplash.com/photo-1606313564200-e75d5e79876a?w=800"
     },
     {
-      name: "Frozen Treats",
-      imageURL: "https://images.unsplash.com/photo-1505394033641-40c6ad1178d7?w=800"
+      name: "Pastries",
+      imageURL: "https://images.unsplash.com/photo-1551024506-0bccd828d307?w=800"
     },
     {
-      name: "Candy",
-      imageURL: "https://images.unsplash.com/photo-1582058091505-f87a2e55a40f?w=800"
+      name: "Cupcakes",
+      imageURL: "https://images.unsplash.com/photo-1576618148400-f54bed99fcfd?w=800"
     },
     {
-      name: "Baked Goods",
-      imageURL: "https://images.unsplash.com/photo-1509440159596-0249088772ff?w=800"
+      name: "Donuts",
+      imageURL: "https://images.unsplash.com/photo-1551106652-a5bcf4b29ab6?w=800"
+    },
+    {
+      name: "Macarons",
+      imageURL: "https://images.unsplash.com/photo-1568219656418-15c329312bf1?w=800"
+    },
+    {
+      name: "Gelato",
+      imageURL: "https://images.unsplash.com/photo-1536304993881-ff6e9eefa2a6?w=800"
     }
   ],
   "Travel": [
@@ -475,65 +475,49 @@ const categorySubcategories = {
   "Pets": [
     {
       name: "Dogs",
-      imageURL: "https://images.unsplash.com/photo-1517849845537-4d257902454a?w=800"
+      imageURL: "https://images.unsplash.com/photo-1548535537-3cfaf1fc327c?w=800"
     },
     {
       name: "Cats",
       imageURL: "https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=800"
     },
     {
-      name: "Fish",
-      imageURL: "https://images.unsplash.com/photo-1522069169874-c58ec4b76be5?w=800"
-    },
-    {
       name: "Birds",
-      imageURL: "https://images.unsplash.com/photo-1452570053594-1b985d6ea890?w=800"
+      imageURL: "https://images.unsplash.com/photo-1552728089-57bdde30beb3?w=800"
     },
     {
-      name: "Small Animals",
-      imageURL: "https://images.unsplash.com/photo-1425082661705-1834bfd09dca?w=800"
+      name: "Fish",
+      imageURL: "https://images.unsplash.com/photo-1552728089-57bdde30beb3?w=800"
+    },
+    {
+      name: "Rabbits",
+      imageURL: "https://images.unsplash.com/photo-1583512603806-077998240c7a?w=800"
+    },
+    {
+      name: "Hamsters",
+      imageURL: "https://images.unsplash.com/photo-1583512603806-077998240c7a?w=800"
     },
     {
       name: "Reptiles",
-      imageURL: "https://images.unsplash.com/photo-1548550023-2bdb3c5beed7?w=800"
+      imageURL: "https://images.unsplash.com/photo-1543852786-1cf6624b9987?w=800"
     },
     {
-      name: "Exotic Pets",
-      imageURL: "https://images.unsplash.com/photo-1425082661705-1834bfd09dca?w=800"
+      name: "Guinea Pigs",
+      imageURL: "https://images.unsplash.com/photo-1583512603806-077998240c7a?w=800"
     },
     {
-      name: "Pet Supplies",
-      imageURL: "https://images.unsplash.com/photo-1601758174114-e711c0cbaa69?w=800"
+      name: "Ferrets",
+      imageURL: "https://images.unsplash.com/photo-1583512603806-077998240c7a?w=800"
     },
     {
-      name: "Pet Care",
-      imageURL: "https://images.unsplash.com/photo-1516734212186-a967f81ad0d7?w=800"
-    },
-    {
-      name: "Pet Training",
-      imageURL: "https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=800"
+      name: "Turtles",
+      imageURL: "https://images.unsplash.com/photo-1543852786-1cf6624b9987?w=800"
     }
   ],
   "Home Decor": [
     {
-      name: "Living Room",
-      imageURL: "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=800"
-    },
-    {
-      name: "Bedroom",
-      imageURL: "https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?w=800"
-    },
-    {
-      name: "Kitchen",
-      imageURL: "https://images.unsplash.com/photo-1556911220-bff31c812dba?w=800"
-    },
-    {
-      name: "Bathroom",
-      imageURL: "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?w=800"
-    },
-    {
-      name: "Outdoor",
-      imageURL: "https://images.unsplash.com/photo-1600566752355-35792bedcfea?w=800"
+      name: "Furniture",
+      imageURL: "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=800"
     },
     {
       name: "Lighting",
@@ -541,19 +525,35 @@ const categorySubcategories = {
     },
     {
       name: "Wall Art",
-      imageURL: "https://images.unsplash.com/photo-1526724038726-3007ffb8025f?w=800"
+      imageURL: "https://images.unsplash.com/photo-1579547945413-497e1b99dac0?w=800"
     },
     {
-      name: "Furniture",
-      imageURL: "https://images.unsplash.com/photo-1538688525198-9b88f6f53126?w=800"
+      name: "Rugs",
+      imageURL: "https://images.unsplash.com/photo-1579639782419-cc9a0f4c1d4c?w=800"
     },
     {
-      name: "Textiles",
-      imageURL: "https://images.unsplash.com/photo-1590012314607-cda9d9b699ae?w=800"
+      name: "Curtains",
+      imageURL: "https://images.unsplash.com/photo-1513506003901-1e6a229e2d15?w=800"
     },
     {
-      name: "Storage",
-      imageURL: "https://images.unsplash.com/photo-1558997519-83c9716b1b07?w=800"
+      name: "Pillows",
+      imageURL: "https://images.unsplash.com/photo-1579639782419-cc9a0f4c1d4c?w=800"
+    },
+    {
+      name: "Plants",
+      imageURL: "https://images.unsplash.com/photo-1485955900006-10f4d1d3d0b0?w=800"
+    },
+    {
+      name: "Mirrors",
+      imageURL: "https://images.unsplash.com/photo-1513506003901-1e6a229e2d15?w=800"
+    },
+    {
+      name: "Candles",
+      imageURL: "https://images.unsplash.com/photo-1513506003901-1e6a229e2d15?w=800"
+    },
+    {
+      name: "Vases",
+      imageURL: "https://images.unsplash.com/photo-1513506003901-1e6a229e2d15?w=800"
     }
   ],
   "Fitness": [
@@ -852,44 +852,338 @@ const categorySubcategories = {
   ],
   "Politics": [
     {
-      name: "Local Politics",
-      imageURL: "https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=800"
+      name: "US Politics",
+      imageURL: "https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=800"
     },
     {
-      name: "National Politics",
-      imageURL: "https://images.unsplash.com/photo-1529107386315-e1a2ed48a620?w=800"
+      name: "World Politics",
+      imageURL: "https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=800"
+    },
+    {
+      name: "Elections",
+      imageURL: "https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=800"
+    },
+    {
+      name: "Policy",
+      imageURL: "https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=800"
     },
     {
       name: "International Relations",
-      imageURL: "https://images.unsplash.com/photo-1526470498-9ae73c665de8?w=800"
+      imageURL: "https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=800"
     },
     {
-      name: "Economic Policy",
-      imageURL: "https://images.unsplash.com/photo-1518186285589-2f7649de83e0?w=800"
+      name: "Political Parties",
+      imageURL: "https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=800"
     },
     {
-      name: "Social Issues",
-      imageURL: "https://images.unsplash.com/photo-1460518451285-97b6aa326961?w=800"
+      name: "Political Leaders",
+      imageURL: "https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=800"
     },
     {
-      name: "Environmental Policy",
-      imageURL: "https://images.unsplash.com/photo-1497435334941-8c899ee9e694?w=800"
+      name: "Political Movements",
+      imageURL: "https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=800"
     },
     {
-      name: "Education Policy",
-      imageURL: "https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=800"
+      name: "Political Theory",
+      imageURL: "https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=800"
     },
     {
-      name: "Healthcare Policy",
-      imageURL: "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=800"
+      name: "Political History",
+      imageURL: "https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=800"
+    }
+  ],
+  "Business": [
+    {
+      name: "Startups",
+      imageURL: "https://images.unsplash.com/photo-1552664730-d307ca884978?w=800"
     },
     {
-      name: "Foreign Policy",
-      imageURL: "https://images.unsplash.com/photo-1526470498-9ae73c665de8?w=800"
+      name: "Finance",
+      imageURL: "https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=800"
     },
     {
-      name: "Civil Rights",
-      imageURL: "https://images.unsplash.com/photo-1591189824936-5cca9fca7608?w=800"
+      name: "Marketing",
+      imageURL: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800"
+    },
+    {
+      name: "Management",
+      imageURL: "https://images.unsplash.com/photo-1552664730-d307ca884978?w=800"
+    },
+    {
+      name: "Entrepreneurship",
+      imageURL: "https://images.unsplash.com/photo-1552664730-d307ca884978?w=800"
+    },
+    {
+      name: "E-commerce",
+      imageURL: "https://images.unsplash.com/photo-1556741533-6e6a62bd8b49?w=800"
+    },
+    {
+      name: "Consulting",
+      imageURL: "https://images.unsplash.com/photo-1552664730-d307ca884978?w=800"
+    },
+    {
+      name: "Real Estate",
+      imageURL: "https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=800"
+    },
+    {
+      name: "HR",
+      imageURL: "https://images.unsplash.com/photo-1552664730-d307ca884978?w=800"
+    },
+    {
+      name: "Sales",
+      imageURL: "https://images.unsplash.com/photo-1552664730-d307ca884978?w=800"
+    }
+  ],
+  "Entertainment": [
+    {
+      name: "TV Shows",
+      imageURL: "https://images.unsplash.com/photo-1574375927938-d5a98e8ffe85?w=800"
+    },
+    {
+      name: "Concerts",
+      imageURL: "https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=800"
+    },
+    {
+      name: "Theater",
+      imageURL: "https://images.unsplash.com/photo-1547153760-18fc86324498?w=800"
+    },
+    {
+      name: "Comedy",
+      imageURL: "https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?w=800"
+    },
+    {
+      name: "Festivals",
+      imageURL: "https://images.unsplash.com/photo-1511795409834-4324d6310bc0?w=800"
+    },
+    {
+      name: "Gaming",
+      imageURL: "https://images.unsplash.com/photo-1493711662062-fa541adb3fc8?w=800"
+    },
+    {
+      name: "Events",
+      imageURL: "https://images.unsplash.com/photo-1511578314322-379afb476865?w=800"
+    },
+    {
+      name: "Amusement Parks",
+      imageURL: "https://images.unsplash.com/photo-1513889961551-a5d8e5b0d4e7?w=800"
+    },
+    {
+      name: "Nightlife",
+      imageURL: "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=800"
+    },
+    {
+      name: "Streaming",
+      imageURL: "https://images.unsplash.com/photo-1574375927938-d5a98e8ffe85?w=800"
+    }
+  ],
+  "General": [
+    {
+      name: "News",
+      imageURL: "https://images.unsplash.com/photo-1504711434969-e33886194f5c?w=800"
+    },
+    {
+      name: "Opinions",
+      imageURL: "https://images.unsplash.com/photo-1504711434969-e33886194f5c?w=800"
+    },
+    {
+      name: "Trending",
+      imageURL: "https://images.unsplash.com/photo-1504711434969-e33886194f5c?w=800"
+    },
+    {
+      name: "Viral",
+      imageURL: "https://images.unsplash.com/photo-1504711434969-e33886194f5c?w=800"
+    },
+    {
+      name: "Features",
+      imageURL: "https://images.unsplash.com/photo-1504711434969-e33886194f5c?w=800"
+    },
+    {
+      name: "Editorials",
+      imageURL: "https://images.unsplash.com/photo-1504711434969-e33886194f5c?w=800"
+    },
+    {
+      name: "Analysis",
+      imageURL: "https://images.unsplash.com/photo-1504711434969-e33886194f5c?w=800"
+    },
+    {
+      name: "Reviews",
+      imageURL: "https://images.unsplash.com/photo-1504711434969-e33886194f5c?w=800"
+    },
+    {
+      name: "Interviews",
+      imageURL: "https://images.unsplash.com/photo-1504711434969-e33886194f5c?w=800"
+    },
+    {
+      name: "Highlights",
+      imageURL: "https://images.unsplash.com/photo-1504711434969-e33886194f5c?w=800"
+    }
+  ],
+  "Health": [
+    {
+      name: "Fitness",
+      imageURL: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800"
+    },
+    {
+      name: "Nutrition",
+      imageURL: "https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=800"
+    },
+    {
+      name: "Mental Health",
+      imageURL: "https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=800"
+    },
+    {
+      name: "Wellness",
+      imageURL: "https://images.unsplash.com/photo-1498837167922-ddd27525d352?w=800"
+    },
+    {
+      name: "Medical",
+      imageURL: "https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=800"
+    },
+    {
+      name: "Alternative Medicine",
+      imageURL: "https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=800"
+    },
+    {
+      name: "Prevention",
+      imageURL: "https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=800"
+    },
+    {
+      name: "Aging",
+      imageURL: "https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=800"
+    },
+    {
+      name: "Children's Health",
+      imageURL: "https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=800"
+    },
+    {
+      name: "Public Health",
+      imageURL: "https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=800"
+    }
+  ],
+  "Lifestyle": [
+    {
+      name: "Fashion",
+      imageURL: "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=800"
+    },
+    {
+      name: "Home",
+      imageURL: "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=800"
+    },
+    {
+      name: "Relationships",
+      imageURL: "https://images.unsplash.com/photo-1516589178581-6cd7833ae3b2?w=800"
+    },
+    {
+      name: "Parenting",
+      imageURL: "https://images.unsplash.com/photo-1516589178581-6cd7833ae3b2?w=800"
+    },
+    {
+      name: "Beauty",
+      imageURL: "https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?w=800"
+    },
+    {
+      name: "Travel",
+      imageURL: "https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=800"
+    },
+    {
+      name: "Food",
+      imageURL: "https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=800"
+    },
+    {
+      name: "Pets",
+      imageURL: "https://images.unsplash.com/photo-1548535537-3cfaf1fc327c?w=800"
+    },
+    {
+      name: "Gardening",
+      imageURL: "https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=800"
+    },
+    {
+      name: "DIY",
+      imageURL: "https://images.unsplash.com/photo-1499781350541-7783f6c6a0c8?w=800"
+    }
+  ],
+  "US": [
+    {
+      name: "Politics",
+      imageURL: "https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=800"
+    },
+    {
+      name: "Economy",
+      imageURL: "https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=800"
+    },
+    {
+      name: "Culture",
+      imageURL: "https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=800"
+    },
+    {
+      name: "Society",
+      imageURL: "https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=800"
+    },
+    {
+      name: "Education",
+      imageURL: "https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=800"
+    },
+    {
+      name: "Healthcare",
+      imageURL: "https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=800"
+    },
+    {
+      name: "Technology",
+      imageURL: "https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=800"
+    },
+    {
+      name: "Environment",
+      imageURL: "https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=800"
+    },
+    {
+      name: "Immigration",
+      imageURL: "https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=800"
+    },
+    {
+      name: "Infrastructure",
+      imageURL: "https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=800"
+    }
+  ],
+  "World": [
+    {
+      name: "Politics",
+      imageURL: "https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=800"
+    },
+    {
+      name: "Economy",
+      imageURL: "https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=800"
+    },
+    {
+      name: "Culture",
+      imageURL: "https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=800"
+    },
+    {
+      name: "Society",
+      imageURL: "https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=800"
+    },
+    {
+      name: "Education",
+      imageURL: "https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=800"
+    },
+    {
+      name: "Healthcare",
+      imageURL: "https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=800"
+    },
+    {
+      name: "Technology",
+      imageURL: "https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=800"
+    },
+    {
+      name: "Environment",
+      imageURL: "https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=800"
+    },
+    {
+      name: "Immigration",
+      imageURL: "https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=800"
+    },
+    {
+      name: "Infrastructure",
+      imageURL: "https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=800"
     }
   ]
 };
@@ -917,6 +1211,15 @@ async function createSubcategories() {
     });
     await batch.commit();
     console.log('Cleared existing subcategories');
+
+    // Clear existing votes
+    const votesSnapshot = await db.collection('votes').get();
+    const votesBatch = db.batch();
+    votesSnapshot.docs.forEach(doc => {
+      votesBatch.delete(doc.ref);
+    });
+    await votesBatch.commit();
+    console.log('Cleared existing votes');
     
     // Create new subcategories
     const newBatch = db.batch();

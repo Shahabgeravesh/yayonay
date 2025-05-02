@@ -116,3 +116,4 @@ GoogleService-Info.plist
 .vscode/
 *.swp
 *.swoserviceAccountKey.json
+serviceAccountKey.json
