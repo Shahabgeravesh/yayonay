@@ -18,6 +18,22 @@ const categoryQuestions = {
     "Service",
     "Ambiance"
   ],
+  "Drinks": [
+    "Taste",
+    "Quality",
+    "Value",
+    "Presentation",
+    "Temperature",
+    "Freshness"
+  ],
+  "Dessert": [
+    "Taste",
+    "Presentation",
+    "Sweetness",
+    "Texture",
+    "Freshness",
+    "Value"
+  ],
   "Movies": [
     "Plot",
     "Acting",
@@ -42,6 +58,46 @@ const categoryQuestions = {
     "World Building",
     "Ending"
   ],
+  "Technology": [
+    "Innovation",
+    "Usability",
+    "Design",
+    "Performance",
+    "Value",
+    "Reliability"
+  ],
+  "Fashion": [
+    "Style",
+    "Quality",
+    "Comfort",
+    "Value",
+    "Durability",
+    "Trendiness"
+  ],
+  "Pets": [
+    "Temperament",
+    "Care Requirements",
+    "Cost",
+    "Space Needs",
+    "Lifespan",
+    "Family Friendly"
+  ],
+  "Home Decor": [
+    "Style",
+    "Quality",
+    "Value",
+    "Durability",
+    "Functionality",
+    "Aesthetics"
+  ],
+  "Fitness": [
+    "Effectiveness",
+    "Difficulty",
+    "Equipment Needed",
+    "Time Required",
+    "Safety",
+    "Results"
+  ],
   "Gaming": [
     "Gameplay",
     "Graphics",
@@ -49,6 +105,126 @@ const categoryQuestions = {
     "Controls",
     "Replay Value",
     "Multiplayer"
+  ],
+  "Beauty": [
+    "Effectiveness",
+    "Value",
+    "Quality",
+    "Packaging",
+    "Ingredients",
+    "Results"
+  ],
+  "Cars": [
+    "Performance",
+    "Design",
+    "Comfort",
+    "Reliability",
+    "Value",
+    "Features"
+  ],
+  "Photography": [
+    "Composition",
+    "Lighting",
+    "Subject",
+    "Technical Quality",
+    "Creativity",
+    "Impact"
+  ],
+  "Nature": [
+    "Beauty",
+    "Accessibility",
+    "Conservation",
+    "Activities",
+    "Facilities",
+    "Experience"
+  ],
+  "DIY": [
+    "Difficulty",
+    "Cost",
+    "Time Required",
+    "Results",
+    "Instructions",
+    "Materials Needed"
+  ],
+  "Politics": [
+    "Impact",
+    "Fairness",
+    "Effectiveness",
+    "Transparency",
+    "Public Support",
+    "Implementation"
+  ],
+  "Business": [
+    "Innovation",
+    "Profitability",
+    "Sustainability",
+    "Leadership",
+    "Market Impact",
+    "Growth Potential"
+  ],
+  "Entertainment": [
+    "Entertainment Value",
+    "Production Quality",
+    "Originality",
+    "Audience Engagement",
+    "Value",
+    "Replay Value"
+  ],
+  "General": [
+    "Relevance",
+    "Accuracy",
+    "Impact",
+    "Timeliness",
+    "Quality",
+    "Value"
+  ],
+  "Health": [
+    "Effectiveness",
+    "Safety",
+    "Cost",
+    "Accessibility",
+    "Results",
+    "Side Effects"
+  ],
+  "Lifestyle": [
+    "Quality of Life",
+    "Sustainability",
+    "Cost",
+    "Time Management",
+    "Balance",
+    "Satisfaction"
+  ],
+  "US": [
+    "Impact",
+    "Effectiveness",
+    "Public Support",
+    "Implementation",
+    "Cost",
+    "Benefits"
+  ],
+  "World": [
+    "Global Impact",
+    "International Relations",
+    "Cultural Sensitivity",
+    "Sustainability",
+    "Effectiveness",
+    "Long-term Effects"
+  ],
+  "Sports": [
+    "Skill Level",
+    "Entertainment Value",
+    "Rules",
+    "Equipment",
+    "Accessibility",
+    "Physical Benefits"
+  ],
+  "Art": [
+    "Creativity",
+    "Technique",
+    "Impact",
+    "Originality",
+    "Presentation",
+    "Message"
   ],
   "Travel": [
     "Location",
@@ -95,7 +271,7 @@ async function createSubQuestions() {
     
     // Clear existing subQuestions
     const subQuestionsSnapshot = await db.collection('subQuestions').get();
-    const batch = db.batch();
+    let batch = db.batch();
     subQuestionsSnapshot.docs.forEach(doc => {
       batch.delete(doc.ref);
     });
@@ -103,8 +279,8 @@ async function createSubQuestions() {
     console.log('Cleared existing subQuestions');
     
     // Create new subQuestions
-    const newBatch = db.batch();
     let count = 0;
+    batch = db.batch();
     
     for (const [categoryName, questions] of Object.entries(categoryQuestions)) {
       const categoryId = categoryIdMap[categoryName];
@@ -117,24 +293,25 @@ async function createSubQuestions() {
       console.log(`Creating sub-questions for ${categoryName} (${categorySubCategories.length} subcategories)`);
       
       for (const subCategory of categorySubCategories) {
-      for (const question of questions) {
-        const subQuestionRef = db.collection('subQuestions').doc();
-        const subQuestion = {
-          categoryId: categoryId,
+        for (const question of questions) {
+          const subQuestionRef = db.collection('subQuestions').doc();
+          const subQuestion = {
+            categoryId: categoryId,
             subCategoryId: subCategory.id,
-          question: question,
-          yayCount: 0,
-          nayCount: 0
-        };
-        
-        newBatch.set(subQuestionRef, subQuestion);
-        count++;
-        
-        // Firestore has a limit of 500 operations per batch
-        if (count % 450 === 0) {
-          await newBatch.commit();
-          console.log(`Committed batch of ${count} subQuestions`);
-          count = 0;
+            question: question,
+            yayCount: 0,
+            nayCount: 0
+          };
+          
+          batch.set(subQuestionRef, subQuestion);
+          count++;
+          
+          // Firestore has a limit of 500 operations per batch
+          if (count % 450 === 0) {
+            await batch.commit();
+            console.log(`Committed batch of ${count} subQuestions`);
+            count = 0;
+            batch = db.batch(); // Create a new batch
           }
         }
       }
@@ -142,7 +319,7 @@ async function createSubQuestions() {
     
     // Commit any remaining operations
     if (count > 0) {
-      await newBatch.commit();
+      await batch.commit();
       console.log(`Committed final batch of ${count} subQuestions`);
     }
     
