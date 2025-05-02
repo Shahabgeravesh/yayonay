@@ -40,40 +40,34 @@ struct MainTabView: View {
                                 selectedTab = index
                             }
                         }) {
-                            VStack(spacing: 6) {
+                            VStack(spacing: 4) {
                                 ZStack {
                                     Circle()
-                                        .fill(selectedTab == index ? Color.blue.opacity(0.1) : Color.clear)
-                                        .frame(width: 50, height: 50)
+                                        .fill(selectedTab == index ? Color.blue.opacity(0.05) : Color.clear)
+                                        .frame(width: 40, height: 40)
                                     
                                     Image(systemName: tabIcon(for: index))
-                                        .font(.system(size: 22, weight: selectedTab == index ? .semibold : .regular))
+                                        .font(.system(size: 18, weight: selectedTab == index ? .semibold : .regular))
                                         .foregroundColor(selectedTab == index ? .blue : .gray)
                                         .scaleEffect(selectedTab == index ? 1.1 : 1.0)
-                }
-            
-                                if selectedTab == index {
-                                    Circle()
-                                        .fill(Color.blue)
-                                        .frame(width: 4, height: 4)
-                                        .transition(.scale.combined(with: .opacity))
                                 }
                             }
                             .frame(maxWidth: .infinity)
                         }
                     }
                 }
-                .padding(.horizontal, 8)
-                .padding(.vertical, 12)
+                .padding(.horizontal, 4)
+                .padding(.vertical, 8)
                 .background(
                     .ultraThinMaterial
+                        .opacity(0.8)
                 )
-                .clipShape(RoundedRectangle(cornerRadius: 25))
-                .shadow(color: Color.black.opacity(0.1), radius: 10, x: 0, y: -5)
+                .clipShape(RoundedRectangle(cornerRadius: 20))
+                .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: -2)
                 .padding(.horizontal)
-                .padding(.bottom, 8)
+                .padding(.bottom, 4)
                 .offset(y: isTabBarVisible ? 0 : 100)
-                }
+            }
         }
         .ignoresSafeArea(.keyboard)
     }

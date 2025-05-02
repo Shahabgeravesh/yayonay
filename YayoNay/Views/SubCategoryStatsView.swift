@@ -233,68 +233,112 @@ struct SubCategoryStatsView: View {
                             Button(action: {
                                 shareToFacebook()
                             }) {
-                                HStack(spacing: 6) {
-                                    Image(systemName: "square.and.arrow.up")
-                                        .font(.system(size: 16, weight: .medium))
-                                    Text("Facebook")
-                                        .font(.system(size: 14, weight: .medium))
-                                }
-                                .frame(minWidth: 44, minHeight: 44)
-                                .padding(.horizontal, 12)
-                                .background(Color(red: 0.23, green: 0.35, blue: 0.60).opacity(0.1))
-                                .foregroundColor(Color(red: 0.23, green: 0.35, blue: 0.60))
-                                .clipShape(Capsule())
+                                Image("iconfinder_facebook")
+                                    .resizable()
+                                    .scaledToFit()
+                                    .frame(width: 24, height: 24)
+                                    .padding(8)
+                                    .background(Color(red: 0.23, green: 0.35, blue: 0.60).opacity(0.1))
+                                    .foregroundColor(Color(red: 0.23, green: 0.35, blue: 0.60))
+                                    .clipShape(Circle())
                             }
                             
-                            // Twitter/X
+                            // X (Twitter)
                             Button(action: {
                                 shareToTwitter()
                             }) {
-                                HStack(spacing: 6) {
-                                    Image(systemName: "square.and.arrow.up")
-                                        .font(.system(size: 16, weight: .medium))
-                                    Text("Twitter")
-                                        .font(.system(size: 14, weight: .medium))
-                                }
-                                .frame(minWidth: 44, minHeight: 44)
-                                .padding(.horizontal, 12)
-                                .background(Color.black.opacity(0.1))
-                                .foregroundColor(.black)
-                                .clipShape(Capsule())
+                                Image(systemName: "x.circle.fill")
+                                    .resizable()
+                                    .scaledToFit()
+                                    .frame(width: 24, height: 24)
+                                    .padding(8)
+                                    .background(Color.black.opacity(0.1))
+                                    .foregroundColor(.black)
+                                    .clipShape(Circle())
                             }
                             
                             // Instagram
                             Button(action: {
                                 shareToInstagram()
                             }) {
-                                HStack(spacing: 6) {
-                                    Image(systemName: "square.and.arrow.up")
-                                        .font(.system(size: 16, weight: .medium))
-                                    Text("Instagram")
-                                        .font(.system(size: 14, weight: .medium))
-                                }
-                                .frame(minWidth: 44, minHeight: 44)
-                                .padding(.horizontal, 12)
-                                .background(Color(red: 0.83, green: 0.18, blue: 0.42).opacity(0.1))
-                                .foregroundColor(Color(red: 0.83, green: 0.18, blue: 0.42))
-                                .clipShape(Capsule())
+                                Image("iconfinder_instagram")
+                                    .resizable()
+                                    .scaledToFit()
+                                    .frame(width: 24, height: 24)
+                                    .padding(8)
+                                    .background(Color(red: 0.83, green: 0.18, blue: 0.42).opacity(0.1))
+                                    .foregroundColor(Color(red: 0.83, green: 0.18, blue: 0.42))
+                                    .clipShape(Circle())
                             }
                             
-                            // Message
+                            // WhatsApp
                             Button(action: {
-                                shareToMessage()
+                                shareToWhatsApp()
                             }) {
-                                HStack(spacing: 6) {
-                                    Image(systemName: "message.fill")
-                                        .font(.system(size: 16, weight: .medium))
-                                    Text("Message")
-                                        .font(.system(size: 14, weight: .medium))
-                                }
-                                .frame(minWidth: 44, minHeight: 44)
-                                .padding(.horizontal, 12)
-                                .background(Color.blue.opacity(0.1))
-                                .foregroundColor(.blue)
-                                .clipShape(Capsule())
+                                Image(systemName: "message.circle.fill")
+                                    .resizable()
+                                    .scaledToFit()
+                                    .frame(width: 24, height: 24)
+                                    .padding(8)
+                                    .background(Color(red: 0.18, green: 0.77, blue: 0.45).opacity(0.1))
+                                    .foregroundColor(Color(red: 0.18, green: 0.77, blue: 0.45))
+                                    .clipShape(Circle())
+                            }
+                            
+                            // Telegram
+                            Button(action: {
+                                shareToTelegram()
+                            }) {
+                                Image(systemName: "paperplane.circle.fill")
+                                    .resizable()
+                                    .scaledToFit()
+                                    .frame(width: 24, height: 24)
+                                    .padding(8)
+                                    .background(Color(red: 0.0, green: 0.7, blue: 1.0).opacity(0.1))
+                                    .foregroundColor(Color(red: 0.0, green: 0.7, blue: 1.0))
+                                    .clipShape(Circle())
+                            }
+                            
+                            // LinkedIn
+                            Button(action: {
+                                shareToLinkedIn()
+                            }) {
+                                Image("iconfinder_linkedin")
+                                    .resizable()
+                                    .scaledToFit()
+                                    .frame(width: 24, height: 24)
+                                    .padding(8)
+                                    .background(Color(red: 0.0, green: 0.47, blue: 0.71).opacity(0.1))
+                                    .foregroundColor(Color(red: 0.0, green: 0.47, blue: 0.71))
+                                    .clipShape(Circle())
+                            }
+                            
+                            // TikTok
+                            Button(action: {
+                                shareToTikTok()
+                            }) {
+                                Image("iconfinder_tiktok")
+                                    .resizable()
+                                    .scaledToFit()
+                                    .frame(width: 24, height: 24)
+                                    .padding(8)
+                                    .background(Color.black.opacity(0.1))
+                                    .foregroundColor(.black)
+                                    .clipShape(Circle())
+                            }
+                            
+                            // More Options
+                            Button(action: {
+                                showShareSheet = true
+                            }) {
+                                Image(systemName: "ellipsis.circle.fill")
+                                    .resizable()
+                                    .scaledToFit()
+                                    .frame(width: 24, height: 24)
+                                    .padding(8)
+                                    .background(Color.gray.opacity(0.1))
+                                    .foregroundColor(.gray)
+                                    .clipShape(Circle())
                             }
                         }
                         .padding(.horizontal)
@@ -404,48 +448,48 @@ struct SubCategoryStatsView: View {
                 
                 // Update Vote Reset Button section
                 VStack(spacing: 12) {
-                        if let lastVoteDate = statsViewModel.lastVoteDate {
-                            let nextVoteDate = Calendar.current.date(byAdding: .day, value: 7, to: lastVoteDate) ?? Date()
+                    if let lastVoteDate = statsViewModel.lastVoteDate {
+                        let nextVoteDate = Calendar.current.date(byAdding: .day, value: 7, to: lastVoteDate) ?? Date()
                         let canReset = timerState.timeRemaining <= 0
-                            
-                            Button(action: {
-                                if canReset {
+                        
+                        Button(action: {
+                            if canReset {
                                 HapticManager.shared.buttonPress()
-                                    showResetConfirmation = true
-                                }
-                            }) {
-                                HStack(spacing: 8) {
+                                showResetConfirmation = true
+                            }
+                        }) {
+                            HStack(spacing: 8) {
                                 Image(systemName: canReset ? "arrow.clockwise.circle.fill" : "clock.fill")
-                                        .font(.system(size: 18))
+                                    .font(.system(size: 18))
                                 Text(canReset ? "Change My Vote" : "Time Remaining: \(formatTimeRemaining(timerState.timeRemaining))")
-                                        .font(.system(size: 15, weight: .semibold))
-                                }
-                                .foregroundColor(canReset ? .white : .secondary)
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 12)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .fill(canReset ? Color.blue : Color.gray.opacity(0.2))
-                                )
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .stroke(canReset ? Color.blue : Color.gray.opacity(0.3), lineWidth: 1)
-                                )
-                                .shadow(color: canReset ? Color.blue.opacity(0.3) : Color.clear, radius: 4, x: 0, y: 2)
+                                    .font(.system(size: 15, weight: .semibold))
                             }
-                            .disabled(!canReset)
-                            .scaleEffect(canReset ? 1.0 : 0.95)
-                            .animation(.spring(response: 0.3, dampingFraction: 0.6), value: canReset)
+                            .foregroundColor(canReset ? .white : .secondary)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 12)
+                            .background(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(canReset ? Color.blue : Color.gray.opacity(0.2))
+                            )
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .stroke(canReset ? Color.blue : Color.gray.opacity(0.3), lineWidth: 1)
+                            )
+                            .shadow(color: canReset ? Color.blue.opacity(0.3) : Color.clear, radius: 4, x: 0, y: 2)
+                        }
+                        .disabled(!canReset)
+                        .scaleEffect(canReset ? 1.0 : 0.95)
+                        .animation(.spring(response: 0.3, dampingFraction: 0.6), value: canReset)
+                        
+                        if !canReset {
+                            Text("You voted on \(formatDate(lastVoteDate))")
+                                .font(.system(size: 13))
+                                .foregroundColor(.secondary)
                             
-                            if !canReset {
-                                Text("You voted on \(formatDate(lastVoteDate))")
-                                    .font(.system(size: 13))
-                                    .foregroundColor(.secondary)
-                                
-                                Text("You can change your vote on \(formatDate(nextVoteDate))")
-                                    .font(.system(size: 13))
-                                    .foregroundColor(.secondary)
-                            }
+                            Text("You can change your vote on \(formatDate(nextVoteDate))")
+                                .font(.system(size: 13))
+                                .foregroundColor(.secondary)
+                        }
                     } else {
                         // Show disabled button when no vote exists
                         Button(action: {}) {
@@ -466,11 +510,12 @@ struct SubCategoryStatsView: View {
                                 RoundedRectangle(cornerRadius: 12)
                                     .stroke(Color.gray.opacity(0.3), lineWidth: 1)
                             )
-                }
+                        }
                         .disabled(true)
                     }
                 }
                 .padding(.horizontal)
+                .padding(.bottom, 32) // Add bottom padding to prevent overlap with TabView
             }
         }
         .alert("Reset Vote", isPresented: $showResetConfirmation) {
@@ -551,239 +596,136 @@ struct SubCategoryStatsView: View {
     
     private func shareToFacebook() {
         HapticManager.shared.buttonPress()
-        let username = Auth.auth().currentUser?.displayName ?? "a friend"
+        let deepLink = "yayonay://subcategory/\(statsViewModel.currentSubCategory.id)"
+        let appStoreLink = "https://apps.apple.com/app/idYOUR_APP_ID"
+        let vote = yayPercentage > 50 ? "YAY" : "NAY"
+        let shareText = "I just voted \(vote) on \(statsViewModel.currentSubCategory.name) in YayoNay! What do you think? Download YayoNay to vote: \(appStoreLink)"
         
-        // Create deep link URL for the specific subcategory
-        let deepLinkURL = "yayonay://subcategory/\(statsViewModel.currentSubCategory.id)"
-        let appStoreURL = "https://apps.apple.com/app/yayonay/idYOUR_APP_ID" // Replace with your actual App Store ID
-        let shareText = "\(username) wants you to vote on \(statsViewModel.currentSubCategory.name) on YayoNay! \(statsViewModel.currentSubCategory.yayCount) people voted Yay and \(statsViewModel.currentSubCategory.nayCount) voted Nay. What do you think? #YayoNay\n\nVote now: \(deepLinkURL)\n\nDownload YayoNay: \(appStoreURL)"
-        
-        guard let encodedText = shareText.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
-              let url = URL(string: "https://www.facebook.com/sharer/sharer.php?u=\(appStoreURL)&quote=\(encodedText)") else {
-            print("Error: Could not create Facebook share URL")
-            return
-        }
-        
-        DispatchQueue.main.async {
+        if let url = URL(string: "fb://share?text=\(shareText.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")") {
             if UIApplication.shared.canOpenURL(url) {
-                UIApplication.shared.open(url, options: [:]) { success in
-                    if !success {
-                        print("Error: Could not open Facebook URL")
-                    }
-                }
+                UIApplication.shared.open(url)
             } else {
-                print("Error: Facebook app not available")
+                // Fallback to Facebook web sharing
+                if let webURL = URL(string: "https://www.facebook.com/sharer/sharer.php?u=\(appStoreLink)&quote=\(shareText.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")") {
+                    UIApplication.shared.open(webURL)
+                }
             }
         }
     }
     
     private func shareToTwitter() {
         HapticManager.shared.buttonPress()
-        let username = Auth.auth().currentUser?.displayName ?? "a friend"
+        let deepLink = "yayonay://subcategory/\(statsViewModel.currentSubCategory.id)"
+        let appStoreLink = "https://apps.apple.com/app/idYOUR_APP_ID"
+        let vote = yayPercentage > 50 ? "YAY" : "NAY"
+        let shareText = "I voted \(vote) on \(statsViewModel.currentSubCategory.name) in YayoNay! What's your vote? #YayoNay #VoteNow \(appStoreLink)"
         
-        // Create deep link URL for the specific subcategory
-        let deepLinkURL = "yayonay://subcategory/\(statsViewModel.currentSubCategory.id)"
-        let appStoreURL = "https://apps.apple.com/app/yayonay/idYOUR_APP_ID" // Replace with your actual App Store ID
-        let shareText = "\(username) wants you to vote on \(statsViewModel.currentSubCategory.name) on YayoNay! \(statsViewModel.currentSubCategory.yayCount) people voted Yay and \(statsViewModel.currentSubCategory.nayCount) voted Nay. What do you think? #YayoNay\n\nVote now: \(deepLinkURL)\n\nDownload YayoNay: \(appStoreURL)"
-        
-        guard let encodedText = shareText.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
-              let url = URL(string: "https://twitter.com/intent/tweet?text=\(encodedText)") else {
-            print("Error: Could not create Twitter share URL")
-            return
-        }
-        
-        DispatchQueue.main.async {
+        if let url = URL(string: "twitter://post?message=\(shareText.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")") {
             if UIApplication.shared.canOpenURL(url) {
-                UIApplication.shared.open(url, options: [:]) { success in
-                    if !success {
-                        print("Error: Could not open Twitter URL")
-                    }
-                }
+                UIApplication.shared.open(url)
             } else {
-                print("Error: Twitter app not available")
+                // Fallback to Twitter web sharing
+                if let webURL = URL(string: "https://twitter.com/intent/tweet?text=\(shareText.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")") {
+                    UIApplication.shared.open(webURL)
+                }
             }
         }
     }
     
     private func shareToInstagram() {
         HapticManager.shared.buttonPress()
-        let username = Auth.auth().currentUser?.displayName ?? "a friend"
-        
-        // Create deep link URL for the specific subcategory
-        let deepLinkURL = "yayonay://subcategory/\(statsViewModel.currentSubCategory.id)"
-        let appStoreURL = "https://apps.apple.com/app/yayonay/idYOUR_APP_ID" // Replace with your actual App Store ID
-        let shareText = "\(username) wants you to vote on \(statsViewModel.currentSubCategory.name) on YayoNay! \(statsViewModel.currentSubCategory.yayCount) people voted Yay and \(statsViewModel.currentSubCategory.nayCount) voted Nay. What do you think? #YayoNay\n\nVote now: \(deepLinkURL)\n\nDownload YayoNay: \(appStoreURL)"
-        
-        DispatchQueue.main.async {
-            // Check photo library authorization status
-            let status = PHPhotoLibrary.authorizationStatus(for: .addOnly)
-            
-            switch status {
-            case .authorized, .limited:
-                // Create and save the share image
-                let image = createShareImage(text: shareText)
-                let imageSaver = ImageSaver()
-                imageSaver.completion = { error in
-                    if let error = error {
-                        self.errorMessage = "Failed to save image: \(error.localizedDescription)"
-                        self.showSaveErrorAlert = true
-                        return
-                    }
-                    self.openInstagram(with: image, appStoreURL: appStoreURL)
-                }
-                UIImageWriteToSavedPhotosAlbum(image, imageSaver, #selector(ImageSaver.image(_:didFinishSavingWithError:contextInfo:)), nil)
-                
-            case .notDetermined:
-                // Request permission
-                PHPhotoLibrary.requestAuthorization(for: .addOnly) { newStatus in
-                    DispatchQueue.main.async {
-                        if newStatus == .authorized || newStatus == .limited {
-                            let image = self.createShareImage(text: shareText)
-                            let imageSaver = ImageSaver()
-                            imageSaver.completion = { error in
-                                if let error = error {
-                                    self.errorMessage = "Failed to save image: \(error.localizedDescription)"
-                                    self.showSaveErrorAlert = true
-                                    return
-                                }
-                                self.openInstagram(with: image, appStoreURL: appStoreURL)
-                            }
-                            UIImageWriteToSavedPhotosAlbum(image, imageSaver, #selector(ImageSaver.image(_:didFinishSavingWithError:contextInfo:)), nil)
-                        } else {
-                            self.errorMessage = "Please allow photo library access in Settings to share to Instagram."
-                            self.showPhotoPermissionAlert = true
-                        }
-                    }
-                }
-                
-            case .denied, .restricted:
-                self.errorMessage = "Please enable photo library access in Settings to share to Instagram."
-                self.showPhotoPermissionAlert = true
-                
-            @unknown default:
-                self.errorMessage = "Unable to access photo library. Please try again."
-                self.showPhotoPermissionAlert = true
-            }
-        }
-    }
-    
-    private func openInstagram(with image: UIImage?, appStoreURL: String) {
-        guard let image = image else { return }
-        
-        // Share to Instagram Stories
-        let pasteboardItems: [String: Any] = [
-            "com.instagram.sharedSticker.stickerImage": image,
-            "com.instagram.sharedSticker.backgroundTopColor": "#000000",
-            "com.instagram.sharedSticker.backgroundBottomColor": "#000000",
-            "com.instagram.sharedSticker.contentURL": appStoreURL
-        ]
-        
-        UIPasteboard.general.setItems([pasteboardItems], options: [
-            UIPasteboard.OptionsKey.expirationDate: Date().addingTimeInterval(300)
-        ])
+        let deepLink = "yayonay://subcategory/\(statsViewModel.currentSubCategory.id)"
+        let appStoreLink = "https://apps.apple.com/app/idYOUR_APP_ID"
+        let vote = yayPercentage > 50 ? "YAY" : "NAY"
+        let shareText = "I voted \(vote) on \(statsViewModel.currentSubCategory.name) in YayoNay! What's your vote? Download YayoNay to vote: \(appStoreLink)"
         
         // Try to open Instagram Stories
-        if let instagramURL = URL(string: "instagram-stories://share") {
-            UIApplication.shared.open(instagramURL, options: [:]) { success in
-                if !success {
-                    // If Stories sharing fails, try opening the main app
-                    if let mainURL = URL(string: "instagram://app") {
-                        UIApplication.shared.open(mainURL, options: [:])
-                    }
+        if let url = URL(string: "instagram-stories://share") {
+            if UIApplication.shared.canOpenURL(url) {
+                UIApplication.shared.open(url)
+            } else {
+                // Fallback to Instagram app
+                if let appURL = URL(string: "instagram://app") {
+                    UIApplication.shared.open(appURL)
                 }
             }
         }
     }
     
-    private func createShareImage(text: String) -> UIImage {
-        let size = CGSize(width: 1080, height: 1920) // Instagram Story size
-        let renderer = UIGraphicsImageRenderer(size: size)
-        
-        return renderer.image { context in
-            // Background
-            UIColor.black.setFill()
-            context.fill(CGRect(origin: .zero, size: size))
-            
-            // Text
-            let paragraphStyle = NSMutableParagraphStyle()
-            paragraphStyle.alignment = .center
-            paragraphStyle.lineBreakMode = .byWordWrapping
-            
-            // Main text attributes
-            let mainAttributes: [NSAttributedString.Key: Any] = [
-                .font: UIFont.systemFont(ofSize: 40, weight: .bold),
-                .foregroundColor: UIColor.white,
-                .paragraphStyle: paragraphStyle
-            ]
-            
-            // URL text attributes (slightly smaller and different color)
-            let urlAttributes: [NSAttributedString.Key: Any] = [
-                .font: UIFont.systemFont(ofSize: 32, weight: .medium),
-                .foregroundColor: UIColor(red: 0.0, green: 0.7, blue: 1.0, alpha: 1.0),
-                .paragraphStyle: paragraphStyle
-            ]
-            
-            // Split text into components while preserving the deep link
-            let components = text.components(separatedBy: "\n\n")
-            let mainText = components.first ?? ""
-            let deepLinkText = components.count > 1 ? components[1] : ""
-            let appStoreText = components.last ?? ""
-            
-            // Draw main text
-            let mainTextRect = CGRect(x: 40, y: size.height/2 - 200, width: size.width - 80, height: 400)
-            mainText.draw(in: mainTextRect, withAttributes: mainAttributes)
-            
-            // Draw deep link text
-            if !deepLinkText.isEmpty {
-                let deepLinkRect = CGRect(x: 40, y: size.height/2 + 50, width: size.width - 80, height: 100)
-                deepLinkText.draw(in: deepLinkRect, withAttributes: urlAttributes)
-            }
-            
-            // Draw App Store text
-            let appStoreRect = CGRect(x: 40, y: size.height/2 + 150, width: size.width - 80, height: 100)
-            appStoreText.draw(in: appStoreRect, withAttributes: urlAttributes)
-            
-            // Add YayoNay logo or branding if needed
-            if let logo = UIImage(named: "YayoNayLogo") {
-                let logoSize = CGSize(width: 200, height: 200)
-                let logoRect = CGRect(
-                    x: (size.width - logoSize.width) / 2,
-                    y: size.height - logoSize.height - 40,
-                    width: logoSize.width,
-                    height: logoSize.height
-                )
-                logo.draw(in: logoRect)
-            }
-        }
-    }
-    
-    private func shareToMessage() {
+    private func shareToWhatsApp() {
         HapticManager.shared.buttonPress()
-        guard let username = Auth.auth().currentUser?.displayName ?? Auth.auth().currentUser?.email else {
-            print("Error: No user found for sharing")
-            return
-        }
+        let deepLink = "yayonay://subcategory/\(statsViewModel.currentSubCategory.id)"
+        let appStoreLink = "https://apps.apple.com/app/idYOUR_APP_ID"
+        let vote = yayPercentage > 50 ? "YAY" : "NAY"
+        let shareText = "I just voted \(vote) on \(statsViewModel.currentSubCategory.name) in YayoNay! What do you think? Download YayoNay to vote: \(appStoreLink)"
         
-        // Create deep link URL for the specific subcategory
-        let deepLinkURL = "yayonay://subcategory/\(statsViewModel.currentSubCategory.id)"
-        let appStoreURL = "https://apps.apple.com/app/yayonay/idYOUR_APP_ID" // Replace with your actual App Store ID
-        let shareText = "\(username) wants you to vote on \(statsViewModel.currentSubCategory.name) on YayoNay! \(statsViewModel.currentSubCategory.yayCount) people voted Yay and \(statsViewModel.currentSubCategory.nayCount) voted Nay. What do you think? #YayoNay\n\nVote now: \(deepLinkURL)\n\nDownload YayoNay: \(appStoreURL)"
-        
-        DispatchQueue.main.async {
-            let activityVC = UIActivityViewController(
-                activityItems: [shareText, URL(string: appStoreURL) as Any],
-                applicationActivities: nil
-            )
-            
-            if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-               let window = windowScene.windows.first,
-               let rootVC = window.rootViewController {
-                activityVC.completionWithItemsHandler = { (activityType, completed, returnedItems, error) in
-                    if let error = error {
-                        print("Error sharing: \(error.localizedDescription)")
-                    }
+        if let url = URL(string: "whatsapp://send?text=\(shareText.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")") {
+            if UIApplication.shared.canOpenURL(url) {
+                UIApplication.shared.open(url)
+            } else {
+                // Fallback to WhatsApp web
+                if let webURL = URL(string: "https://api.whatsapp.com/send?text=\(shareText.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")") {
+                    UIApplication.shared.open(webURL)
                 }
-                rootVC.present(activityVC, animated: true)
+            }
+        }
+    }
+    
+    private func shareToTelegram() {
+        HapticManager.shared.buttonPress()
+        let deepLink = "yayonay://subcategory/\(statsViewModel.currentSubCategory.id)"
+        let appStoreLink = "https://apps.apple.com/app/idYOUR_APP_ID"
+        let vote = yayPercentage > 50 ? "YAY" : "NAY"
+        let shareText = "I just voted \(vote) on \(statsViewModel.currentSubCategory.name) in YayoNay! What do you think? Download YayoNay to vote: \(appStoreLink)"
+        
+        if let url = URL(string: "tg://msg?text=\(shareText.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")") {
+            if UIApplication.shared.canOpenURL(url) {
+                UIApplication.shared.open(url)
+            } else {
+                // Fallback to Telegram web
+                if let webURL = URL(string: "https://t.me/share/url?url=\(appStoreLink)&text=\(shareText.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")") {
+                    UIApplication.shared.open(webURL)
+                }
+            }
+        }
+    }
+    
+    private func shareToLinkedIn() {
+        HapticManager.shared.buttonPress()
+        let deepLink = "yayonay://subcategory/\(statsViewModel.currentSubCategory.id)"
+        let appStoreLink = "https://apps.apple.com/app/idYOUR_APP_ID"
+        let vote = yayPercentage > 50 ? "YAY" : "NAY"
+        let shareText = "I just voted \(vote) on \(statsViewModel.currentSubCategory.name) in YayoNay! What's your opinion? Download YayoNay to vote: \(appStoreLink)"
+        
+        // Try LinkedIn app first
+        if let url = URL(string: "linkedin://share?text=\(shareText.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")") {
+            if UIApplication.shared.canOpenURL(url) {
+                UIApplication.shared.open(url)
+            } else {
+                // Fallback to LinkedIn web sharing with message
+                if let webURL = URL(string: "https://www.linkedin.com/sharing/share-offsite/?mini=true&url=\(appStoreLink)&title=YayoNay%20Vote&summary=\(shareText.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")") {
+                    UIApplication.shared.open(webURL)
+                }
+            }
+        }
+    }
+    
+    private func shareToTikTok() {
+        HapticManager.shared.buttonPress()
+        let deepLink = "yayonay://subcategory/\(statsViewModel.currentSubCategory.id)"
+        let appStoreLink = "https://apps.apple.com/app/idYOUR_APP_ID"
+        let vote = yayPercentage > 50 ? "YAY" : "NAY"
+        let shareText = "I just voted \(vote) on \(statsViewModel.currentSubCategory.name) in YayoNay! What's your vote? Download YayoNay to vote: \(appStoreLink)"
+        
+        // Try to open TikTok app
+        if let url = URL(string: "tiktok://") {
+            if UIApplication.shared.canOpenURL(url) {
+                UIApplication.shared.open(url)
+            } else {
+                // Fallback to TikTok web
+                if let webURL = URL(string: "https://www.tiktok.com/") {
+                    UIApplication.shared.open(webURL)
+                }
             }
         }
     }

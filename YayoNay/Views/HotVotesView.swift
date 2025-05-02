@@ -38,43 +38,23 @@ struct TopCategory: Identifiable {
     let id: String
     let name: String
     let totalVotes: Int
+    let imageURL: String
+    
+    init(id: String, name: String, totalVotes: Int, imageURL: String) {
+        self.id = id
+        self.name = name
+        self.totalVotes = totalVotes
+        self.imageURL = imageURL
+    }
     
     var iconName: String {
-        switch name.lowercased() {
-        case "food": return "fork.knife"
-        case "fruit": return "leaf.fill"
-        case "drinks", "drink": return "cup.and.saucer.fill"
-        case "dessert": return "birthday.cake.fill"
-        case "sports", "sport": return "figure.run"
-        case "hike": return "mountain.2.fill"
-        case "travel": return "airplane"
-        case "art", "arts": return "paintbrush.fill"
-        case "music": return "music.note"
-        case "movies", "movie": return "film"
-        case "books", "book": return "book.fill"
-        case "technology", "tech": return "laptopcomputer"
-        case "fashion": return "tshirt.fill"
-        default: return "star.fill"
-        }
+        // Default icon if no specific match
+        return "star.fill"
     }
     
     var accentColor: Color {
-        switch name.lowercased() {
-        case "food": return .orange
-        case "fruit": return .green
-        case "drinks", "drink": return .blue
-        case "dessert": return .pink
-        case "sports", "sport": return .red
-        case "hike": return .mint
-        case "travel": return .purple
-        case "art", "arts": return .indigo
-        case "music": return .pink
-        case "movies", "movie": return .brown
-        case "books", "book": return .green
-        case "technology", "tech": return .gray
-        case "fashion": return .mint
-        default: return .yellow
-        }
+        // Default color if no specific match
+        return .yellow
     }
 }
 
@@ -82,16 +62,18 @@ class HotVotesViewModel: ObservableObject {
     @Published var hotVotes: [HotVoteItem] = []
     @Published var topCategories: [TopCategory] = []
     @Published var todaysTopVotes: [HotVoteItem] = []
+    @Published var hasLoaded = false
     private let db = Firestore.firestore()
-    private var hasLoaded = false
     
     // Store all listener registrations
     private var hotVotesListener: ListenerRegistration?
     private var todaysVotesListener: ListenerRegistration?
+    private var topCategoriesListener: ListenerRegistration?
+    private var subCategoriesListener: ListenerRegistration?
     
     func fetchData() {
         fetchHotVotes()
-        fetchTopCategories()
+        setupTopCategoriesListener()
         fetchTodaysTopVotes()
     }
     
@@ -140,17 +122,23 @@ class HotVotesViewModel: ObservableObject {
             }
     }
     
-    func fetchTopCategories() {
-        // First get all subcategories to count votes by category
-        db.collection("subCategories")
-            .getDocuments { [weak self] snapshot, error in
+    private func setupTopCategoriesListener() {
+        // Remove any existing listeners
+        topCategoriesListener?.remove()
+        subCategoriesListener?.remove()
+        
+        // First, listen to all subcategories for vote count changes
+        subCategoriesListener = db.collection("subCategories")
+            .addSnapshotListener { [weak self] snapshot, error in
+                guard let self = self else { return }
+                
                 if let error = error {
-                    print("Error fetching top categories: \(error)")
+                    print("Error listening to subcategories: \(error)")
                     return
                 }
                 
                 // Count votes per category
-                var categoryVotes: [String: (name: String, votes: Int)] = [:]
+                var categoryVotes: [String: Int] = [:]
                 
                 snapshot?.documents.forEach { doc in
                     let data = doc.data()
@@ -158,30 +146,38 @@ class HotVotesViewModel: ObservableObject {
                        let yayCount = data["yayCount"] as? Int,
                        let nayCount = data["nayCount"] as? Int {
                         let totalVotes = yayCount + nayCount
-                        let current = categoryVotes[categoryId]?.votes ?? 0
-                        categoryVotes[categoryId] = (name: "", current + totalVotes)
+                        categoryVotes[categoryId] = (categoryVotes[categoryId] ?? 0) + totalVotes
                     }
                 }
                 
-                // Get categories and combine with vote counts
-                self?.db.collection("categories").getDocuments { snapshot, error in
-                    guard let documents = snapshot?.documents else { return }
-                    
-                    self?.topCategories = documents.compactMap { doc -> TopCategory? in
-                        let id = doc.documentID
-                        guard let name = doc["name"] as? String else { return nil }
-                        let votes = categoryVotes[id]?.votes ?? 0
+                // Then, listen to categories to get their details
+                self.topCategoriesListener = self.db.collection("categories")
+                    .addSnapshotListener { [weak self] snapshot, error in
+                        guard let self = self else { return }
                         
-                        return TopCategory(
-                            id: id,
-                            name: name,
-                            totalVotes: votes
-                        )
+                        if let error = error {
+                            print("Error listening to categories: \(error)")
+                            return
+                        }
+                        
+                        guard let documents = snapshot?.documents else { return }
+                        
+                        self.topCategories = documents.compactMap { doc -> TopCategory? in
+                            let id = doc.documentID
+                            guard let name = doc.data()["name"] as? String,
+                                  let imageURL = doc.data()["imageURL"] as? String else { return nil }
+                            
+                            return TopCategory(
+                                id: id,
+                                name: name,
+                                totalVotes: categoryVotes[id] ?? 0,
+                                imageURL: imageURL
+                            )
+                        }
+                        .sorted { $0.totalVotes > $1.totalVotes }
+                        .prefix(5)
+                        .map { $0 }
                     }
-                    .sorted { $0.totalVotes > $1.totalVotes }
-                    .prefix(5)
-                    .map { $0 }
-                }
             }
     }
     
@@ -267,12 +263,68 @@ class HotVotesViewModel: ObservableObject {
         // Clean up all listeners when the view model is deallocated
         hotVotesListener?.remove()
         todaysVotesListener?.remove()
+        topCategoriesListener?.remove()
+        subCategoriesListener?.remove()
     }
 }
 
 struct HotVotesView: View {
     @StateObject private var viewModel = HotVotesViewModel()
-    @State private var hasLoaded = false
+    @State private var selectedSubCategory: SubCategory?
+    @State private var showSubCategoryDetail = false
+    private let db = Firestore.firestore()
+    private var topCategoriesListener: ListenerRegistration?
+    
+    init() {
+        setupTopCategoriesListener()
+    }
+    
+    private func setupTopCategoriesListener() {
+        // Listen to all subcategories for vote count changes
+        db.collection("subCategories")
+            .addSnapshotListener { [weak viewModel] snapshot, error in
+                if let error = error {
+                    print("Error listening to subcategories: \(error)")
+                    return
+                }
+                
+                // Count votes per category
+                var categoryVotes: [String: (name: String, votes: Int, imageURL: String)] = [:]
+                
+                snapshot?.documents.forEach { doc in
+                    let data = doc.data()
+                    if let categoryId = data["categoryId"] as? String,
+                       let yayCount = data["yayCount"] as? Int,
+                       let nayCount = data["nayCount"] as? Int {
+                        let totalVotes = yayCount + nayCount
+                        let current = categoryVotes[categoryId]?.votes ?? 0
+                        categoryVotes[categoryId] = (name: "", current + totalVotes, imageURL: "")
+                    }
+                }
+                
+                // Get categories and combine with vote counts
+                self.db.collection("categories").getDocuments { snapshot, error in
+                    guard let documents = snapshot?.documents else { return }
+                    
+                    viewModel?.topCategories = documents.compactMap { doc -> TopCategory? in
+                        let id = doc.documentID
+                        guard let name = doc.data()["name"] as? String,
+                              let imageURL = doc.data()["imageURL"] as? String else { return nil }
+                        let votes = categoryVotes[id]?.votes ?? 0
+                        
+                        return TopCategory(
+                            id: id,
+                            name: name,
+                            totalVotes: votes,
+                            imageURL: imageURL
+                        )
+                    }
+                    .sorted { $0.totalVotes > $1.totalVotes }
+                    .prefix(5)
+                    .map { $0 }
+                }
+            }
+    }
     
     var body: some View {
         NavigationStack {
@@ -312,9 +364,9 @@ struct HotVotesView: View {
             .navigationTitle("Hot Votes")
         }
         .onAppear {
-            if !hasLoaded {
+            if !viewModel.hasLoaded {
                 viewModel.fetchData()
-                hasLoaded = true
+                viewModel.hasLoaded = true
             }
         }
     }
@@ -342,14 +394,22 @@ struct TopCategoryRow: View {
                         .font(.system(size: 17, weight: .semibold))
                         .foregroundColor(.white)
                 }
-                .accessibilityHidden(true) // Hide from VoiceOver since we include it in the label
+                .accessibilityHidden(true)
                 
-                // Category Icon and Name
+                // Category Image and Name
                 HStack {
-                    Image(systemName: category.iconName)
-                        .font(.system(size: 20))
-                        .foregroundStyle(category.accentColor)
-                        .accessibilityHidden(true) // Hide from VoiceOver since we describe it in the label
+                    AsyncImage(url: URL(string: category.imageURL)) { image in
+                        image
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                    } placeholder: {
+                        Image(systemName: category.iconName)
+                            .font(.system(size: 20))
+                            .foregroundStyle(category.accentColor)
+                    }
+                    .frame(width: 40, height: 40)
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                    .accessibilityHidden(true)
                     
                     Text(category.name)
                         .font(.system(size: 17, weight: .semibold))

@@ -9,6 +9,7 @@ class SubCategoryViewModel: ObservableObject {
     @Published var hasReachedEnd = false
     private let db = Firestore.firestore()
     private var listener: ListenerRegistration?
+    private var voteCountListener: ListenerRegistration?
     private var isProcessingUpdate = false
     private let categoryId: String
     private let initialSubCategoryId: String?
@@ -18,11 +19,44 @@ class SubCategoryViewModel: ObservableObject {
         self.categoryId = categoryId
         self.initialSubCategoryId = initialSubCategoryId
         fetchSubCategories(for: categoryId)
+        setupVoteCountListener()
     }
     
     deinit {
-        print("DEBUG: SubCategoryViewModel deinit - removing listener")
+        print("DEBUG: SubCategoryViewModel deinit - removing listeners")
         listener?.remove()
+        voteCountListener?.remove()
+    }
+    
+    private func setupVoteCountListener() {
+        // Listen to all subcategories in this category for vote count changes
+        voteCountListener = db.collection("subCategories")
+            .whereField("categoryId", isEqualTo: categoryId)
+            .addSnapshotListener { [weak self] snapshot, error in
+                guard let self = self else { return }
+                
+                if let error = error {
+                    print("DEBUG: ❌ Error listening to vote counts: \(error.localizedDescription)")
+                    return
+                }
+                
+                guard let documents = snapshot?.documents else {
+                    print("DEBUG: ❌ No documents in vote count listener")
+                    return
+                }
+                
+                // Update vote counts in our local subcategories
+                for document in documents {
+                    if let index = self.subCategories.firstIndex(where: { $0.id == document.documentID }),
+                       let yayCount = document.data()["yayCount"] as? Int,
+                       let nayCount = document.data()["nayCount"] as? Int {
+                        var updatedSubCategory = self.subCategories[index]
+                        updatedSubCategory.yayCount = yayCount
+                        updatedSubCategory.nayCount = nayCount
+                        self.subCategories[index] = updatedSubCategory
+                    }
+                }
+            }
     }
     
     func fetchSubCategories(for categoryId: String) {
