@@ -293,24 +293,24 @@ async function createSubQuestions() {
       console.log(`Creating sub-questions for ${categoryName} (${categorySubCategories.length} subcategories)`);
       
       for (const subCategory of categorySubCategories) {
-        for (const question of questions) {
-          const subQuestionRef = db.collection('subQuestions').doc();
-          const subQuestion = {
-            categoryId: categoryId,
+      for (const question of questions) {
+        const subQuestionRef = db.collection('subQuestions').doc();
+        const subQuestion = {
+          categoryId: categoryId,
             subCategoryId: subCategory.id,
-            question: question,
-            yayCount: 0,
-            nayCount: 0
-          };
-          
+          question: question,
+          yayCount: 0,
+          nayCount: 0
+        };
+        
           batch.set(subQuestionRef, subQuestion);
-          count++;
-          
-          // Firestore has a limit of 500 operations per batch
-          if (count % 450 === 0) {
+        count++;
+        
+        // Firestore has a limit of 500 operations per batch
+        if (count % 450 === 0) {
             await batch.commit();
-            console.log(`Committed batch of ${count} subQuestions`);
-            count = 0;
+          console.log(`Committed batch of ${count} subQuestions`);
+          count = 0;
             batch = db.batch(); // Create a new batch
           }
         }

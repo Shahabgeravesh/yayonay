@@ -101,15 +101,15 @@ struct TutorialView: View {
     
     var body: some View {
         GeometryReader { geometry in
-            ZStack {
-                // Background gradient
-                LinearGradient(
+        ZStack {
+            // Background gradient
+            LinearGradient(
                     gradient: Gradient(colors: [Color.blue.opacity(0.3), Color.purple.opacity(0.3)]),
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
-                )
-                .ignoresSafeArea()
-                
+            )
+            .ignoresSafeArea()
+            
                 VStack(spacing: 20) {
                     // Progress dots
                     HStack(spacing: 8) {
@@ -136,7 +136,7 @@ struct TutorialView: View {
                                         .onChanged { value in
                                             isDragging = true
                                             offset = value.translation.width
-                                        }
+                }
                                         .onEnded { value in
                                             isDragging = false
                                             let threshold = geometry.size.width * 0.3
@@ -148,7 +148,7 @@ struct TutorialView: View {
                                                 } else {
                                                     withAnimation {
                                                         currentIndex = min(cards.count - 1, currentIndex + 1)
-                                                    }
+                            }
                                                 }
                                             }
                                             withAnimation {
@@ -158,8 +158,8 @@ struct TutorialView: View {
                                             // Check if we're on the last card and swiped left
                                             if currentIndex == cards.count - 1 && value.translation.width < -threshold {
                                                 completeTutorial()
-                                            }
-                                        }
+                        }
+                    }
                                 )
                         }
                     }
@@ -179,8 +179,8 @@ struct TutorialView: View {
                         .opacity(currentIndex == 0 ? 0.5 : 1.0)
                         
                         if currentIndex < cards.count - 1 {
-                            Button(action: {
-                                withAnimation {
+                        Button(action: {
+                            withAnimation {
                                     currentIndex = min(cards.count - 1, currentIndex + 1)
                                 }
                             }) {
@@ -192,21 +192,21 @@ struct TutorialView: View {
                             Button(action: {
                                 print("DEBUG: Get Started button pressed")
                                 completeTutorial()
-                            }) {
-                                Text("Get Started")
+                        }) {
+                            Text("Get Started")
                                     .font(.headline)
-                                    .foregroundColor(.white)
+                                .foregroundColor(.white)
                                     .padding(.horizontal, 30)
                                     .padding(.vertical, 15)
                                     .background(Color.blue)
                                     .cornerRadius(25)
-                            }
                         }
                     }
-                    .padding(.bottom, 30)
                 }
+                .padding(.bottom, 30)
             }
         }
+    }
     }
 }
 
@@ -216,26 +216,26 @@ struct TutorialCardView: View {
     
     var body: some View {
         VStack(spacing: 20) {
-            // Icon
+                // Icon
             Image(systemName: card.icon)
                 .font(.system(size: 50))
                 .foregroundColor(.blue)
                 .padding()
                 .background(Color.blue.opacity(0.1))
                 .clipShape(Circle())
-            
-            // Title
+                
+                // Title
             Text(card.title)
                 .font(.title)
                 .fontWeight(.bold)
-                .multilineTextAlignment(.center)
-            
-            // Description
+                    .multilineTextAlignment(.center)
+                
+                // Description
             Text(card.description)
                 .font(.body)
-                .multilineTextAlignment(.center)
+                    .multilineTextAlignment(.center)
                 .padding(.horizontal)
-            
+                
             // App Screenshot with fallback
             if let image = UIImage(named: card.imageName) {
                 Image(uiImage: image)
@@ -261,7 +261,7 @@ struct TutorialCardView: View {
                 .cornerRadius(15)
                 .padding()
             }
-        }
+            }
         .padding()
         .background(Color(.systemBackground))
         .cornerRadius(20)

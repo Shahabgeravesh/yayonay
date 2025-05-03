@@ -160,24 +160,24 @@ class HotVotesViewModel: ObservableObject {
                             return
                         }
                         
-                        guard let documents = snapshot?.documents else { return }
-                        
+                    guard let documents = snapshot?.documents else { return }
+                    
                         self.topCategories = documents.compactMap { doc -> TopCategory? in
-                            let id = doc.documentID
+                        let id = doc.documentID
                             guard let name = doc.data()["name"] as? String,
                                   let imageURL = doc.data()["imageURL"] as? String else { return nil }
-                            
-                            return TopCategory(
-                                id: id,
-                                name: name,
+                        
+                        return TopCategory(
+                            id: id,
+                            name: name,
                                 totalVotes: categoryVotes[id] ?? 0,
                                 imageURL: imageURL
-                            )
-                        }
-                        .sorted { $0.totalVotes > $1.totalVotes }
-                        .prefix(5)
-                        .map { $0 }
+                        )
                     }
+                    .sorted { $0.totalVotes > $1.totalVotes }
+                    .prefix(5)
+                    .map { $0 }
+                }
             }
     }
     
@@ -403,9 +403,9 @@ struct TopCategoryRow: View {
                             .resizable()
                             .aspectRatio(contentMode: .fill)
                     } placeholder: {
-                        Image(systemName: category.iconName)
-                            .font(.system(size: 20))
-                            .foregroundStyle(category.accentColor)
+                    Image(systemName: category.iconName)
+                        .font(.system(size: 20))
+                        .foregroundStyle(category.accentColor)
                     }
                     .frame(width: 40, height: 40)
                     .clipShape(RoundedRectangle(cornerRadius: 8))

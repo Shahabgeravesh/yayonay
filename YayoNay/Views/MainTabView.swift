@@ -67,7 +67,7 @@ struct MainTabView: View {
                 .padding(.horizontal)
                 .padding(.bottom, 4)
                 .offset(y: isTabBarVisible ? 0 : 100)
-            }
+                }
         }
         .ignoresSafeArea(.keyboard)
     }
