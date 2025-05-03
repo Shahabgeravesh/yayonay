@@ -110,6 +110,7 @@ struct TopicRow: View {
     let onVote: (Bool) -> Void
     let onShare: () -> Void
     let onShareViaMessage: () -> Void
+    @State private var isExpanded = false
     
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -188,6 +189,35 @@ struct TopicRow: View {
                         .clipShape(Circle())
                 }
                 .buttonStyle(PlainButtonStyle())
+            }
+            
+            // Description Section
+            if isExpanded {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(topic.description)
+                        .font(.system(size: 13))
+                        .foregroundColor(.secondary)
+                        .padding(.top, 4)
+                }
+                .transition(.opacity.combined(with: .move(edge: .top)))
+            }
+            
+            // Expand/Collapse Button
+            Button(action: {
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                    isExpanded.toggle()
+                }
+            }) {
+                HStack {
+                    Text(isExpanded ? "Show less" : "Show more")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(.blue)
+                    
+                    Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(.blue)
+                }
+                .padding(.top, 4)
             }
         }
         .padding(10)
