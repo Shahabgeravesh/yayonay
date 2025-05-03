@@ -496,7 +496,7 @@ struct SubCategoryStatsView: View {
                             HStack(spacing: 8) {
                                 Image(systemName: "checkmark.circle.fill")
                                     .font(.system(size: 18))
-                                Text("No Vote to Reset")
+                                Text("Change My Vote")
                                     .font(.system(size: 15, weight: .semibold))
                             }
                             .foregroundColor(.secondary)
@@ -512,6 +512,11 @@ struct SubCategoryStatsView: View {
                             )
                         }
                         .disabled(true)
+                        
+                        Text("You can change your vote once every 7 days")
+                            .font(.system(size: 13))
+                            .foregroundColor(.secondary)
+                            .padding(.top, 4)
                     }
                 }
                 .padding(.horizontal)

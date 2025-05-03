@@ -10,10 +10,25 @@ const db = admin.firestore();
 
 // Define collections to clear
 const collectionsToClear = [
+  'users',
   'categories',
   'subCategories',
   'subQuestions',
-  'votes'
+  'votes',
+  'userVotes',
+  'comments',
+  'allTimeBest',
+  'topics',
+  'topicsBox',
+  'topicBox',
+  'topicComments',
+  'bestTopics',
+  'popularTopics',
+  'trendingTopics',
+  'recentTopics',
+  'attributeVotes',
+  'attributes',
+  'attributeTopics'
 ];
 
 async function clearCollection(collectionName) {
@@ -53,11 +68,57 @@ async function clearCollection(collectionName) {
   }
 }
 
+async function clearUserSubcollections() {
+  try {
+    console.log('Starting to clear user subcollections...');
+    
+    // Get all users
+    const usersSnapshot = await db.collection('users').get();
+    let totalSubcollections = 0;
+    
+    for (const userDoc of usersSnapshot.docs) {
+      // Get all subcollections for this user
+      const collections = await userDoc.ref.listCollections();
+      
+      for (const collection of collections) {
+        const snapshot = await collection.get();
+        const batch = db.batch();
+        let count = 0;
+        
+        snapshot.forEach(doc => {
+          batch.delete(doc.ref);
+          count++;
+          totalSubcollections++;
+          
+          if (count % 450 === 0) {
+            batch.commit();
+            console.log(`Committed batch of ${count} deletions for user ${userDoc.id} subcollection ${collection.id}`);
+            count = 0;
+          }
+        });
+        
+        if (count > 0) {
+          await batch.commit();
+          console.log(`Committed final batch of ${count} deletions for user ${userDoc.id} subcollection ${collection.id}`);
+        }
+      }
+    }
+    
+    console.log(`Successfully cleared ${totalSubcollections} user subcollections`);
+    
+  } catch (error) {
+    console.error('Error clearing user subcollections:', error);
+  }
+}
+
 async function clearAllData() {
   try {
     console.log('Starting to clear all data...');
     
-    // Clear each collection
+    // First clear user subcollections
+    await clearUserSubcollections();
+    
+    // Then clear all collections including users
     for (const collection of collectionsToClear) {
       await clearCollection(collection);
     }

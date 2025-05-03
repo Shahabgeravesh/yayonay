@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		BA0A2B7E2DC462360031508B /* serviceAccountKey.json in Resources */ = {isa = PBXBuildFile; fileRef = BA0A2B7D2DC462360031508B /* serviceAccountKey.json */; };
 		BA0A508D2DC1BA920031508B /* FirebaseDynamicLinks in Frameworks */ = {isa = PBXBuildFile; productRef = BA0A508C2DC1BA920031508B /* FirebaseDynamicLinks */; };
+		BA0A5E032DC6A4210031508B /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = BA0A5DBA2DC6A4210031508B /* Assets.xcassets */; };
 		BA0AFBAD2DC461F80031508B /* serviceAccountKey.json in Resources */ = {isa = PBXBuildFile; fileRef = BA0AFBAC2DC461F80031508B /* serviceAccountKey.json */; };
 		BA2984202DB06E6300D5CBBF /* FirebaseMessaging in Frameworks */ = {isa = PBXBuildFile; productRef = BA29841F2DB06E6300D5CBBF /* FirebaseMessaging */; };
 		BAE90E602D869B810067F715 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = BAE90E5F2D869B810067F715 /* FirebaseAuth */; };
@@ -38,6 +39,7 @@
 
 /* Begin PBXFileReference section */
 		BA0A2B7D2DC462360031508B /* serviceAccountKey.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = serviceAccountKey.json; sourceTree = "<group>"; };
+		BA0A5DBA2DC6A4210031508B /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		BA0AFBAC2DC461F80031508B /* serviceAccountKey.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = serviceAccountKey.json; sourceTree = "<group>"; };
 		BAE90E212D8699540067F715 /* YayoNay.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = YayoNay.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		BAE90E322D8699550067F715 /* YayoNayTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = YayoNayTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -116,6 +118,7 @@
 				BAE90E3F2D8699550067F715 /* YayoNayUITests */,
 				BAE90E222D8699540067F715 /* Products */,
 				BAE90F322D893CF80067F715 /* GoogleService-Info.plist */,
+				BA0A5DBA2DC6A4210031508B /* Assets.xcassets */,
 			);
 			sourceTree = "<group>";
 		};
@@ -263,6 +266,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				BA0AFBAD2DC461F80031508B /* serviceAccountKey.json in Resources */,
+				BA0A5E032DC6A4210031508B /* Assets.xcassets in Resources */,
 				BA0A2B7E2DC462360031508B /* serviceAccountKey.json in Resources */,
 				BAE90F332D893CF80067F715 /* GoogleService-Info.plist in Resources */,
 			);
