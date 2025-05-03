@@ -269,6 +269,7 @@ class UserManager: NSObject, ObservableObject {
               let window = windowScene.windows.first,
               let rootViewController = window.rootViewController else {
             isLoading = false
+            self.error = NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: AuthFeedbackManager.networkError])
             return
         }
         
@@ -277,7 +278,7 @@ class UserManager: NSObject, ObservableObject {
             
             if let error = error {
                 DispatchQueue.main.async {
-                    self.error = error
+                    self.error = NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: AuthFeedbackManager.googleSignInError])
                     self.isLoading = false
                 }
                 return
@@ -286,7 +287,7 @@ class UserManager: NSObject, ObservableObject {
             guard let user = result?.user,
                   let idToken = user.idToken?.tokenString else {
                 DispatchQueue.main.async {
-                    self.error = NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: "Failed to get ID token"])
+                    self.error = NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: AuthFeedbackManager.googleSignInError])
                     self.isLoading = false
                 }
                 return
@@ -316,7 +317,7 @@ class UserManager: NSObject, ObservableObject {
                 self.isLoading = false
                 
                 if let error = error {
-                    self.error = error
+                    self.error = NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: AuthFeedbackManager.appleSignInError])
                     return
                 }
                 
@@ -335,12 +336,12 @@ class UserManager: NSObject, ObservableObject {
                 self.isLoading = false
                 
                 if let error = error {
-                    self.error = error
+                    self.error = NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: AuthFeedbackManager.getErrorMessage(for: error)])
                     return
                 }
                 
                 guard let user = result?.user else {
-                    self.error = NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: "Failed to get user"])
+                    self.error = NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: AuthFeedbackManager.unexpectedError])
                     return
                 }
                 
@@ -444,7 +445,7 @@ class UserManager: NSObject, ObservableObject {
                 self.isLoading = false
                 
                 if let error = error {
-                    self.error = error
+                    self.error = NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: AuthFeedbackManager.getErrorMessage(for: error)])
                     return
                 }
                 
@@ -463,7 +464,7 @@ class UserManager: NSObject, ObservableObject {
                 self.isLoading = false
                 
                 if let error = error {
-                    self.error = error
+                    self.error = NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: AuthFeedbackManager.getErrorMessage(for: error)])
                 }
                 // Auth successful - profile check handled by listener
             }
@@ -477,8 +478,19 @@ class UserManager: NSObject, ObservableObject {
             self.isLoading = false
             
             if let error = error {
-                self.error = error
+                self.error = NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: AuthFeedbackManager.getErrorMessage(for: error)])
             }
+        }
+    }
+    
+    func reauthenticate(with credential: AuthCredential, completion: @escaping (Error?) -> Void) {
+        guard let user = auth.currentUser else {
+            completion(NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: "No user is currently signed in"]))
+            return
+        }
+        
+        user.reauthenticate(with: credential) { result, error in
+            completion(error)
         }
     }
     

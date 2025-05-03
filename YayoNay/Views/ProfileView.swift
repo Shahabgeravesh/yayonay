@@ -12,6 +12,7 @@ struct ProfileView: View {
     @State private var imageSelection: PhotosPickerItem? = nil
     @State private var showingEditProfile = false
     @State private var showingShareSheet = false
+    @State private var showChangePassword = false
     
     var body: some View {
         NavigationStack {
@@ -59,7 +60,7 @@ struct ProfileView: View {
                         .padding(.top, 24)
                         
                         // Action Buttons
-                        HStack(spacing: 16) {
+                        VStack(spacing: 16) {
                             Button(action: { showEditProfile = true }) {
                                 HStack {
                                     Image(systemName: "pencil")
@@ -83,6 +84,22 @@ struct ProfileView: View {
                                 .frame(height: 44)
                                 .frame(maxWidth: .infinity)
                                 .background(AppColor.gradient)
+                                .clipShape(RoundedRectangle(cornerRadius: 22))
+                            }
+                            
+                            Button(action: { 
+                                print("Change Password button tapped")
+                                showChangePassword = true 
+                            }) {
+                                HStack {
+                                    Image(systemName: "key")
+                                    Text("Change Password")
+                                }
+                                .font(AppFont.medium(15))
+                                .foregroundStyle(AppColor.accent)
+                                .frame(height: 44)
+                                .frame(maxWidth: .infinity)
+                                .background(AppColor.accent.opacity(0.1))
                                 .clipShape(RoundedRectangle(cornerRadius: 22))
                             }
                         }
@@ -131,6 +148,9 @@ struct ProfileView: View {
                         inviteLink
                     ])
                 }
+            }
+            .sheet(isPresented: $showChangePassword) {
+                ChangePasswordView(userManager: userManager)
             }
             .onChange(of: imageSelection) { oldValue, newValue in
                 Task {

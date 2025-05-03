@@ -85,25 +85,6 @@ struct ExploreView: View {
                             .padding(.horizontal)
                         }
                     } else {
-                        // Random Category Section
-                        if let randomCategory = viewModel.categories.first(where: { $0.id == "random" }) {
-                            VStack(alignment: .leading, spacing: 16) {
-                                Text("Random")
-                                    .font(.system(size: 24, weight: .bold))
-                                    .padding(.horizontal)
-                                
-                                RandomCategoryCard(category: randomCategory)
-                                    .onTapGesture {
-                                        withAnimation(.spring()) {
-                                            selectedCategory = randomCategory
-                                            showCategoryDetail = true
-                                        }
-                                    }
-                                    .padding(.horizontal)
-                            }
-                            .padding(.bottom, 8)
-                        }
-                        
                         // Featured Section
                         VStack(alignment: .leading, spacing: 16) {
                             Text("Featured Categories")
@@ -124,6 +105,25 @@ struct ExploreView: View {
                                 }
                                 .padding(.horizontal)
                             }
+                        }
+                        
+                        // Random Category Section
+                        if let randomCategory = viewModel.categories.first(where: { $0.id == "random" }) {
+                            VStack(alignment: .leading, spacing: 16) {
+                                Text("Random")
+                                    .font(.system(size: 24, weight: .bold))
+                                    .padding(.horizontal)
+                                
+                                RandomCategoryCard(category: randomCategory)
+                                    .onTapGesture {
+                                        withAnimation(.spring()) {
+                                            selectedCategory = randomCategory
+                                            showCategoryDetail = true
+                                        }
+                                    }
+                                    .padding(.horizontal)
+                            }
+                            .padding(.bottom, 8)
                         }
                         
                         // All Categories Section

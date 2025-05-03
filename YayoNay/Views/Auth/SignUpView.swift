@@ -14,6 +14,8 @@ struct SignUpView: View {
     @State private var password = ""
     @State private var confirmPassword = ""
     @State private var agreedToTerms = false
+    @State private var showSuccessAlert = false
+    @State private var successMessage = ""
     
     var body: some View {
         NavigationStack {
@@ -112,6 +114,11 @@ struct SignUpView: View {
                     }
                 }
             }
+            .alert("Success", isPresented: $showSuccessAlert) {
+                Button("OK") { dismiss() }
+            } message: {
+                Text(successMessage)
+            }
             .alert("Error", isPresented: .constant(userManager.error != nil)) {
                 Button("OK") { userManager.error = nil }
             } message: {
@@ -142,6 +149,8 @@ struct SignUpView: View {
     private func signUp() {
         withAnimation {
             userManager.signUp(email: email, password: password)
+            // The success will be handled by the auth state listener in UserManager
+            // which will automatically update the UI
         }
     }
 }

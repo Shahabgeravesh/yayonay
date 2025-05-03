@@ -14,6 +14,8 @@ struct SignInView: View {
     @State private var password = ""
     @State private var showForgotPassword = false
     @State private var isAnimating = false
+    @State private var showSuccessAlert = false
+    @State private var successMessage = ""
     
     var body: some View {
         NavigationStack {
@@ -102,6 +104,11 @@ struct SignInView: View {
             } message: {
                 Text("Enter your email to receive a password reset link.")
             }
+            .alert("Success", isPresented: $showSuccessAlert) {
+                Button("OK") { dismiss() }
+            } message: {
+                Text(successMessage)
+            }
             .alert("Error", isPresented: .constant(userManager.error != nil)) {
                 Button("OK") { userManager.error = nil }
             } message: {
@@ -122,6 +129,8 @@ struct SignInView: View {
     private func signIn() {
         withAnimation {
             userManager.signIn(email: email, password: password)
+            // The success will be handled by the auth state listener in UserManager
+            // which will automatically update the UI
         }
     }
 } 
