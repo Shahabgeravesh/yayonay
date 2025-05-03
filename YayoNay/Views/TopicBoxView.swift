@@ -133,25 +133,50 @@ struct TopicRow: View {
                         .lineLimit(1)
                     
                     HStack(spacing: 4) {
-                        Text(topic.category)
-                            .font(.system(size: 10))
-                            .padding(.horizontal, 4)
-                            .padding(.vertical, 1)
-                            .background(Color.blue.opacity(0.1))
-                            .foregroundColor(.blue)
-                            .clipShape(Capsule())
-                        
-                        Text("•")
-                            .font(.system(size: 10))
-                            .foregroundStyle(.secondary)
-                        
-                        Text("Submitted: \(dateFormatter.string(from: topic.date))")
+                        Text(dateFormatter.string(from: topic.date))
                             .font(.system(size: 10))
                             .foregroundStyle(.secondary)
                     }
                 }
                 
                 Spacer()
+                
+                // Voting Options
+                HStack(spacing: 8) {
+                    // Downvote button
+                    Button(action: { onVote(false) }) {
+                        HStack(spacing: 2) {
+                            Image(systemName: "hand.thumbsdown")
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundColor(topic.userVoteStatus == .downvoted ? .red : .gray)
+                            Text("\(topic.downvotes)")
+                                .font(.system(size: 11))
+                                .foregroundColor(topic.userVoteStatus == .downvoted ? .red : .gray)
+                        }
+                        .frame(height: 28)
+                        .padding(.horizontal, 6)
+                        .background(topic.userVoteStatus == .downvoted ? Color.red.opacity(0.1) : Color.clear)
+                        .clipShape(Capsule())
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    
+                    // Upvote button
+                    Button(action: { onVote(true) }) {
+                        HStack(spacing: 2) {
+                            Image(systemName: "hand.thumbsup")
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundColor(topic.userVoteStatus == .upvoted ? .green : .gray)
+                            Text("\(topic.upvotes)")
+                                .font(.system(size: 11))
+                                .foregroundColor(topic.userVoteStatus == .upvoted ? .green : .gray)
+                        }
+                        .frame(height: 28)
+                        .padding(.horizontal, 6)
+                        .background(topic.userVoteStatus == .upvoted ? Color.green.opacity(0.1) : Color.clear)
+                        .clipShape(Capsule())
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                }
                 
                 // Share button
                 Button(action: onShare) {
@@ -161,43 +186,6 @@ struct TopicRow: View {
                         .frame(width: 28, height: 28)
                         .background(Color.gray.opacity(0.1))
                         .clipShape(Circle())
-                }
-                .buttonStyle(PlainButtonStyle())
-            }
-            
-            // Voting Options
-            HStack(spacing: 12) {
-                // Downvote button
-                Button(action: { onVote(false) }) {
-                    HStack(spacing: 2) {
-                        Image(systemName: "hand.thumbsdown")
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundColor(topic.userVoteStatus == .downvoted ? .red : .gray)
-                        Text("\(topic.downvotes)")
-                            .font(.system(size: 11))
-                            .foregroundColor(topic.userVoteStatus == .downvoted ? .red : .gray)
-                    }
-                    .frame(height: 28)
-                    .padding(.horizontal, 6)
-                    .background(topic.userVoteStatus == .downvoted ? Color.red.opacity(0.1) : Color.clear)
-                    .clipShape(Capsule())
-                }
-                .buttonStyle(PlainButtonStyle())
-                
-                // Upvote button
-                Button(action: { onVote(true) }) {
-                    HStack(spacing: 2) {
-                        Image(systemName: "hand.thumbsup")
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundColor(topic.userVoteStatus == .upvoted ? .green : .gray)
-                        Text("\(topic.upvotes)")
-                            .font(.system(size: 11))
-                            .foregroundColor(topic.userVoteStatus == .upvoted ? .green : .gray)
-                    }
-                    .frame(height: 28)
-                    .padding(.horizontal, 6)
-                    .background(topic.userVoteStatus == .upvoted ? Color.green.opacity(0.1) : Color.clear)
-                    .clipShape(Capsule())
                 }
                 .buttonStyle(PlainButtonStyle())
             }
@@ -211,7 +199,7 @@ struct TopicRow: View {
     private let dateFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.dateStyle = .medium
-        formatter.timeStyle = .short
+        formatter.timeStyle = .none
         return formatter
     }()
 }
