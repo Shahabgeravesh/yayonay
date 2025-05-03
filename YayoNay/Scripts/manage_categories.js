@@ -11,6 +11,15 @@ const db = admin.firestore();
 // Define all categories with their order and image URLs
 const categories = [
   { 
+    name: "Random", 
+    order: 0, 
+    imageURL: "https://images.unsplash.com/photo-1511512578047-dfb367046420?w=800",
+    isTopCategory: true,
+    description: "Discover and vote on random items from all categories",
+    featured: true,
+    votesCount: 0
+  },
+  { 
     name: "Fashion", 
     order: 1, 
     imageURL: "https://images.unsplash.com/photo-1445208345000-3c1a1c3b8d1a?w=800",
@@ -252,7 +261,11 @@ async function createCategories() {
         continue;
       }
 
-      const categoryRef = db.collection('categories').doc();
+      // Use fixed document ID for Random category
+      const categoryRef = category.name === "Random" 
+        ? db.collection('categories').doc('random')
+        : db.collection('categories').doc();
+        
       const categoryData = {
         name: category.name,
         order: maxOrder + category.order,
@@ -370,6 +383,81 @@ async function createSubcategories() {
   }
 }
 
+async function populateRandomSubcategories() {
+  try {
+    console.log('Starting to populate random subcategories...');
+    
+    // Get all subcategories
+    const subcategoriesSnapshot = await db.collection('subCategories').get();
+    console.log(`Found ${subcategoriesSnapshot.size} total subcategories`);
+    
+    const subcategories = subcategoriesSnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+
+    // Clear existing random subcategories
+    const randomSubcategoriesSnapshot = await db.collection('random_subcategories').get();
+    console.log(`Found ${randomSubcategoriesSnapshot.size} existing random subcategories`);
+    
+    const batch = db.batch();
+    randomSubcategoriesSnapshot.docs.forEach(doc => {
+      batch.delete(doc.ref);
+    });
+    await batch.commit();
+    console.log('Cleared existing random subcategories');
+
+    // Create new random subcategories
+    const newBatch = db.batch();
+    let count = 0;
+
+    // Shuffle subcategories and take 20 random ones
+    const shuffledSubcategories = [...subcategories].sort(() => Math.random() - 0.5);
+    const selectedSubcategories = shuffledSubcategories.slice(0, 20);
+    console.log(`Selected ${selectedSubcategories.length} random subcategories`);
+
+    for (const subcategory of selectedSubcategories) {
+      console.log(`Adding subcategory: ${subcategory.name} (ID: ${subcategory.id})`);
+      
+      const randomSubcategoryRef = db.collection('random_subcategories').doc(subcategory.id);
+      const randomSubcategoryData = {
+        name: subcategory.name,
+        imageURL: subcategory.imageURL,
+        categoryId: 'random',
+        order: Math.floor(Math.random() * 1000), // Random order
+        yayCount: 0,
+        nayCount: 0,
+        attributes: subcategory.attributes || {},
+        originalCategoryId: subcategory.categoryId // Keep track of original category
+      };
+
+      newBatch.set(randomSubcategoryRef, randomSubcategoryData);
+      count++;
+
+      // Firestore has a limit of 500 operations per batch
+      if (count % 450 === 0) {
+        await newBatch.commit();
+        console.log(`Committed batch of ${count} random subcategories`);
+        count = 0;
+      }
+    }
+
+    // Commit any remaining operations
+    if (count > 0) {
+      await newBatch.commit();
+      console.log(`Committed final batch of ${count} random subcategories`);
+    }
+
+    // Verify the random subcategories were created
+    const finalRandomSubcategories = await db.collection('random_subcategories').get();
+    console.log(`Final count of random subcategories: ${finalRandomSubcategories.size}`);
+    
+    console.log('Successfully populated random subcategories');
+  } catch (error) {
+    console.error('Error populating random subcategories:', error);
+  }
+}
+
 // Main function to run the script
 async function main() {
   try {
@@ -378,6 +466,9 @@ async function main() {
     
     // Then create subcategories
     await createSubcategories();
+    
+    // Finally populate random subcategories
+    await populateRandomSubcategories();
     
     console.log('All operations completed successfully');
   } catch (error) {

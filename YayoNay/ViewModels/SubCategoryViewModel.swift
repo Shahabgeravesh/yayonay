@@ -30,7 +30,8 @@ class SubCategoryViewModel: ObservableObject {
     
     private func setupVoteCountListener() {
         // Listen to all subcategories in this category for vote count changes
-        voteCountListener = db.collection("subCategories")
+        let collectionName = categoryId == "random" ? "random_subcategories" : "subCategories"
+        voteCountListener = db.collection(collectionName)
             .whereField("categoryId", isEqualTo: categoryId)
             .addSnapshotListener { [weak self] snapshot, error in
                 guard let self = self else { return }
@@ -93,7 +94,8 @@ class SubCategoryViewModel: ObservableObject {
             print("📊 Found \(recentlyVotedIds.count) recently voted items")
             
             // Now fetch subcategories, excluding recently voted ones
-            let subCategoriesRef = Firestore.firestore().collection("subCategories")
+            let collectionName = categoryId == "random" ? "random_subcategories" : "subCategories"
+            let subCategoriesRef = Firestore.firestore().collection(collectionName)
                 .whereField("categoryId", isEqualTo: categoryId)
             
             subCategoriesRef.getDocuments { [weak self] (snapshot, error) in
@@ -189,7 +191,8 @@ class SubCategoryViewModel: ObservableObject {
         generator.impactOccurred()
         
         let field = isYay ? "yayCount" : "nayCount"
-        db.collection("subCategories")
+        let collectionName = categoryId == "random" ? "random_subcategories" : "subCategories"
+        db.collection(collectionName)
             .document(subCategory.id)
             .updateData([
                 field: FieldValue.increment(Int64(1))

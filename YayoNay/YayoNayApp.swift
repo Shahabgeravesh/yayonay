@@ -61,6 +61,41 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         let seeder = DatabaseSeeder()
         seeder.initializeSubQuestionsCollection()
         
+        // Add Random category if it doesn't exist
+        let randomCategoryRef = Firestore.firestore().collection("categories").document("random")
+        randomCategoryRef.getDocument { document, error in
+            if let error = error {
+                print("DEBUG: Error checking Random category: \(error.localizedDescription)")
+                return
+            }
+            
+            if document?.exists != true {
+                let randomCategory = Category(
+                    id: "random",
+                    name: "Random",
+                    imageURL: "https://images.unsplash.com/photo-1511512578047-dfb367046420?w=800",
+                    isTopCategory: true,
+                    order: 0,
+                    description: "Discover and vote on random items from all categories",
+                    featured: true,
+                    votesCount: 0
+                )
+                
+                do {
+                    let data = try Firestore.Encoder().encode(randomCategory)
+                    randomCategoryRef.setData(data) { error in
+                        if let error = error {
+                            print("DEBUG: Error creating Random category: \(error.localizedDescription)")
+                        } else {
+                            print("DEBUG: Successfully created Random category")
+                        }
+                    }
+                } catch {
+                    print("DEBUG: Error encoding Random category: \(error.localizedDescription)")
+                }
+            }
+        }
+        
         // Add a delay to ensure Firebase is initialized
         DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
             print("DEBUG: Verifying subQuestions collection...")

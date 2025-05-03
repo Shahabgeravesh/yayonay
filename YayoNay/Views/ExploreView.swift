@@ -85,6 +85,25 @@ struct ExploreView: View {
                             .padding(.horizontal)
                         }
                     } else {
+                        // Random Category Section
+                        if let randomCategory = viewModel.categories.first(where: { $0.id == "random" }) {
+                            VStack(alignment: .leading, spacing: 16) {
+                                Text("Random")
+                                    .font(.system(size: 24, weight: .bold))
+                                    .padding(.horizontal)
+                                
+                                RandomCategoryCard(category: randomCategory)
+                                    .onTapGesture {
+                                        withAnimation(.spring()) {
+                                            selectedCategory = randomCategory
+                                            showCategoryDetail = true
+                                        }
+                                    }
+                                    .padding(.horizontal)
+                            }
+                            .padding(.bottom, 8)
+                        }
+                        
                         // Featured Section
                         VStack(alignment: .leading, spacing: 16) {
                             Text("Featured Categories")
@@ -93,7 +112,7 @@ struct ExploreView: View {
                             
                             ScrollView(.horizontal, showsIndicators: false) {
                                 HStack(spacing: 20) {
-                                    ForEach(viewModel.categories.prefix(5)) { category in
+                                    ForEach(viewModel.categories.filter { $0.id != "random" }.prefix(5)) { category in
                                         FeaturedCategoryCard(category: category)
                                             .onTapGesture {
                                                 withAnimation(.spring()) {
@@ -117,7 +136,7 @@ struct ExploreView: View {
                                 GridItem(.flexible(), spacing: 16),
                                 GridItem(.flexible(), spacing: 16)
                             ], spacing: 16) {
-                                ForEach(viewModel.categories) { category in
+                                ForEach(viewModel.categories.filter { $0.id != "random" }) { category in
                                     CategoryCard(category: category)
                                         .onTapGesture {
                                             withAnimation(.spring()) {
@@ -335,6 +354,60 @@ struct CategoryCard: View {
         .background(Color(.systemBackground))
         .cornerRadius(20)
         .shadow(color: Color.black.opacity(0.1), radius: 10, x: 0, y: 5)
+    }
+}
+
+struct RandomCategoryCard: View {
+    let category: Category
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            ZStack {
+                // Background Image
+                AsyncImage(url: URL(string: category.imageURL ?? "")) { image in
+                    image
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                } placeholder: {
+                    Color.gray.opacity(0.2)
+                }
+                .frame(height: 160)
+                .clipShape(RoundedRectangle(cornerRadius: 16))
+                
+                // Overlay
+                LinearGradient(
+                    gradient: Gradient(colors: [
+                        .black.opacity(0.7),
+                        .black.opacity(0.3)
+                    ]),
+                    startPoint: .bottom,
+                    endPoint: .top
+                )
+                .clipShape(RoundedRectangle(cornerRadius: 16))
+                
+                // Content
+                VStack(alignment: .leading, spacing: 8) {
+                    Spacer()
+                    
+                    HStack {
+                        Image(systemName: "dice.fill")
+                            .font(.system(size: 24, weight: .bold))
+                            .foregroundColor(.white)
+                        
+                        Text(category.name)
+                            .font(.system(size: 24, weight: .bold))
+                            .foregroundColor(.white)
+                    }
+                    
+                    Text(category.description)
+                        .font(.system(size: 14))
+                        .foregroundColor(.white.opacity(0.9))
+                        .lineLimit(2)
+                }
+                .padding(16)
+            }
+        }
+        .shadow(color: .black.opacity(0.2), radius: 8, x: 0, y: 4)
     }
 }
 
