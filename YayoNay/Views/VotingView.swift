@@ -18,6 +18,7 @@ struct VotingView: View {
     @State private var showVoteFeedback = false
     @State private var voteChoice: String = ""
     @State private var isAnimating = false
+    @State private var swipeDirection: String? = nil // "yay" or "nay"
     
     init(category: String) {
         _viewModel = StateObject(wrappedValue: VotingViewModel(category: category))
@@ -25,6 +26,10 @@ struct VotingView: View {
     
     init(topic: Topic) {
         _viewModel = StateObject(wrappedValue: VotingViewModel(topic: topic))
+    }
+    
+    private func debugSwipe(_ message: String) {
+        debugPrint(message)
     }
     
     var body: some View {
@@ -39,14 +44,14 @@ struct VotingView: View {
                     // Card
                     VStack(spacing: 24) {
                         // Topic Title
-            Text(viewModel.topic.title)
+                        Text(viewModel.topic.title)
                             .font(.system(size: 32, weight: .bold))
-                .multilineTextAlignment(.center)
+                            .multilineTextAlignment(.center)
                             .padding(.horizontal, 32)
                             .padding(.top, 40)
                         
                         Spacer()
-            
+                        
                         // Vote Buttons
                         HStack(spacing: 24) {
                             // Nay Button
@@ -71,42 +76,98 @@ struct VotingView: View {
                             .onChanged { gesture in
                                 withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
                                     offset = gesture.translation
-                                    rotation = Double(gesture.translation.width / 20)
-                                    scale = 1.0 - abs(gesture.translation.width / 1000)
+                                    rotation = 0
+                                    scale = 1.0 - abs(gesture.translation.height / 1000)
+                                    if gesture.translation.height < -60 {
+                                        swipeDirection = "yay"
+                                        DispatchQueue.main.async {
+                                            debugPrint("🔼 Swipe direction changed to YAY")
+                                        }
+                                    } else if gesture.translation.height > 60 {
+                                        swipeDirection = "nay"
+                                        DispatchQueue.main.async {
+                                            debugPrint("🔽 Swipe direction changed to NAY")
+                                        }
+                                    } else {
+                                        swipeDirection = nil
+                                        DispatchQueue.main.async {
+                                            debugPrint("↔️ Swipe direction reset")
+                                        }
+                                    }
                                 }
                             }
                             .onEnded { gesture in
                                 withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                                    if abs(gesture.translation.width) > 100 {
-                                        let isYay = gesture.translation.width > 0
-                                        handleSwipe(isYay: isYay)
+                                    if gesture.translation.height < -100 {
+                                        DispatchQueue.main.async {
+                                            debugPrint("✅ Swipe up confirmed - YAY")
+                                        }
+                                        handleSwipe(isYay: true)
+                                        swipeDirection = "yay"
+                                    } else if gesture.translation.height > 100 {
+                                        DispatchQueue.main.async {
+                                            debugPrint("✅ Swipe down confirmed - NAY")
+                                        }
+                                        handleSwipe(isYay: false)
+                                        swipeDirection = "nay"
                                     } else {
+                                        DispatchQueue.main.async {
+                                            debugPrint("❌ Swipe cancelled - not enough distance")
+                                        }
                                         offset = .zero
                                         rotation = 0
                                         scale = 1.0
+                                        swipeDirection = nil
                                     }
                                 }
                             }
                     )
                     
-                    // Vote Feedback
-                    if showVoteFeedback {
-                        VStack {
-                            Image(systemName: voteChoice == viewModel.topic.optionA ? "hand.thumbsup.fill" : "hand.thumbsdown.fill")
-                                .font(.system(size: 60))
-                                .foregroundColor(voteChoice == viewModel.topic.optionA ? .green : .red)
-                                .padding()
+                    // Vote Feedback and Swipe Overlay
+                    if showVoteFeedback || swipeDirection != nil {
+                        ZStack {
+                            if swipeDirection == "yay" || (showVoteFeedback && voteChoice == viewModel.topic.optionA) {
+                                VStack(spacing: 12) {
+                                    Text("Yay")
+                                        .font(.system(size: 48, weight: .bold))
+                                        .foregroundColor(.white)
+                                    Text("😃")
+                                        .font(.system(size: 60))
+                                }
+                                .padding(20)
                                 .background(
-                                    Circle()
-                                        .fill(.ultraThinMaterial)
+                                    Capsule()
+                                        .fill(Color.green.opacity(0.85))
                                         .shadow(color: Color.black.opacity(0.2), radius: 10, x: 0, y: 5)
                                 )
+                                .transition(.scale.combined(with: .opacity))
+                            } else if swipeDirection == "nay" || (showVoteFeedback && voteChoice == viewModel.topic.optionB) {
+                                VStack(spacing: 12) {
+                                    Text("Nay")
+                                        .font(.system(size: 48, weight: .bold))
+                                        .foregroundColor(.white)
+                                    Text("😢")
+                                        .font(.system(size: 60))
+                                }
+                                .padding(20)
+                                .background(
+                                    Capsule()
+                                        .fill(Color.red.opacity(0.85))
+                                        .shadow(color: Color.black.opacity(0.2), radius: 10, x: 0, y: 5)
+                                )
+                                .transition(.scale.combined(with: .opacity))
+                            }
                         }
-                        .transition(.scale.combined(with: .opacity))
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .zIndex(1)
+                        .animation(.spring(response: 0.3, dampingFraction: 0.7), value: swipeDirection)
+                        .onAppear {
+                            debugPrint("🎯 Showing feedback overlay - Direction: \(swipeDirection ?? "none"), ShowFeedback: \(showVoteFeedback)")
+                        }
                     }
-            }
-            .padding()
-            
+                }
+                .padding()
+                
                 // Navigation Buttons
                 HStack(spacing: 24) {
                     Button(action: viewModel.previousTopic) {
@@ -148,7 +209,7 @@ struct VotingView: View {
             VStack(spacing: 12) {
                 Image(systemName: isYay ? "hand.thumbsup.fill" : "hand.thumbsdown.fill")
                     .font(.system(size: 28))
-            Text(choice)
+                Text(choice)
                     .font(.system(size: 18, weight: .medium))
             }
                 .frame(maxWidth: .infinity)
@@ -177,23 +238,32 @@ struct VotingView: View {
     }
     
     private func handleSwipe(isYay: Bool) {
+        debugSwipe("🔄 Starting handleSwipe - isYay: \(isYay)")
         let choice = isYay ? viewModel.topic.optionA : viewModel.topic.optionB
         voteChoice = choice
         showVoteFeedback = true
+        swipeDirection = isYay ? "yay" : "nay"
+        debugSwipe("📝 Updated state - Choice: \(choice), ShowFeedback: \(showVoteFeedback), Direction: \(swipeDirection ?? "none")")
         
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+            offset = CGSize(width: 0, height: isYay ? -500 : 500)
+            rotation = isYay ? -15 : 15
+        }
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            debugSwipe("⏰ Time to handle vote")
             handleVote(choice: choice)
-            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                offset = CGSize(width: isYay ? 500 : -500, height: 0)
-                rotation = isYay ? 15 : -15
-            }
-            
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                debugSwipe("⏰ Time to transition to next topic")
                 viewModel.nextTopic()
-                offset = .zero
-                rotation = 0
-                scale = 1.0
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                    offset = .zero
+                    rotation = 0
+                    scale = 1.0
+                }
                 showVoteFeedback = false
+                swipeDirection = nil
+                debugSwipe("🔄 Reset feedback state")
             }
         }
     }

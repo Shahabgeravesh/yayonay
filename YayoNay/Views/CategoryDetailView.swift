@@ -14,6 +14,7 @@ struct CategoryDetailView: View {
     let initialSubCategoryId: String?
     @StateObject private var viewModel: SubCategoryViewModel
     @State private var offset: CGFloat = 0
+    @State private var horizontalOffset: CGFloat = 0
     @State private var backgroundColor: Color = .white
     @State private var isLoading = true
     @State private var isRefreshing = false
@@ -24,6 +25,7 @@ struct CategoryDetailView: View {
     
     // Constants for thresholds and calculations
     private let swipeThreshold: CGFloat = 100.0
+    private let horizontalSwipeThreshold: CGFloat = 100.0
     private let maxOpacity: CGFloat = 0.3
     
     init(category: Category, initialSubCategoryId: String? = nil) {
@@ -42,6 +44,7 @@ struct CategoryDetailView: View {
                 backgroundColor
                     .ignoresSafeArea()
                     .animation(.easeInOut(duration: 0.3), value: offset)
+                    .animation(.easeInOut(duration: 0.3), value: horizontalOffset)
                 
                 Group {
                     if isLoading && !viewModel.hasReachedEnd {
@@ -57,19 +60,34 @@ struct CategoryDetailView: View {
                                 CardView(
                                     subCategory: currentSubCategory,
                                     offset: offset,
-                                    swipeThreshold: swipeThreshold
+                                    horizontalOffset: horizontalOffset,
+                                    swipeThreshold: swipeThreshold,
+                                    horizontalSwipeThreshold: horizontalSwipeThreshold
                                 )
                                 .gesture(
                                     DragGesture()
                                         .onChanged { gesture in
                                             if !isAnimatingCard {
-                                                offset = gesture.translation.height
-                                                updateBackgroundColor(for: offset)
+                                                if abs(gesture.translation.width) > abs(gesture.translation.height) {
+                                                    // Horizontal swipe
+                                                    horizontalOffset = gesture.translation.width
+                                                    updateBackgroundColor(for: horizontalOffset, isHorizontal: true)
+                                                } else {
+                                                    // Vertical swipe
+                                                    offset = gesture.translation.height
+                                                    updateBackgroundColor(for: offset, isHorizontal: false)
+                                                }
                                             }
                                         }
                                         .onEnded { gesture in
                                             if !isAnimatingCard {
-                                                handleSwipe(gesture.translation.height, for: currentSubCategory)
+                                                if abs(gesture.translation.width) > abs(gesture.translation.height) {
+                                                    // Handle horizontal swipe
+                                                    handleHorizontalSwipe(gesture.translation.width)
+                                                } else {
+                                                    // Handle vertical swipe
+                                                    handleSwipe(gesture.translation.height, for: currentSubCategory)
+                                                }
                                             }
                                         }
                                 )
@@ -136,16 +154,21 @@ struct CategoryDetailView: View {
         }
     }
     
-    private func updateBackgroundColor(for offset: CGFloat) {
-        let progress = min(abs(offset) / swipeThreshold, 1.0)
-        if offset > 0 {
-            // Swiping down (Nay)
-            backgroundColor = .red.opacity(progress * maxOpacity)
-        } else if offset < 0 {
-            // Swiping up (Yay)
-            backgroundColor = .green.opacity(progress * maxOpacity)
+    private func updateBackgroundColor(for offset: CGFloat, isHorizontal: Bool) {
+        let progress = min(abs(offset) / (isHorizontal ? horizontalSwipeThreshold : swipeThreshold), 1.0)
+        if isHorizontal {
+            // Yellow for skip (both left and right)
+            backgroundColor = .yellow.opacity(progress * maxOpacity)
         } else {
-            backgroundColor = .white
+            if offset > 0 {
+                // Swiping down (Nay)
+                backgroundColor = .red.opacity(progress * maxOpacity)
+            } else if offset < 0 {
+                // Swiping up (Yay)
+                backgroundColor = .green.opacity(progress * maxOpacity)
+            } else {
+                backgroundColor = .white
+            }
         }
     }
     
@@ -201,30 +224,30 @@ struct CategoryDetailView: View {
                 print("DEBUG: Vote type: \(isYay ? "Yay" : "Nay")")
                 
                 // Save vote
-                self.saveVote(for: subCategory, isYay: isYay)
+                    self.saveVote(for: subCategory, isYay: isYay)
                 print("DEBUG: ✅ Vote saved")
                 
                 // Add to voted subcategories
                 self.votedSubCategoryIds.insert(subCategory.id)
                 print("DEBUG: ✅ Added to voted subcategories")
-                
-                // Animate card off screen
-                withAnimation(.interpolatingSpring(stiffness: 180, damping: 100)) {
-                    self.offset = offset > 0 ? 1000 : -1000
-                    self.backgroundColor = .white
-                }
+            
+            // Animate card off screen
+            withAnimation(.interpolatingSpring(stiffness: 180, damping: 100)) {
+                self.offset = offset > 0 ? 1000 : -1000
+                        self.backgroundColor = .white
+            }
                 print("DEBUG: ✅ Card animation started")
-                
+            
                 // Move to next item immediately
-                self.viewModel.nextItem()
+                    self.viewModel.nextItem()
                 print("DEBUG: ✅ Moved to next item")
-                
-                // Reset card position and animation state
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                    withAnimation(nil) {
-                        self.offset = 0
-                    }
-                    self.isAnimatingCard = false
+            
+            // Reset card position and animation state
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                withAnimation(nil) {
+                    self.offset = 0
+                }
+                            self.isAnimatingCard = false
                     print("DEBUG: ✅ Card animation completed")
                 }
             }
@@ -233,6 +256,35 @@ struct CategoryDetailView: View {
             // Spring back to center
             withAnimation(.interpolatingSpring(stiffness: 180, damping: 100)) {
                 self.offset = 0
+                self.backgroundColor = .white
+            }
+        }
+    }
+    
+    private func handleHorizontalSwipe(_ offset: CGFloat) {
+        if abs(offset) > horizontalSwipeThreshold && !isAnimatingCard {
+            isAnimatingCard = true
+            
+            // Animate card off screen
+            withAnimation(.interpolatingSpring(stiffness: 180, damping: 100)) {
+                self.horizontalOffset = offset > 0 ? 1000 : -1000
+                self.backgroundColor = .white
+            }
+            
+            // Move to next item immediately
+            self.viewModel.nextItem()
+            
+            // Reset card position and animation state
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                withAnimation(nil) {
+                    self.horizontalOffset = 0
+                }
+                self.isAnimatingCard = false
+            }
+        } else {
+            // Spring back to center
+            withAnimation(.interpolatingSpring(stiffness: 180, damping: 100)) {
+                self.horizontalOffset = 0
                 self.backgroundColor = .white
             }
         }
@@ -319,8 +371,8 @@ struct CategoryDetailView: View {
         VStack(spacing: 24) {
             if viewModel.subCategories.isEmpty {
                 Image(systemName: "tray")
-                    .font(.system(size: 70))
-                    .foregroundStyle(.secondary)
+                .font(.system(size: 70))
+                .foregroundStyle(.secondary)
                 
                 Text("No items available")
                     .font(.title2.weight(.semibold))
@@ -340,10 +392,10 @@ struct CategoryDetailView: View {
                 Image(systemName: "checkmark.circle.fill")
                     .font(.system(size: 70))
                     .foregroundStyle(.green)
-                    .symbolEffect(.bounce)
-                
+                .symbolEffect(.bounce)
+            
                 Text("Great job!")
-                    .font(.title2.weight(.semibold))
+                .font(.title2.weight(.semibold))
                     .foregroundStyle(.primary)
                 
                 VStack(spacing: 8) {
@@ -353,7 +405,7 @@ struct CategoryDetailView: View {
                     
                     Text("Check back later for new items")
                         .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                .foregroundStyle(.secondary)
                 }
                 .multilineTextAlignment(.center)
             }
@@ -367,35 +419,80 @@ struct CategoryDetailView: View {
 struct CardView: View {
     let subCategory: SubCategory
     let offset: CGFloat
+    let horizontalOffset: CGFloat
     let swipeThreshold: CGFloat
+    let horizontalSwipeThreshold: CGFloat
     
     var body: some View {
-        // Main Card
-        VStack(spacing: 0) {
-            // Title at the top
-            Text(subCategory.name)
-                .font(.system(size: 24, weight: .bold))
-                .padding(.top, 24)
-                .padding(.bottom, 16)
-            
-            // Image
-            AsyncImage(url: URL(string: subCategory.imageURL)) { image in
-                image
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-            } placeholder: {
-                Color.gray.opacity(0.1)
+        ZStack {
+            // Main Card
+            VStack(spacing: 0) {
+                // Title at the top
+                Text(subCategory.name)
+                    .font(.system(size: 24, weight: .bold))
+                    .padding(.top, 24)
+                    .padding(.bottom, 16)
+                
+                // Image
+                AsyncImage(url: URL(string: subCategory.imageURL)) { image in
+                    image
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                } placeholder: {
+                    Color.gray.opacity(0.1)
+                }
+                .frame(height: UIScreen.main.bounds.height * 0.5)
+                
+                Spacer(minLength: 24)
             }
-            .frame(height: UIScreen.main.bounds.height * 0.5) // Slightly smaller height
+            .frame(width: UIScreen.main.bounds.width - 60, height: UIScreen.main.bounds.height * 0.65)
+            .background(Color(.systemBackground))
+            .clipShape(RoundedRectangle(cornerRadius: 24))
+            .shadow(color: .black.opacity(0.15), radius: 12, x: 0, y: 4)
+            .offset(x: horizontalOffset, y: offset)
+            .animation(.interpolatingSpring(stiffness: 180, damping: 100), value: offset)
+            .animation(.interpolatingSpring(stiffness: 180, damping: 100), value: horizontalOffset)
             
-            Spacer(minLength: 24)
+            // Vote Text Overlay
+            if abs(offset) > 50 {
+                VStack(spacing: 8) {
+                    if offset < 0 {
+                        Text("😊")
+                            .font(.system(size: 50))
+                            .opacity(min(abs(offset) / swipeThreshold, 1.0))
+                        Text("YAY")
+                            .font(.system(size: 40, weight: .bold))
+                            .foregroundColor(.green)
+                            .opacity(min(abs(offset) / swipeThreshold, 1.0))
+                    } else {
+                        Text("😢")
+                            .font(.system(size: 50))
+                            .opacity(min(abs(offset) / swipeThreshold, 1.0))
+                        Text("NAY")
+                            .font(.system(size: 40, weight: .bold))
+                            .foregroundColor(.red)
+                            .opacity(min(abs(offset) / swipeThreshold, 1.0))
+                    }
+                }
+                .offset(y: offset < 0 ? -100 : 100)
+                .animation(.interpolatingSpring(stiffness: 180, damping: 100), value: offset)
+            }
+            
+            // Skip Text Overlay
+            if abs(horizontalOffset) > 50 {
+                VStack(spacing: 8) {
+                    Text("😐")
+                        .font(.system(size: 50))
+                        .opacity(min(abs(horizontalOffset) / horizontalSwipeThreshold, 1.0))
+                    Text("SKIP")
+                        .font(.system(size: 40, weight: .bold))
+                        .foregroundColor(.yellow)
+                        .opacity(min(abs(horizontalOffset) / horizontalSwipeThreshold, 1.0))
+                }
+                .offset(x: horizontalOffset < 0 ? -100 : 100)
+                .animation(.interpolatingSpring(stiffness: 180, damping: 100), value: horizontalOffset)
+            }
         }
-        .frame(width: UIScreen.main.bounds.width - 60, height: UIScreen.main.bounds.height * 0.65) // Smaller card
-        .background(Color(.systemBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 24))
-        .shadow(color: .black.opacity(0.15), radius: 12, x: 0, y: 4)
-        .offset(y: offset)
-        .animation(.interpolatingSpring(stiffness: 180, damping: 100), value: offset)
     }
 }
 

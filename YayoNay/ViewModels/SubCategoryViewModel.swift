@@ -47,14 +47,16 @@ class SubCategoryViewModel: ObservableObject {
                 }
                 
                 // Update vote counts in our local subcategories
-                for document in documents {
-                    if let index = self.subCategories.firstIndex(where: { $0.id == document.documentID }),
-                       let yayCount = document.data()["yayCount"] as? Int,
-                       let nayCount = document.data()["nayCount"] as? Int {
-                        var updatedSubCategory = self.subCategories[index]
-                        updatedSubCategory.yayCount = yayCount
-                        updatedSubCategory.nayCount = nayCount
-                        self.subCategories[index] = updatedSubCategory
+                DispatchQueue.main.async {
+                    for document in documents {
+                        if let index = self.subCategories.firstIndex(where: { $0.id == document.documentID }),
+                           let yayCount = document.data()["yayCount"] as? Int,
+                           let nayCount = document.data()["nayCount"] as? Int {
+                            var updatedSubCategory = self.subCategories[index]
+                            updatedSubCategory.yayCount = yayCount
+                            updatedSubCategory.nayCount = nayCount
+                            self.subCategories[index] = updatedSubCategory
+                        }
                     }
                 }
             }

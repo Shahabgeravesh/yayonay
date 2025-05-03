@@ -1,4 +1,4 @@
-// MARK: - Random View
+// MARK: - Discover Hub View
 // This view provides a random voting experience, including:
 // 1. Random selection of items to vote on
 // 2. Surprise voting options
@@ -8,15 +8,14 @@
 import SwiftUI
 import FirebaseFirestore
 
-struct RandomView: View {
-    @StateObject private var viewModel = RandomViewModel()
+struct DiscoverHubView: View {
+    @StateObject private var viewModel = DiscoverHubViewModel()
     
     var body: some View {
         NavigationStack {
             VStack {
                 if let topic = viewModel.currentTopic {
                     VotingView(topic: topic)
-                        .padding()
                 } else {
                     ContentUnavailableView(
                         "No Topics Available",
@@ -26,7 +25,7 @@ struct RandomView: View {
                 }
                 
                 Button(action: viewModel.fetchRandomTopic) {
-                    Label("Next Random Topic", systemImage: "dice.fill")
+                    Label("Next Topic", systemImage: "dice.fill")
                         .font(.headline)
                         .padding()
                         .frame(maxWidth: .infinity)
@@ -36,7 +35,7 @@ struct RandomView: View {
                 }
                 .padding()
             }
-            .navigationTitle("Random")
+            .navigationTitle("Discover Hub")
         }
         .onAppear {
             viewModel.fetchRandomTopic()
@@ -44,7 +43,7 @@ struct RandomView: View {
     }
 }
 
-class RandomViewModel: ObservableObject {
+class DiscoverHubViewModel: ObservableObject {
     @Published var currentTopic: Topic?
     private let db = Firestore.firestore()
     
@@ -66,5 +65,5 @@ class RandomViewModel: ObservableObject {
 }
 
 #Preview {
-    RandomView()
+    DiscoverHubView()
 } 

@@ -656,6 +656,35 @@ class UserManager: NSObject, ObservableObject {
             }
         }
     }
+    
+    // MARK: - Notification Preferences
+    func fetchNotificationPreferences() async -> (general: Bool, votes: Bool, reminders: Bool)? {
+        guard let userId = auth.currentUser?.uid else { return nil }
+        do {
+            let doc = try await db.collection("users").document(userId).getDocument()
+            let data = doc.data() ?? [:]
+            let general = data["notificationsGeneral"] as? Bool ?? true
+            let votes = data["notificationsVotes"] as? Bool ?? true
+            let reminders = data["notificationsReminders"] as? Bool ?? true
+            return (general, votes, reminders)
+        } catch {
+            print("Error fetching notification preferences: \(error)")
+            return nil
+        }
+    }
+
+    func updateNotificationPreferences(general: Bool, votes: Bool, reminders: Bool) async {
+        guard let userId = auth.currentUser?.uid else { return }
+        do {
+            try await db.collection("users").document(userId).updateData([
+                "notificationsGeneral": general,
+                "notificationsVotes": votes,
+                "notificationsReminders": reminders
+            ])
+        } catch {
+            print("Error updating notification preferences: \(error)")
+        }
+    }
 }
 
 // MARK: - ASAuthorizationControllerDelegate

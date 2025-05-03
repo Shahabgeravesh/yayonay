@@ -10,6 +10,7 @@
 		BA0A2B7E2DC462360031508B /* serviceAccountKey.json in Resources */ = {isa = PBXBuildFile; fileRef = BA0A2B7D2DC462360031508B /* serviceAccountKey.json */; };
 		BA0A508D2DC1BA920031508B /* FirebaseDynamicLinks in Frameworks */ = {isa = PBXBuildFile; productRef = BA0A508C2DC1BA920031508B /* FirebaseDynamicLinks */; };
 		BA0A5E032DC6A4210031508B /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = BA0A5DBA2DC6A4210031508B /* Assets.xcassets */; };
+		BA0A5ED12DC6BF1F0031508B /* Flow in Frameworks */ = {isa = PBXBuildFile; productRef = BA0A5ED02DC6BF1F0031508B /* Flow */; };
 		BA0AFBAD2DC461F80031508B /* serviceAccountKey.json in Resources */ = {isa = PBXBuildFile; fileRef = BA0AFBAC2DC461F80031508B /* serviceAccountKey.json */; };
 		BA2984202DB06E6300D5CBBF /* FirebaseMessaging in Frameworks */ = {isa = PBXBuildFile; productRef = BA29841F2DB06E6300D5CBBF /* FirebaseMessaging */; };
 		BAE90E602D869B810067F715 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = BAE90E5F2D869B810067F715 /* FirebaseAuth */; };
@@ -87,6 +88,7 @@
 				BAE90EF92D88DC790067F715 /* GoogleSignInSwift in Frameworks */,
 				BAE90E602D869B810067F715 /* FirebaseAuth in Frameworks */,
 				BAE90EF72D88DC790067F715 /* GoogleSignIn in Frameworks */,
+				BA0A5ED12DC6BF1F0031508B /* Flow in Frameworks */,
 				BAE90E622D869B810067F715 /* FirebaseFirestore in Frameworks */,
 				BA0A508D2DC1BA920031508B /* FirebaseDynamicLinks in Frameworks */,
 				BAE90E642D869B810067F715 /* FirebaseStorage in Frameworks */,
@@ -161,6 +163,7 @@
 				BAE90EF82D88DC790067F715 /* GoogleSignInSwift */,
 				BA29841F2DB06E6300D5CBBF /* FirebaseMessaging */,
 				BA0A508C2DC1BA920031508B /* FirebaseDynamicLinks */,
+				BA0A5ED02DC6BF1F0031508B /* Flow */,
 			);
 			productName = YayoNay;
 			productReference = BAE90E212D8699540067F715 /* YayoNay.app */;
@@ -247,6 +250,7 @@
 			packageReferences = (
 				BAE90E5E2D869B810067F715 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
 				BAE90EF52D88DC790067F715 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */,
+				BA0A5ECF2DC6BF1F0031508B /* XCRemoteSwiftPackageReference "SwiftUI-Flow" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = BAE90E222D8699540067F715 /* Products */;
@@ -652,6 +656,14 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		BA0A5ECF2DC6BF1F0031508B /* XCRemoteSwiftPackageReference "SwiftUI-Flow" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/tevelee/SwiftUI-Flow";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 3.0.2;
+			};
+		};
 		BAE90E5E2D869B810067F715 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/firebase/firebase-ios-sdk.git";
@@ -675,6 +687,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = BAE90E5E2D869B810067F715 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
 			productName = FirebaseDynamicLinks;
+		};
+		BA0A5ED02DC6BF1F0031508B /* Flow */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = BA0A5ECF2DC6BF1F0031508B /* XCRemoteSwiftPackageReference "SwiftUI-Flow" */;
+			productName = Flow;
 		};
 		BA29841F2DB06E6300D5CBBF /* FirebaseMessaging */ = {
 			isa = XCSwiftPackageProductDependency;

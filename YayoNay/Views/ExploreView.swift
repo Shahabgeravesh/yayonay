@@ -107,14 +107,14 @@ struct ExploreView: View {
                             }
                         }
                         
-                        // Random Category Section
+                        // Discover Hub Section
                         if let randomCategory = viewModel.categories.first(where: { $0.id == "random" }) {
                             VStack(alignment: .leading, spacing: 16) {
-                                Text("Random")
+                                Text("Discover Hub")
                                     .font(.system(size: 24, weight: .bold))
                                     .padding(.horizontal)
                                 
-                                RandomCategoryCard(category: randomCategory)
+                                DiscoverHubCard(category: randomCategory)
                                     .onTapGesture {
                                         withAnimation(.spring()) {
                                             selectedCategory = randomCategory
@@ -357,7 +357,7 @@ struct CategoryCard: View {
     }
 }
 
-struct RandomCategoryCard: View {
+struct DiscoverHubCard: View {
     let category: Category
     
     var body: some View {
@@ -394,15 +394,16 @@ struct RandomCategoryCard: View {
                             .font(.system(size: 24, weight: .bold))
                             .foregroundColor(.white)
                         
-                        Text(category.name)
-                            .font(.system(size: 24, weight: .bold))
-                            .foregroundColor(.white)
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(category.name)
+                                .font(.system(size: 32, weight: .bold))
+                                .foregroundColor(.white)
+                            
+                            Text(category.description)
+                                .font(.system(size: 14))
+                                .foregroundColor(.white.opacity(0.9))
+                        }
                     }
-                    
-                    Text(category.description)
-                        .font(.system(size: 14))
-                        .foregroundColor(.white.opacity(0.9))
-                        .lineLimit(2)
                 }
                 .padding(16)
             }

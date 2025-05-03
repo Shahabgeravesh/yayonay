@@ -61,22 +61,22 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         let seeder = DatabaseSeeder()
         seeder.initializeSubQuestionsCollection()
         
-        // Add Random category if it doesn't exist
+        // Add Discover Hub category if it doesn't exist
         let randomCategoryRef = Firestore.firestore().collection("categories").document("random")
         randomCategoryRef.getDocument { document, error in
             if let error = error {
-                print("DEBUG: Error checking Random category: \(error.localizedDescription)")
+                print("DEBUG: Error checking Discover Hub category: \(error.localizedDescription)")
                 return
             }
             
             if document?.exists != true {
                 let randomCategory = Category(
                     id: "random",
-                    name: "Random",
+                    name: "Discover Hub",
                     imageURL: "https://images.unsplash.com/photo-1511512578047-dfb367046420?w=800",
                     isTopCategory: true,
                     order: 0,
-                    description: "Discover and vote on random items from all categories",
+                    description: "All content",
                     featured: true,
                     votesCount: 0
                 )
@@ -85,13 +85,13 @@ class AppDelegate: NSObject, UIApplicationDelegate {
                     let data = try Firestore.Encoder().encode(randomCategory)
                     randomCategoryRef.setData(data) { error in
                         if let error = error {
-                            print("DEBUG: Error creating Random category: \(error.localizedDescription)")
+                            print("DEBUG: Error creating Discover Hub category: \(error.localizedDescription)")
                         } else {
-                            print("DEBUG: Successfully created Random category")
+                            print("DEBUG: Successfully created Discover Hub category")
                         }
                     }
                 } catch {
-                    print("DEBUG: Error encoding Random category: \(error.localizedDescription)")
+                    print("DEBUG: Error encoding Discover Hub category: \(error.localizedDescription)")
                 }
             }
         }

@@ -11,11 +11,11 @@ const db = admin.firestore();
 // Define all categories with their order and image URLs
 const categories = [
   { 
-    name: "Random", 
+    name: "Discover Hub", 
     order: 0, 
     imageURL: "https://images.unsplash.com/photo-1511512578047-dfb367046420?w=800",
     isTopCategory: true,
-    description: "Discover and vote on random items from all categories",
+    description: "All content",
     featured: true,
     votesCount: 0
   },
@@ -261,8 +261,8 @@ async function createCategories() {
         continue;
       }
 
-      // Use fixed document ID for Random category
-      const categoryRef = category.name === "Random" 
+      // Use fixed document ID for Discover Hub category
+      const categoryRef = category.name === "Discover Hub" 
         ? db.collection('categories').doc('random')
         : db.collection('categories').doc();
         
@@ -383,44 +383,38 @@ async function createSubcategories() {
   }
 }
 
-async function populateRandomSubcategories() {
+async function populateDiscoverHubSubcategories() {
   try {
-    console.log('Starting to populate random subcategories...');
+    console.log('Starting to populate discover hub subcategories...');
     
-    // Get all subcategories
-    const subcategoriesSnapshot = await db.collection('subCategories').get();
-    console.log(`Found ${subcategoriesSnapshot.size} total subcategories`);
+    // Clear existing discover hub subcategories
+    const discoverHubSubcategoriesSnapshot = await db.collection('random_subcategories').get();
+    console.log(`Found ${discoverHubSubcategoriesSnapshot.size} existing discover hub subcategories`);
     
+    const batch = db.batch();
+    discoverHubSubcategoriesSnapshot.docs.forEach(doc => {
+      batch.delete(doc.ref);
+    });
+    await batch.commit();
+    console.log('Cleared existing discover hub subcategories');
+    
+    // Create new discover hub subcategories
+    const subcategoriesSnapshot = await db.collection('subcategories').get();
     const subcategories = subcategoriesSnapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data()
     }));
-
-    // Clear existing random subcategories
-    const randomSubcategoriesSnapshot = await db.collection('random_subcategories').get();
-    console.log(`Found ${randomSubcategoriesSnapshot.size} existing random subcategories`);
     
-    const batch = db.batch();
-    randomSubcategoriesSnapshot.docs.forEach(doc => {
-      batch.delete(doc.ref);
-    });
-    await batch.commit();
-    console.log('Cleared existing random subcategories');
-
-    // Create new random subcategories
-    const newBatch = db.batch();
+    // Use ALL subcategories for Discover Hub
+    const selectedSubcategories = subcategories;
+    console.log(`Selected ${selectedSubcategories.length} discover hub subcategories`);
+    
     let count = 0;
-
-    // Shuffle subcategories and take 20 random ones
-    const shuffledSubcategories = [...subcategories].sort(() => Math.random() - 0.5);
-    const selectedSubcategories = shuffledSubcategories.slice(0, 20);
-    console.log(`Selected ${selectedSubcategories.length} random subcategories`);
-
+    let newBatch = db.batch();
+    
     for (const subcategory of selectedSubcategories) {
-      console.log(`Adding subcategory: ${subcategory.name} (ID: ${subcategory.id})`);
-      
-      const randomSubcategoryRef = db.collection('random_subcategories').doc(subcategory.id);
-      const randomSubcategoryData = {
+      const discoverHubSubcategoryRef = db.collection('random_subcategories').doc(subcategory.id);
+      const discoverHubSubcategoryData = {
         name: subcategory.name,
         imageURL: subcategory.imageURL,
         categoryId: 'random',
@@ -430,31 +424,25 @@ async function populateRandomSubcategories() {
         attributes: subcategory.attributes || {},
         originalCategoryId: subcategory.categoryId // Keep track of original category
       };
-
-      newBatch.set(randomSubcategoryRef, randomSubcategoryData);
+      
+      newBatch.set(discoverHubSubcategoryRef, discoverHubSubcategoryData);
       count++;
-
-      // Firestore has a limit of 500 operations per batch
-      if (count % 450 === 0) {
+      
+      if (count % 500 === 0) {
         await newBatch.commit();
-        console.log(`Committed batch of ${count} random subcategories`);
-        count = 0;
+        console.log(`Committed batch of ${count} discover hub subcategories`);
+        newBatch = db.batch();
       }
     }
-
-    // Commit any remaining operations
-    if (count > 0) {
-      await newBatch.commit();
-      console.log(`Committed final batch of ${count} random subcategories`);
-    }
-
-    // Verify the random subcategories were created
-    const finalRandomSubcategories = await db.collection('random_subcategories').get();
-    console.log(`Final count of random subcategories: ${finalRandomSubcategories.size}`);
     
-    console.log('Successfully populated random subcategories');
+    if (count % 500 !== 0) {
+      await newBatch.commit();
+      console.log(`Committed final batch of ${count % 500} discover hub subcategories`);
+    }
+    
+    console.log('Discover hub subcategories population completed successfully');
   } catch (error) {
-    console.error('Error populating random subcategories:', error);
+    console.error('Error populating discover hub subcategories:', error);
   }
 }
 
@@ -467,8 +455,8 @@ async function main() {
     // Then create subcategories
     await createSubcategories();
     
-    // Finally populate random subcategories
-    await populateRandomSubcategories();
+    // Finally populate discover hub subcategories
+    await populateDiscoverHubSubcategories();
     
     console.log('All operations completed successfully');
   } catch (error) {

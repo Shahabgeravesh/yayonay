@@ -13,126 +13,153 @@ struct ProfileView: View {
     @State private var showingEditProfile = false
     @State private var showingShareSheet = false
     @State private var showChangePassword = false
+    @State private var showNotificationPreferences = false
     
     var body: some View {
         NavigationStack {
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 0) {
-                    // Profile Content
-                    VStack(spacing: 0) {
-                        // Profile Image
-                        PhotosPicker(selection: $imageSelection,
-                                   matching: .images,
-                                   photoLibrary: .shared()) {
-                            profileImage
-                        }
-                        .overlay(
-                            Circle()
-                                .fill(AppColor.gradient)
-                                .frame(width: 36, height: 36)
-                                .overlay(
-                                    Image(systemName: "camera.fill")
-                                        .font(.system(size: 16, weight: .bold))
-                                        .foregroundStyle(.white)
-                                )
-                                .offset(x: 4, y: 4),
-                            alignment: .bottomTrailing
-                        )
+                    // Profile Image
+                    PhotosPicker(selection: $imageSelection,
+                                 matching: .images,
+                                 photoLibrary: .shared()) {
+                        profileImage
                     }
+                    .frame(width: 140, height: 140)
                     .padding(.top, 32)
-                    
-                    // Profile Info Section
-                    VStack(spacing: 24) {
-                        // Username and Bio
-                        VStack(spacing: 12) {
-                            Text(userManager.currentUser?.username ?? "")
-                                .font(AppFont.bold(32))
+                    .overlay(
+                        Circle()
+                            .fill(AppColor.gradient)
+                            .frame(width: 36, height: 36)
+                            .overlay(
+                                Image(systemName: "camera.fill")
+                                    .font(.system(size: 16, weight: .bold))
+                                    .foregroundStyle(.white)
+                            )
+                            .offset(x: 4, y: 4),
+                        alignment: .bottomTrailing
+                    )
+
+                    // Stats Row (Votes and Last Vote)
+                    HStack {
+                        VStack {
+                            Text("\(userManager.currentUser?.votesCount ?? 0)")
+                                .font(AppFont.bold(22))
                                 .foregroundStyle(AppColor.text)
-                            
-                            if let bio = userManager.currentUser?.bio, !bio.isEmpty {
-                                Text(bio)
-                                    .font(AppFont.regular(16))
-                                    .foregroundStyle(AppColor.secondaryText)
-                                    .multilineTextAlignment(.center)
-                                    .padding(.horizontal, 32)
-                            }
+                            Text("Votes")
+                                .font(AppFont.regular(14))
+                                .foregroundStyle(AppColor.secondaryText)
                         }
-                        .padding(.top, 24)
-                        
-                        // Action Buttons
-                        VStack(spacing: 16) {
-                            Button(action: { showEditProfile = true }) {
-                                HStack {
-                                    Image(systemName: "pencil")
-                                    Text("Edit Profile")
-                                }
-                                .font(AppFont.medium(15))
-                                .foregroundStyle(AppColor.accent)
-                                .frame(height: 44)
-                                .frame(maxWidth: .infinity)
-                                .background(AppColor.accent.opacity(0.1))
-                                .clipShape(RoundedRectangle(cornerRadius: 22))
+                        .frame(maxWidth: .infinity)
+                        VStack {
+                            if let user = userManager.currentUser {
+                                Text(formatDate(user.lastVoteDate))
+                                    .font(AppFont.bold(18))
+                                    .foregroundStyle(AppColor.text)
+                            } else {
+                                Text("-")
+                                    .font(AppFont.bold(18))
+                                    .foregroundStyle(AppColor.text)
                             }
-                            
-                            Button(action: { showingShareSheet = true }) {
-                                HStack {
-                                    Image(systemName: "person.badge.plus")
-                                    Text("Invite")
-                                }
-                                .font(AppFont.medium(15))
-                                .foregroundStyle(.white)
-                                .frame(height: 44)
-                                .frame(maxWidth: .infinity)
-                                .background(AppColor.gradient)
-                                .clipShape(RoundedRectangle(cornerRadius: 22))
-                            }
-                            
-                            Button(action: { 
-                                print("Change Password button tapped")
-                                showChangePassword = true 
-                            }) {
-                                HStack {
-                                    Image(systemName: "key")
-                                    Text("Change Password")
-                                }
-                                .font(AppFont.medium(15))
-                                .foregroundStyle(AppColor.accent)
-                                .frame(height: 44)
-                                .frame(maxWidth: .infinity)
-                                .background(AppColor.accent.opacity(0.1))
-                                .clipShape(RoundedRectangle(cornerRadius: 22))
-                            }
+                            Text("Last vote")
+                                .font(AppFont.regular(14))
+                                .foregroundStyle(AppColor.secondaryText)
                         }
-                        .padding(.horizontal, 32)
-                        
-                        // Stats Card
-                        statsSection
-                            .padding(.horizontal, 20)
-                        
-                        // Interests Section
-                        if let interests = userManager.currentUser?.topInterests,
-                           !interests.isEmpty {
-                            interestsSection(interests: interests)
-                                .padding(.horizontal, 20)
-                        }
-                        
-                        Spacer()
-                        
-                        // Sign Out Button
-                        Button(action: { showSignOutAlert = true }) {
-                            HStack {
-                                Image(systemName: "rectangle.portrait.and.arrow.right")
-                                Text("Sign Out")
-                            }
-                            .font(AppFont.medium(15))
-                            .foregroundStyle(.red)
-                            .frame(height: 44)
+                        .frame(maxWidth: .infinity)
+                    }
+                    .padding(.top, 24)
+                    .padding(.horizontal, 32)
+
+                    // Username
+                    Text(userManager.currentUser?.username ?? "")
+                        .font(AppFont.bold(22))
+                        .foregroundStyle(AppColor.text)
+                        .padding(.top, 16)
+                        .padding(.bottom, 4)
+                        .frame(maxWidth: .infinity, alignment: .center)
+
+                    // Top Interests (single blue line, centered)
+                    if let interests = userManager.currentUser?.topInterests, !interests.isEmpty {
+                        let topInterests = interests.prefix(3).joined(separator: ", ")
+                        Text("Top interests: \(topInterests)")
+                            .font(AppFont.regular(16))
+                            .foregroundStyle(Color.blue)
+                            .padding(.bottom, 20)
+                            .frame(maxWidth: .infinity, alignment: .center)
+                    }
+
+                    // Invite Button
+                    Button(action: { showingShareSheet = true }) {
+                        Text("Invite others to vote")
+                            .font(AppFont.bold(18))
+                            .foregroundStyle(.white)
+                            .frame(height: 54)
                             .frame(maxWidth: .infinity)
-                            .background(Color.red.opacity(0.1))
-                            .clipShape(RoundedRectangle(cornerRadius: 22))
+                            .background(AppColor.gradient)
+                            .clipShape(RoundedRectangle(cornerRadius: 18))
+                    }
+                    .padding(.horizontal, 24)
+                    .padding(.bottom, 24)
+
+                    // Settings List
+                    VStack(spacing: 18) {
+                        Button(action: { showEditProfile = true }) {
+                            HStack {
+                                Text("Choose your interests")
+                                    .font(AppFont.regular(16))
+                                    .foregroundStyle(AppColor.text)
+                                Spacer()
+                            }
+                            .padding()
+                            .background(AppColor.secondaryBackground)
+                            .clipShape(RoundedRectangle(cornerRadius: 16))
                         }
-                        .padding(.horizontal, 32)
-                        .padding(.bottom, 32)
+                        Button(action: { showChangePassword = true }) {
+                            HStack {
+                                Text("Settings and security")
+                                    .font(AppFont.regular(16))
+                                    .foregroundStyle(AppColor.text)
+                                Spacer()
+                            }
+                            .padding()
+                            .background(AppColor.secondaryBackground)
+                            .clipShape(RoundedRectangle(cornerRadius: 16))
+                        }
+                        Button(action: { showNotificationPreferences = true }) {
+                            HStack {
+                                Text("Notification preferences")
+                                    .font(AppFont.regular(16))
+                                    .foregroundStyle(AppColor.text)
+                                Spacer()
+                            }
+                            .padding()
+                            .background(AppColor.secondaryBackground)
+                            .clipShape(RoundedRectangle(cornerRadius: 16))
+                        }
+                        Button(action: { /* Privacy and support action */ }) {
+                            HStack {
+                                Text("Privacy and support")
+                                    .font(AppFont.regular(16))
+                                    .foregroundStyle(AppColor.text)
+                                Spacer()
+                            }
+                            .padding()
+                            .background(AppColor.secondaryBackground)
+                            .clipShape(RoundedRectangle(cornerRadius: 16))
+                        }
+                    }
+                    .padding(.horizontal, 24)
+                    .padding(.bottom, 32)
+
+                    Spacer(minLength: 0)
+
+                    // Sign Out (subtle text button)
+                    Button(action: { showSignOutAlert = true }) {
+                        Text("Sign Out")
+                            .font(AppFont.regular(16))
+                            .foregroundStyle(Color.gray)
+                            .frame(maxWidth: .infinity, alignment: .center)
+                            .padding(.vertical, 16)
                     }
                 }
             }
@@ -151,6 +178,9 @@ struct ProfileView: View {
             }
             .sheet(isPresented: $showChangePassword) {
                 ChangePasswordView(userManager: userManager)
+            }
+            .sheet(isPresented: $showNotificationPreferences) {
+                NotificationPreferencesView()
             }
             .onChange(of: imageSelection) { oldValue, newValue in
                 Task {
@@ -219,105 +249,6 @@ struct ProfileView: View {
             .resizable()
             .aspectRatio(contentMode: .fit)
             .foregroundStyle(AppColor.accent)
-    }
-    
-    private var statsSection: some View {
-        VStack(spacing: 24) {
-            // Stats Row
-            HStack(spacing: 20) {
-                StatItem(
-                    icon: "checkmark.circle.fill",
-                    value: userManager.currentUser?.votesCount ?? 0,
-                    label: "Total Votes"
-                )
-                
-                // Interests Display
-                VStack(spacing: 8) {
-                    Image(systemName: "star.fill")
-                        .font(.system(size: 24))
-                        .foregroundStyle(AppColor.gradient)
-                    
-                    if let interests = userManager.currentUser?.topInterests, !interests.isEmpty {
-                        VStack(spacing: 4) {
-                            ForEach(interests.prefix(3), id: \.self) { interest in
-                                Text(interest)
-                                    .font(AppFont.medium(14))
-                                    .foregroundStyle(AppColor.text)
-                            }
-                            if interests.count > 3 {
-                                Text("+\(interests.count - 3) more")
-                                    .font(AppFont.regular(12))
-                                    .foregroundStyle(AppColor.secondaryText)
-                            }
-                        }
-                    } else {
-                        Text("No interests")
-                            .font(AppFont.regular(14))
-                            .foregroundStyle(AppColor.secondaryText)
-                    }
-                    
-                    Text("Interests")
-                        .font(AppFont.regular(14))
-                        .foregroundStyle(AppColor.secondaryText)
-                }
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 16)
-                .background(AppColor.secondaryBackground)
-                .cornerRadius(16)
-            }
-            
-            // Last Vote Date
-            if let lastVoteDate = userManager.currentUser?.lastVoteDate {
-                HStack(spacing: 12) {
-                    Image(systemName: "calendar")
-                        .font(.system(size: 20))
-                        .foregroundStyle(AppColor.gradient)
-                    
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Last Vote")
-                            .font(AppFont.regular(14))
-                            .foregroundStyle(AppColor.secondaryText)
-                        
-                        Text(formatDate(lastVoteDate))
-                            .font(AppFont.medium(16))
-                            .foregroundStyle(AppColor.text)
-                    }
-                    
-                    Spacer()
-                }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 12)
-                .background(AppColor.secondaryBackground)
-                .cornerRadius(16)
-            }
-        }
-        .padding(.vertical, 16)
-        .padding(.horizontal, 20)
-        .background(AppColor.secondaryBackground)
-        .cornerRadius(20)
-    }
-    
-    private func interestsSection(interests: [String]) -> some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("Interests")
-                .font(AppFont.bold(18))
-                .foregroundStyle(AppColor.text)
-            
-            FlowLayout(spacing: 12) {
-                ForEach(interests, id: \.self) { interest in
-                    Text(interest)
-                        .font(AppFont.medium(14))
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 8)
-                        .background(AppColor.gradient)
-                        .foregroundStyle(.white)
-                        .clipShape(Capsule())
-                }
-            }
-        }
-        .padding(20)
-        .background(AppColor.secondaryBackground)
-        .cornerRadius(20)
     }
     
     private func formatDate(_ date: Date) -> String {
