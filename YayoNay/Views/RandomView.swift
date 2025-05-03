@@ -14,8 +14,16 @@ struct DiscoverHubView: View {
     var body: some View {
         NavigationStack {
             VStack {
-                if let topic = viewModel.currentTopic {
-                    VotingView(topic: topic)
+                if let subCategory = viewModel.currentSubCategory {
+                    CategoryDetailView(
+                        category: Category(
+                            id: subCategory.categoryId,
+                            name: "", // Optionally fetch the name if needed
+                            isTopCategory: false,
+                            order: 0
+                        ),
+                        initialSubCategoryId: subCategory.id
+                    )
                 } else {
                     ContentUnavailableView(
                         "No Topics Available",
@@ -24,7 +32,7 @@ struct DiscoverHubView: View {
                     )
                 }
                 
-                Button(action: viewModel.fetchRandomTopic) {
+                Button(action: viewModel.fetchRandomSubCategory) {
                     Label("Next Topic", systemImage: "dice.fill")
                         .font(.headline)
                         .padding()
@@ -38,17 +46,18 @@ struct DiscoverHubView: View {
             .navigationTitle("Discover Hub")
         }
         .onAppear {
-            viewModel.fetchRandomTopic()
+            viewModel.fetchRandomSubCategory()
         }
     }
 }
 
 class DiscoverHubViewModel: ObservableObject {
     @Published var currentTopic: Topic?
+    @Published var currentSubCategory: SubCategory?
     private let db = Firestore.firestore()
     
     func fetchRandomTopic() {
-        db.collection("topics")
+        db.collection("subCategories")
             .getDocuments { [weak self] snapshot, error in
                 guard let documents = snapshot?.documents,
                       !documents.isEmpty else { return }
@@ -59,6 +68,37 @@ class DiscoverHubViewModel: ObservableObject {
                     DispatchQueue.main.async {
                         self?.currentTopic = topic
                     }
+                }
+            }
+    }
+    
+    func fetchRandomSubCategory() {
+        db.collection("subCategories")
+            .getDocuments { [weak self] snapshot, error in
+                guard let documents = snapshot?.documents,
+                      !documents.isEmpty else { return }
+                
+                // Get a random document
+                let randomIndex = Int.random(in: 0..<documents.count)
+                let doc = documents[randomIndex]
+                let data = doc.data()
+                guard let name = data["name"] as? String,
+                      let imageURL = data["imageURL"] as? String,
+                      let categoryId = data["categoryId"] as? String,
+                      let yayCount = data["yayCount"] as? Int,
+                      let nayCount = data["nayCount"] as? Int else { return }
+                let subCategory = SubCategory(
+                    id: doc.documentID,
+                    name: name,
+                    imageURL: imageURL,
+                    categoryId: categoryId,
+                    order: 0,
+                    yayCount: yayCount,
+                    nayCount: nayCount,
+                    attributes: [:]
+                )
+                DispatchQueue.main.async {
+                    self?.currentSubCategory = subCategory
                 }
             }
     }

@@ -345,7 +345,6 @@ async function createSubcategories() {
           console.log(`Subcategory ${subcategory.name} already exists for ${categoryName}, skipping...`);
           continue;
         }
-
         const subcategoryRef = db.collection('subCategories').doc();
         const subcategoryData = {
           categoryId: categoryId,
@@ -356,10 +355,8 @@ async function createSubcategories() {
           nayCount: 0, // Initialize nayCount
           attributes: {} // Initialize empty attributes object
         };
-        
         batch.set(subcategoryRef, subcategoryData);
         count++;
-        
         // Firestore has a limit of 500 operations per batch
         if (count % 450 === 0) {
           await batch.commit();
@@ -383,69 +380,6 @@ async function createSubcategories() {
   }
 }
 
-async function populateDiscoverHubSubcategories() {
-  try {
-    console.log('Starting to populate discover hub subcategories...');
-    
-    // Clear existing discover hub subcategories
-    const discoverHubSubcategoriesSnapshot = await db.collection('random_subcategories').get();
-    console.log(`Found ${discoverHubSubcategoriesSnapshot.size} existing discover hub subcategories`);
-    
-    const batch = db.batch();
-    discoverHubSubcategoriesSnapshot.docs.forEach(doc => {
-      batch.delete(doc.ref);
-    });
-    await batch.commit();
-    console.log('Cleared existing discover hub subcategories');
-    
-    // Create new discover hub subcategories
-    const subcategoriesSnapshot = await db.collection('subcategories').get();
-    const subcategories = subcategoriesSnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    }));
-    
-    // Use ALL subcategories for Discover Hub
-    const selectedSubcategories = subcategories;
-    console.log(`Selected ${selectedSubcategories.length} discover hub subcategories`);
-    
-    let count = 0;
-    let newBatch = db.batch();
-    
-    for (const subcategory of selectedSubcategories) {
-      const discoverHubSubcategoryRef = db.collection('random_subcategories').doc(subcategory.id);
-      const discoverHubSubcategoryData = {
-        name: subcategory.name,
-        imageURL: subcategory.imageURL,
-        categoryId: 'random',
-        order: Math.floor(Math.random() * 1000), // Random order
-        yayCount: 0,
-        nayCount: 0,
-        attributes: subcategory.attributes || {},
-        originalCategoryId: subcategory.categoryId // Keep track of original category
-      };
-      
-      newBatch.set(discoverHubSubcategoryRef, discoverHubSubcategoryData);
-      count++;
-      
-      if (count % 500 === 0) {
-        await newBatch.commit();
-        console.log(`Committed batch of ${count} discover hub subcategories`);
-        newBatch = db.batch();
-      }
-    }
-    
-    if (count % 500 !== 0) {
-      await newBatch.commit();
-      console.log(`Committed final batch of ${count % 500} discover hub subcategories`);
-    }
-    
-    console.log('Discover hub subcategories population completed successfully');
-  } catch (error) {
-    console.error('Error populating discover hub subcategories:', error);
-  }
-}
-
 // Main function to run the script
 async function main() {
   try {
@@ -454,9 +388,6 @@ async function main() {
     
     // Then create subcategories
     await createSubcategories();
-    
-    // Finally populate discover hub subcategories
-    await populateDiscoverHubSubcategories();
     
     console.log('All operations completed successfully');
   } catch (error) {

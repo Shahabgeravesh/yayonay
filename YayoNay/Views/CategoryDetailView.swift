@@ -300,62 +300,80 @@ struct CategoryDetailView: View {
     
     private func saveVote(for subCategory: SubCategory, isYay: Bool) {
         guard let userId = Auth.auth().currentUser?.uid else { return }
-        
         let db = Firestore.firestore()
-                    let batch = db.batch()
+        let batch = db.batch()
         
-        // Create vote document
-        let voteData: [String: Any] = [
-            "itemName": subCategory.name,
-            "imageURL": subCategory.imageURL,
-            "isYay": isYay,
-            "date": Timestamp(date: Date()),
-                "categoryName": self.category.name,
+        func actuallySaveVote(categoryName: String) {
+            let voteData: [String: Any] = [
+                "itemName": subCategory.name,
+                "imageURL": subCategory.imageURL,
+                "isYay": isYay,
+                "date": Timestamp(date: Date()),
+                "categoryName": categoryName,
                 "categoryId": self.category.id,
-            "subCategoryId": subCategory.id,
-            "userId": userId
-        ]
-        
-        // Add vote document
-        let voteRef = db.collection("votes").document()
-        batch.setData(voteData, forDocument: voteRef)
-        
-        // Update subcategory's vote counts
-        let subCategoryRef = db.collection("subCategories").document(subCategory.id)
-        let updateData: [String: Any] = isYay ? 
-            ["yayCount": FieldValue.increment(Int64(1))] : 
-            ["nayCount": FieldValue.increment(Int64(1))]
-        batch.updateData(updateData, forDocument: subCategoryRef)
-        
-        // Update user profile
-        let userRef = db.collection("users").document(userId)
-        batch.updateData([
-            "votesCount": FieldValue.increment(Int64(1)),
-            "lastVoteDate": Timestamp(date: Date())
-        ], forDocument: userRef)
-        
-        // Add recent activity
-        let activity = [
-            "type": "vote",
-            "itemId": subCategory.id,
-            "title": subCategory.name,
-            "timestamp": Timestamp(date: Date())
-        ] as [String: Any]
-        batch.updateData([
-            "recentActivity": FieldValue.arrayUnion([activity])
-        ], forDocument: userRef)
-        
-        // Commit the batch
-        batch.commit { error in
-            if let error = error {
-                print("Error saving vote: \(error.localizedDescription)")
-            } else {
-                print("Successfully saved vote")
-                // Add to voted subcategories
-                DispatchQueue.main.async {
-                    self.votedSubCategoryIds.insert(subCategory.id)
+                "subCategoryId": subCategory.id,
+                "userId": userId
+            ]
+            print("DEBUG: 📝 Saving vote with data: \(voteData)")
+            
+            // Create vote document
+            let voteRef = db.collection("votes").document()
+            batch.setData(voteData, forDocument: voteRef)
+            
+            // Create or update subcategory document
+            let subCategoryRef = db.collection("subCategories").document(subCategory.id)
+            let subCategoryData: [String: Any] = [
+                "name": subCategory.name,
+                "imageURL": subCategory.imageURL,
+                "categoryId": self.category.id,
+                "yayCount": isYay ? 1 : 0,
+                "nayCount": isYay ? 0 : 1
+            ]
+            batch.setData(subCategoryData, forDocument: subCategoryRef, merge: true)
+            
+            // Update user document
+            let userRef = db.collection("users").document(userId)
+            batch.updateData([
+                "votesCount": FieldValue.increment(Int64(1)),
+                "lastVoteDate": Timestamp(date: Date())
+            ], forDocument: userRef)
+            
+            let activity = [
+                "type": "vote",
+                "itemId": subCategory.id,
+                "title": subCategory.name,
+                "timestamp": Timestamp(date: Date())
+            ] as [String: Any]
+            batch.updateData([
+                "recentActivity": FieldValue.arrayUnion([activity])
+            ], forDocument: userRef)
+            
+            batch.commit { error in
+                if let error = error {
+                    print("Error saving vote: \(error.localizedDescription)")
+                } else {
+                    print("Successfully saved vote")
+                    DispatchQueue.main.async {
+                        self.votedSubCategoryIds.insert(subCategory.id)
+                    }
                 }
             }
+        }
+        
+        if self.category.name.isEmpty {
+            print("DEBUG: 🔍 Fetching category name for ID: \(self.category.id)")
+            db.collection("categories").document(self.category.id).getDocument { snapshot, error in
+                if let error = error {
+                    print("Error fetching category name: \(error.localizedDescription)")
+                    return
+                }
+                let categoryName = snapshot?.data()?["name"] as? String ?? ""
+                print("DEBUG: ✅ Fetched category name: \(categoryName)")
+                actuallySaveVote(categoryName: categoryName)
+            }
+        } else {
+            print("DEBUG: ✅ Using existing category name: \(self.category.name)")
+            actuallySaveVote(categoryName: self.category.name)
         }
     }
     
