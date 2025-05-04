@@ -60,34 +60,23 @@ struct CategoryDetailView: View {
                                 CardView(
                                     subCategory: currentSubCategory,
                                     offset: offset,
-                                    horizontalOffset: horizontalOffset,
+                                    horizontalOffset: 0,
                                     swipeThreshold: swipeThreshold,
-                                    horizontalSwipeThreshold: horizontalSwipeThreshold
+                                    horizontalSwipeThreshold: horizontalSwipeThreshold,
+                                    onSkip: { viewModel.nextItem() }
                                 )
                                 .gesture(
                                     DragGesture()
                                         .onChanged { gesture in
                                             if !isAnimatingCard {
-                                                if abs(gesture.translation.width) > abs(gesture.translation.height) {
-                                                    // Horizontal swipe
-                                                    horizontalOffset = gesture.translation.width
-                                                    updateBackgroundColor(for: horizontalOffset, isHorizontal: true)
-                                                } else {
-                                                    // Vertical swipe
-                                                    offset = gesture.translation.height
-                                                    updateBackgroundColor(for: offset, isHorizontal: false)
-                                                }
+                                                // Only handle vertical swipe
+                                                offset = gesture.translation.height
+                                                updateBackgroundColor(for: offset, isHorizontal: false)
                                             }
                                         }
                                         .onEnded { gesture in
                                             if !isAnimatingCard {
-                                                if abs(gesture.translation.width) > abs(gesture.translation.height) {
-                                                    // Handle horizontal swipe
-                                                    handleHorizontalSwipe(gesture.translation.width)
-                                                } else {
-                                                    // Handle vertical swipe
-                                                    handleSwipe(gesture.translation.height, for: currentSubCategory)
-                                                }
+                                                handleSwipe(gesture.translation.height, for: currentSubCategory)
                                             }
                                         }
                                 )
@@ -440,15 +429,18 @@ struct CardView: View {
     let horizontalOffset: CGFloat
     let swipeThreshold: CGFloat
     let horizontalSwipeThreshold: CGFloat
+    let onSkip: () -> Void
+    @State private var skipAnimationOffset: CGFloat = 0
     
     var body: some View {
         ZStack {
             // Main Card
             VStack(spacing: 0) {
-                // Title at the top
+                Spacer(minLength: 64)
+                // Title at the top (moved further down)
                 Text(subCategory.name)
                     .font(.system(size: 24, weight: .bold))
-                    .padding(.top, 24)
+                    .padding(.top, 0)
                     .padding(.bottom, 16)
                 
                 // Image
@@ -462,53 +454,66 @@ struct CardView: View {
                 .frame(height: UIScreen.main.bounds.height * 0.5)
                 
                 Spacer(minLength: 24)
+                
+                // Enhanced Skip Button (centered, smaller, higher, not touching edge)
+                HStack {
+                    Spacer()
+                    Button(action: {
+                        withAnimation(.interpolatingSpring(stiffness: 180, damping: 80)) {
+                            skipAnimationOffset = 1000
+                        }
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                            skipAnimationOffset = 0
+                            onSkip()
+                        }
+                    }) {
+                        Text("Skip")
+                            .font(.system(size: 18, weight: .semibold))
+                            .foregroundColor(.orange)
+                            .frame(width: 64, height: 44)
+                            .background(
+                                Capsule()
+                                    .fill(Color.white)
+                                    .shadow(color: Color.orange.opacity(0.18), radius: 8, x: 0, y: 4)
+                            )
+                            .overlay(
+                                Capsule()
+                                    .stroke(LinearGradient(gradient: Gradient(colors: [Color.yellow, Color.orange]), startPoint: .topLeading, endPoint: .bottomTrailing), lineWidth: 2)
+                            )
+                            .accessibilityLabel("Skip")
+                            .accessibilityHint("Skip this card")
+                    }
+                    Spacer()
+                }
+                .padding(.top, -24)
+                .padding(.bottom, 40)
             }
             .frame(width: UIScreen.main.bounds.width - 60, height: UIScreen.main.bounds.height * 0.65)
             .background(Color(.systemBackground))
             .clipShape(RoundedRectangle(cornerRadius: 24))
             .shadow(color: .black.opacity(0.15), radius: 12, x: 0, y: 4)
-            .offset(x: horizontalOffset, y: offset)
+            .offset(x: skipAnimationOffset, y: offset)
+            .animation(.interpolatingSpring(stiffness: 180, damping: 80), value: skipAnimationOffset)
             .animation(.interpolatingSpring(stiffness: 180, damping: 100), value: offset)
-            .animation(.interpolatingSpring(stiffness: 180, damping: 100), value: horizontalOffset)
             
             // Vote Text Overlay
             if abs(offset) > 50 {
-                VStack(spacing: 8) {
+                HStack(spacing: 8) {
                     if offset < 0 {
-                        Text("😊")
-                            .font(.system(size: 50))
-                            .opacity(min(abs(offset) / swipeThreshold, 1.0))
-                        Text("YAY")
+                        Text("YAY 😊")
                             .font(.system(size: 40, weight: .bold))
                             .foregroundColor(.green)
                             .opacity(min(abs(offset) / swipeThreshold, 1.0))
                     } else {
-                        Text("😢")
-                            .font(.system(size: 50))
-                            .opacity(min(abs(offset) / swipeThreshold, 1.0))
-                        Text("NAY")
+                        Text("NAY 😢")
                             .font(.system(size: 40, weight: .bold))
                             .foregroundColor(.red)
                             .opacity(min(abs(offset) / swipeThreshold, 1.0))
                     }
                 }
-                .offset(y: offset < 0 ? -100 : 100)
+                .frame(maxWidth: .infinity)
+                .offset(y: offset < 0 ? -220 : 220)
                 .animation(.interpolatingSpring(stiffness: 180, damping: 100), value: offset)
-            }
-            
-            // Skip Text Overlay
-            if abs(horizontalOffset) > 50 {
-                VStack(spacing: 8) {
-                    Text("😐")
-                        .font(.system(size: 50))
-                        .opacity(min(abs(horizontalOffset) / horizontalSwipeThreshold, 1.0))
-                    Text("SKIP")
-                        .font(.system(size: 40, weight: .bold))
-                        .foregroundColor(.yellow)
-                        .opacity(min(abs(horizontalOffset) / horizontalSwipeThreshold, 1.0))
-                }
-                .offset(x: horizontalOffset < 0 ? -100 : 100)
-                .animation(.interpolatingSpring(stiffness: 180, damping: 100), value: horizontalOffset)
             }
         }
     }
