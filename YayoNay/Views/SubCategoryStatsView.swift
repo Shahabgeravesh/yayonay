@@ -604,14 +604,14 @@ struct SubCategoryStatsView: View {
         let deepLink = "yayonay://subcategory/\(statsViewModel.currentSubCategory.id)"
         let appStoreLink = "https://apps.apple.com/app/idYOUR_APP_ID"
         let vote = yayPercentage > 50 ? "YAY" : "NAY"
-        let shareText = "I just voted \(vote) on \(statsViewModel.currentSubCategory.name) in YayoNay! What do you think? Download YayoNay to vote: \(appStoreLink)"
+        let shareText = "I just voted \(vote) on \(statsViewModel.currentSubCategory.name) in YayoNay! What do you think? Vote now: \(deepLink) or download YayoNay: \(appStoreLink)"
         
         if let url = URL(string: "fb://share?text=\(shareText.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")") {
             if UIApplication.shared.canOpenURL(url) {
                 UIApplication.shared.open(url)
             } else {
                 // Fallback to Facebook web sharing
-                if let webURL = URL(string: "https://www.facebook.com/sharer/sharer.php?u=\(appStoreLink)&quote=\(shareText.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")") {
+                if let webURL = URL(string: "https://www.facebook.com/sharer/sharer.php?u=\(deepLink)&quote=\(shareText.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")") {
                     UIApplication.shared.open(webURL)
                 }
             }
@@ -623,14 +623,14 @@ struct SubCategoryStatsView: View {
         let deepLink = "yayonay://subcategory/\(statsViewModel.currentSubCategory.id)"
         let appStoreLink = "https://apps.apple.com/app/idYOUR_APP_ID"
         let vote = yayPercentage > 50 ? "YAY" : "NAY"
-        let shareText = "I voted \(vote) on \(statsViewModel.currentSubCategory.name) in YayoNay! What's your vote? #YayoNay #VoteNow \(appStoreLink)"
+        let shareText = "I voted \(vote) on \(statsViewModel.currentSubCategory.name) in YayoNay! What's your vote? Vote now: \(deepLink) #YayoNay #VoteNow"
         
         if let url = URL(string: "twitter://post?message=\(shareText.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")") {
             if UIApplication.shared.canOpenURL(url) {
                 UIApplication.shared.open(url)
             } else {
                 // Fallback to Twitter web sharing
-                if let webURL = URL(string: "https://twitter.com/intent/tweet?text=\(shareText.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")") {
+                if let webURL = URL(string: "https://twitter.com/intent/tweet?text=\(shareText.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")&url=\(deepLink)") {
                     UIApplication.shared.open(webURL)
                 }
             }
@@ -642,16 +642,24 @@ struct SubCategoryStatsView: View {
         let deepLink = "yayonay://subcategory/\(statsViewModel.currentSubCategory.id)"
         let appStoreLink = "https://apps.apple.com/app/idYOUR_APP_ID"
         let vote = yayPercentage > 50 ? "YAY" : "NAY"
-        let shareText = "I voted \(vote) on \(statsViewModel.currentSubCategory.name) in YayoNay! What's your vote? Download YayoNay to vote: \(appStoreLink)"
+        let shareText = "I voted \(vote) on \(statsViewModel.currentSubCategory.name) in YayoNay! What's your vote? Vote now: \(deepLink)"
         
-        // Try to open Instagram Stories
-        if let url = URL(string: "instagram-stories://share") {
+        // Try to open Instagram Stories with the image
+        if let imageURL = URL(string: statsViewModel.currentSubCategory.imageURL),
+           let url = URL(string: "instagram-stories://share?source_application=YayoNay&background_image=\(imageURL.absoluteString.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")") {
             if UIApplication.shared.canOpenURL(url) {
                 UIApplication.shared.open(url)
             } else {
-                // Fallback to Instagram app
-                if let appURL = URL(string: "instagram://app") {
-                    UIApplication.shared.open(appURL)
+                // Fallback to Instagram app with the deep link
+                if let appURL = URL(string: "instagram://app?url=\(deepLink.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")") {
+                    if UIApplication.shared.canOpenURL(appURL) {
+                        UIApplication.shared.open(appURL)
+                    } else {
+                        // Final fallback to Instagram web
+                        if let webURL = URL(string: "https://www.instagram.com/") {
+                            UIApplication.shared.open(webURL)
+                        }
+                    }
                 }
             }
         }
@@ -662,7 +670,7 @@ struct SubCategoryStatsView: View {
         let deepLink = "yayonay://subcategory/\(statsViewModel.currentSubCategory.id)"
         let appStoreLink = "https://apps.apple.com/app/idYOUR_APP_ID"
         let vote = yayPercentage > 50 ? "YAY" : "NAY"
-        let shareText = "I just voted \(vote) on \(statsViewModel.currentSubCategory.name) in YayoNay! What do you think? Download YayoNay to vote: \(appStoreLink)"
+        let shareText = "I just voted \(vote) on \(statsViewModel.currentSubCategory.name) in YayoNay! What do you think? Vote now: \(deepLink) or download YayoNay: \(appStoreLink)"
         
         if let url = URL(string: "whatsapp://send?text=\(shareText.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")") {
             if UIApplication.shared.canOpenURL(url) {
@@ -681,14 +689,14 @@ struct SubCategoryStatsView: View {
         let deepLink = "yayonay://subcategory/\(statsViewModel.currentSubCategory.id)"
         let appStoreLink = "https://apps.apple.com/app/idYOUR_APP_ID"
         let vote = yayPercentage > 50 ? "YAY" : "NAY"
-        let shareText = "I just voted \(vote) on \(statsViewModel.currentSubCategory.name) in YayoNay! What do you think? Download YayoNay to vote: \(appStoreLink)"
+        let shareText = "I just voted \(vote) on \(statsViewModel.currentSubCategory.name) in YayoNay! What do you think? Vote now: \(deepLink) or download YayoNay: \(appStoreLink)"
         
         if let url = URL(string: "tg://msg?text=\(shareText.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")") {
             if UIApplication.shared.canOpenURL(url) {
                 UIApplication.shared.open(url)
             } else {
                 // Fallback to Telegram web
-                if let webURL = URL(string: "https://t.me/share/url?url=\(appStoreLink)&text=\(shareText.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")") {
+                if let webURL = URL(string: "https://t.me/share/url?url=\(deepLink)&text=\(shareText.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")") {
                     UIApplication.shared.open(webURL)
                 }
             }
@@ -700,7 +708,7 @@ struct SubCategoryStatsView: View {
         let deepLink = "yayonay://subcategory/\(statsViewModel.currentSubCategory.id)"
         let appStoreLink = "https://apps.apple.com/app/idYOUR_APP_ID"
         let vote = yayPercentage > 50 ? "YAY" : "NAY"
-        let shareText = "I just voted \(vote) on \(statsViewModel.currentSubCategory.name) in YayoNay! What's your opinion? Download YayoNay to vote: \(appStoreLink)"
+        let shareText = "I just voted \(vote) on \(statsViewModel.currentSubCategory.name) in YayoNay! What's your opinion? Vote now: \(deepLink) or download YayoNay: \(appStoreLink)"
         
         // Try LinkedIn app first
         if let url = URL(string: "linkedin://share?text=\(shareText.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")") {
@@ -708,7 +716,7 @@ struct SubCategoryStatsView: View {
                 UIApplication.shared.open(url)
             } else {
                 // Fallback to LinkedIn web sharing with message
-                if let webURL = URL(string: "https://www.linkedin.com/sharing/share-offsite/?mini=true&url=\(appStoreLink)&title=YayoNay%20Vote&summary=\(shareText.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")") {
+                if let webURL = URL(string: "https://www.linkedin.com/sharing/share-offsite/?mini=true&url=\(deepLink)&title=YayoNay%20Vote&summary=\(shareText.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")") {
                     UIApplication.shared.open(webURL)
                 }
             }
@@ -720,7 +728,7 @@ struct SubCategoryStatsView: View {
         let deepLink = "yayonay://subcategory/\(statsViewModel.currentSubCategory.id)"
         let appStoreLink = "https://apps.apple.com/app/idYOUR_APP_ID"
         let vote = yayPercentage > 50 ? "YAY" : "NAY"
-        let shareText = "I just voted \(vote) on \(statsViewModel.currentSubCategory.name) in YayoNay! What's your vote? Download YayoNay to vote: \(appStoreLink)"
+        let shareText = "I just voted \(vote) on \(statsViewModel.currentSubCategory.name) in YayoNay! What's your vote? Vote now: \(deepLink) or download YayoNay: \(appStoreLink)"
         
         // Try to open TikTok app
         if let url = URL(string: "tiktok://") {
