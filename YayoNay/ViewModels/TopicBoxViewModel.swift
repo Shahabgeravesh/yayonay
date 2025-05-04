@@ -259,19 +259,16 @@ class TopicBoxViewModel: ObservableObject {
                 username: "User\(Int.random(in: 1000...9999))",
                 imageURL: "https://firebasestorage.googleapis.com/v0/b/yayonay-e7f58.appspot.com/o/default_profile.png?alt=media",
                 email: nil,
-                bio: "",
                 votesCount: 0,
                 lastVoteDate: Date(),
                 topInterests: []
             )
         }
-        
         return UserProfile(
             id: userId,
             username: "User\(Int.random(in: 1000...9999))",
             imageURL: "https://firebasestorage.googleapis.com/v0/b/yayonay-e7f58.appspot.com/o/default_profile.png?alt=media",
             email: nil,
-            bio: "",
             votesCount: 0,
             lastVoteDate: Date(),
             topInterests: []

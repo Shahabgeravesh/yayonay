@@ -27,7 +27,6 @@ class ProfileViewModel: ObservableObject {
             username: "",
             imageURL: "",
             email: nil,
-            bio: "",
             votesCount: 0,
             lastVoteDate: Date(),
             topInterests: []
@@ -61,13 +60,12 @@ class ProfileViewModel: ObservableObject {
             }
     }
     
-    func updateProfile(username: String, image: UIImage?, bio: String) {
+    func updateProfile(username: String, image: UIImage?, interests: [String]) {
         isLoading = true
         
         userManager.updateProfile(
             username: username,
             image: image,
-            bio: bio,
             interests: Array(selectedInterests)
         )
     }
@@ -104,7 +102,6 @@ class ProfileViewModel: ObservableObject {
                 username: "",
                 imageURL: "",
                 email: nil,
-                bio: "",
                 votesCount: 0,
                 lastVoteDate: Date(),
                 topInterests: []
@@ -137,7 +134,6 @@ class ProfileViewModel: ObservableObject {
             username: "User\(Int.random(in: 1000...9999))",
             imageURL: "https://firebasestorage.googleapis.com/v0/b/yayonay-e7f58.appspot.com/o/default_profile.png?alt=media",
             email: nil,
-            bio: "",
             votesCount: 0,
             lastVoteDate: Date(),
             topInterests: []
@@ -160,7 +156,6 @@ class ProfileViewModel: ObservableObject {
             username: username,
             imageURL: "https://firebasestorage.googleapis.com/v0/b/yayonay-e7f58.appspot.com/o/default_profile.png?alt=media",
             email: user.email,
-            bio: "",
             votesCount: 0,
             lastVoteDate: Date(),
             topInterests: []

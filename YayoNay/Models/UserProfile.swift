@@ -6,7 +6,6 @@ struct UserProfile: Codable, Identifiable {
     var username: String
     var imageURL: String // URL to the profile image in Firebase Storage
     var email: String?
-    var bio: String
     var votesCount: Int
     var lastVoteDate: Date
     var topInterests: [String]
@@ -24,7 +23,6 @@ struct UserProfile: Codable, Identifiable {
          username: String,
          imageURL: String = "https://firebasestorage.googleapis.com/v0/b/yayonay-e7f58.appspot.com/o/default_profile.png?alt=media",
          email: String? = nil,
-         bio: String = "",
          votesCount: Int = 0,
          lastVoteDate: Date = Date(),
          topInterests: [String] = [],
@@ -35,7 +33,6 @@ struct UserProfile: Codable, Identifiable {
         self.username = username
         self.imageURL = imageURL
         self.email = email
-        self.bio = bio
         self.votesCount = votesCount
         self.lastVoteDate = lastVoteDate
         self.topInterests = topInterests
@@ -50,7 +47,6 @@ struct UserProfile: Codable, Identifiable {
             "username": username,
             "imageURL": imageURL,
             "email": email as Any,
-            "bio": bio,
             "votesCount": votesCount,
             "lastVoteDate": Timestamp(date: lastVoteDate),
             "topInterests": topInterests,
@@ -75,7 +71,6 @@ struct UserProfile: Codable, Identifiable {
         self.username = username
         self.imageURL = data["imageURL"] as? String ?? "https://firebasestorage.googleapis.com/v0/b/yayonay-e7f58.appspot.com/o/default_profile.png?alt=media"
         self.email = data["email"] as? String
-        self.bio = data["bio"] as? String ?? ""
         self.votesCount = data["votesCount"] as? Int ?? 0
         self.lastVoteDate = (data["lastVoteDate"] as? Timestamp)?.dateValue() ?? Date()
         self.topInterests = data["topInterests"] as? [String] ?? []

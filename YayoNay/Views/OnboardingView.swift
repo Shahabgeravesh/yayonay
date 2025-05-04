@@ -13,7 +13,6 @@ struct OnboardingView: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject var userManager: UserManager
     @State private var username = ""
-    @State private var bio = ""
     @State private var selectedImage: UIImage?
     @State private var selectedInterests: Set<String> = []
     @State private var showImagePicker = false
@@ -121,34 +120,7 @@ struct OnboardingView: View {
                     }
                 }
                 
-                // Step 2: Bio
-                VStack(spacing: 24) {
-                    Text("Add your bio")
-                        .font(.title2)
-                        .fontWeight(.bold)
-                    
-                    Text("Tell others about yourself")
-                        .foregroundStyle(.secondary)
-                    
-                    TextEditor(text: $bio)
-                        .frame(height: 120)
-                        .padding()
-                        .background(Color(.systemGray6))
-                        .cornerRadius(12)
-                    
-                    Spacer()
-                    
-                    Button("Next") {
-                        withAnimation {
-                            currentStep = 2
-                        }
-                    }
-                    .buttonStyle(.primary)
-                }
-                .padding()
-                .tag(1)
-                
-                // Step 3: Interests
+                // Step 2: Interests
                 VStack(spacing: 24) {
                     Text("Select your interests")
                         .font(.title2)
@@ -183,7 +155,7 @@ struct OnboardingView: View {
                     .buttonStyle(.primary)
                 }
                 .padding()
-                .tag(2)
+                .tag(1)
             }
             .tabViewStyle(.page(indexDisplayMode: .never))
             .onChange(of: imageSelection) { newItem in
@@ -218,7 +190,6 @@ struct OnboardingView: View {
         userManager.updateProfile(
             username: username,
             image: selectedImage,
-            bio: bio,
             interests: Array(selectedInterests)
         )
     }

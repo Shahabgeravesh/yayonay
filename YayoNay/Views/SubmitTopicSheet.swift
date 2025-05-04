@@ -64,41 +64,43 @@ struct SubmitTopicSheet: View {
                                 .font(.headline)
                                 .foregroundColor(.primary)
                             
-                            TextField("Enter tags (comma separated)", text: $tags)
+                            TextField("Enter tags (separate with commas)", text: $tags)
                                 .textFieldStyle(RoundedTextFieldStyle(isRequired: true, isEmpty: tags.isEmpty))
                                 .textInputAutocapitalization(.never)
-                                .onChange(of: tags) { newValue in
-                                    // Automatically add hashtags to tags
-                                    let tagList = newValue.components(separatedBy: ",")
-                                        .map { $0.trimmingCharacters(in: .whitespaces) }
-                                        .filter { !$0.isEmpty }
-                                    
-                                    tags = tagList.map { tag in
-                                        if tag.hasPrefix("#") {
-                                            return tag
-                                        } else {
-                                            return "#" + tag
-                                        }
-                                    }.joined(separator: ", ")
-                                }
                             
                             // Preview of tags
                             if !tags.isEmpty {
                                 ScrollView(.horizontal, showsIndicators: false) {
                                     HStack(spacing: 8) {
                                         ForEach(processedTags, id: \.self) { tag in
-                                            Text(tag)
-                                                .font(.system(size: 12))
-                                                .padding(.horizontal, 8)
-                                                .padding(.vertical, 4)
-                                                .background(Color.blue.opacity(0.1))
-                                                .foregroundColor(.blue)
-                                                .clipShape(Capsule())
+                                            HStack(spacing: 4) {
+                                                Text(tag)
+                                                    .font(.system(size: 12))
+                                                Button(action: {
+                                                    // Remove this tag
+                                                    let updatedTags = processedTags.filter { $0 != tag }
+                                                    tags = updatedTags.joined(separator: ", ")
+                                                }) {
+                                                    Image(systemName: "xmark.circle.fill")
+                                                        .font(.system(size: 12))
+                                                        .foregroundColor(.gray)
+                                                }
+                                            }
+                                            .padding(.horizontal, 8)
+                                            .padding(.vertical, 4)
+                                            .background(Color.blue.opacity(0.1))
+                                            .foregroundColor(.blue)
+                                            .clipShape(Capsule())
                                         }
                                     }
                                     .padding(.top, 4)
                                 }
                             }
+                            
+                            Text("Add multiple tags by separating them with commas")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                                .padding(.top, 2)
                         }
                         
                         // Category
@@ -183,6 +185,13 @@ struct SubmitTopicSheet: View {
         tags.components(separatedBy: ",")
             .map { $0.trimmingCharacters(in: .whitespaces) }
             .filter { !$0.isEmpty }
+            .map { tag in
+                if tag.hasPrefix("#") {
+                    return tag
+                } else {
+                    return "#" + tag
+                }
+            }
     }
     
     private func validateAndSubmit() {

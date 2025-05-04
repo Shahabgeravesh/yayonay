@@ -174,54 +174,39 @@ class UserManager: NSObject, ObservableObject {
         return "data:image/jpeg;base64,\(base64String)"
     }
     
-    func updateProfile(username: String, image: UIImage?, bio: String? = nil, interests: [String]? = nil) {
+    func updateProfile(username: String, image: UIImage?, interests: [String]? = nil) {
         guard let userId = auth.currentUser?.uid else {
             self.error = NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: "No user ID available"])
             return
         }
-        
         isLoading = true
         print("Starting profile update for user: \(userId)")
-        
         Task {
             do {
                 var userData: [String: Any] = [
                     "username": username,
                     "lastUpdated": Timestamp(date: Date())
                 ]
-                
                 if let image = image {
                     let imageURL = try await uploadProfileImage(image)
                     userData["imageURL"] = imageURL
                 }
-                
-                if let bio = bio {
-                    userData["bio"] = bio
-                }
                 if let interests = interests {
                     userData["topInterests"] = interests
                 }
-                
                 let docRef = db.collection("users").document(userId)
-                
-                // First check if document exists
                 let snapshot = try await docRef.getDocument()
-                
                 if snapshot.exists {
-                    // Update existing document
                     try await docRef.updateData(userData)
                 } else {
-                    // Create new document with default values
                     var newUserData = userData
                     newUserData["joinDate"] = Timestamp(date: Date())
                     newUserData["votesCount"] = 0
                     newUserData["lastVoteDate"] = Timestamp(date: Date())
                     newUserData["socialLinks"] = [:] as [String: String]
                     newUserData["imageURL"] = userData["imageURL"] ?? "https://firebasestorage.googleapis.com/v0/b/yayonay-e7f58.appspot.com/o/default_profile.png?alt=media"
-                    
                     try await docRef.setData(newUserData)
                 }
-                
                 await MainActor.run {
                     self.isLoading = false
                     self.needsOnboarding = false
@@ -361,7 +346,6 @@ class UserManager: NSObject, ObservableObject {
                     username: username,
                     imageURL: "https://firebasestorage.googleapis.com/v0/b/yayonay-e7f58.appspot.com/o/default_profile.png?alt=media",
                     email: user.email,
-                    bio: "",
                     votesCount: 0,
                     lastVoteDate: Date(),
                     topInterests: []

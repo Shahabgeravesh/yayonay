@@ -14,11 +14,12 @@ struct ProfileView: View {
     @State private var showingShareSheet = false
     @State private var showChangePassword = false
     @State private var showNotificationPreferences = false
+    @State private var showSettingsSheet = false
     
     var body: some View {
         NavigationStack {
             ScrollView(showsIndicators: false) {
-                VStack(spacing: 0) {
+                VStack(spacing: 32) {
                     // Profile Image
                     PhotosPicker(selection: $imageSelection,
                                  matching: .images,
@@ -26,7 +27,7 @@ struct ProfileView: View {
                         profileImage
                     }
                     .frame(width: 140, height: 140)
-                    .padding(.top, 32)
+                    .padding(.top, 40)
                     .overlay(
                         Circle()
                             .fill(AppColor.gradient)
@@ -41,24 +42,25 @@ struct ProfileView: View {
                     )
 
                     // Stats Row (Votes and Last Vote)
-                    HStack {
-                        VStack {
+                    HStack(spacing: 32) {
+                        VStack(spacing: 8) {
                             Text("\(userManager.currentUser?.votesCount ?? 0)")
-                                .font(AppFont.bold(22))
+                                .font(AppFont.bold(24))
                                 .foregroundStyle(AppColor.text)
                             Text("Votes")
                                 .font(AppFont.regular(14))
                                 .foregroundStyle(AppColor.secondaryText)
                         }
                         .frame(maxWidth: .infinity)
-                        VStack {
+                        
+                        VStack(spacing: 8) {
                             if let user = userManager.currentUser {
                                 Text(formatDate(user.lastVoteDate))
-                                    .font(AppFont.bold(18))
+                                    .font(AppFont.bold(20))
                                     .foregroundStyle(AppColor.text)
                             } else {
                                 Text("-")
-                                    .font(AppFont.bold(18))
+                                    .font(AppFont.bold(20))
                                     .foregroundStyle(AppColor.text)
                             }
                             Text("Last vote")
@@ -67,25 +69,21 @@ struct ProfileView: View {
                         }
                         .frame(maxWidth: .infinity)
                     }
-                    .padding(.top, 24)
                     .padding(.horizontal, 32)
 
                     // Username
                     Text(userManager.currentUser?.username ?? "")
-                        .font(AppFont.bold(22))
+                        .font(AppFont.bold(24))
                         .foregroundStyle(AppColor.text)
-                        .padding(.top, 16)
-                        .padding(.bottom, 4)
-                        .frame(maxWidth: .infinity, alignment: .center)
+                        .padding(.top, 8)
 
-                    // Top Interests (single blue line, centered)
+                    // Top Interests
                     if let interests = userManager.currentUser?.topInterests, !interests.isEmpty {
                         let topInterests = interests.prefix(3).joined(separator: ", ")
                         Text("Top interests: \(topInterests)")
                             .font(AppFont.regular(16))
                             .foregroundStyle(Color.blue)
-                            .padding(.bottom, 20)
-                            .frame(maxWidth: .infinity, alignment: .center)
+                            .padding(.top, 4)
                     }
 
                     // Invite Button
@@ -93,35 +91,28 @@ struct ProfileView: View {
                         Text("Invite others to vote")
                             .font(AppFont.bold(18))
                             .foregroundStyle(.white)
-                            .frame(height: 54)
+                            .frame(height: 56)
                             .frame(maxWidth: .infinity)
                             .background(AppColor.gradient)
-                            .clipShape(RoundedRectangle(cornerRadius: 18))
+                            .clipShape(RoundedRectangle(cornerRadius: 16))
                     }
-                    .padding(.horizontal, 24)
-                    .padding(.bottom, 24)
+                    .padding(.horizontal, 32)
+                    .padding(.top, 24)
 
                     // Settings List
-                    VStack(spacing: 18) {
-                        Button(action: { showEditProfile = true }) {
-                            HStack {
-                                Text("Choose your interests")
-                                    .font(AppFont.regular(16))
-                                    .foregroundStyle(AppColor.text)
-                                Spacer()
-                            }
-                            .padding()
-                            .background(AppColor.secondaryBackground)
-                            .clipShape(RoundedRectangle(cornerRadius: 16))
-                        }
-                        Button(action: { showChangePassword = true }) {
+                    VStack(spacing: 16) {
+                        Button(action: { showSettingsSheet = true }) {
                             HStack {
                                 Text("Settings and security")
                                     .font(AppFont.regular(16))
                                     .foregroundStyle(AppColor.text)
                                 Spacer()
+                                Image(systemName: "chevron.right")
+                                    .font(.system(size: 14))
+                                    .foregroundStyle(AppColor.secondaryText)
                             }
-                            .padding()
+                            .padding(.vertical, 16)
+                            .padding(.horizontal, 20)
                             .background(AppColor.secondaryBackground)
                             .clipShape(RoundedRectangle(cornerRadius: 16))
                         }
@@ -131,8 +122,12 @@ struct ProfileView: View {
                                     .font(AppFont.regular(16))
                                     .foregroundStyle(AppColor.text)
                                 Spacer()
+                                Image(systemName: "chevron.right")
+                                    .font(.system(size: 14))
+                                    .foregroundStyle(AppColor.secondaryText)
                             }
-                            .padding()
+                            .padding(.vertical, 16)
+                            .padding(.horizontal, 20)
                             .background(AppColor.secondaryBackground)
                             .clipShape(RoundedRectangle(cornerRadius: 16))
                         }
@@ -142,29 +137,76 @@ struct ProfileView: View {
                                     .font(AppFont.regular(16))
                                     .foregroundStyle(AppColor.text)
                                 Spacer()
+                                Image(systemName: "chevron.right")
+                                    .font(.system(size: 14))
+                                    .foregroundStyle(AppColor.secondaryText)
                             }
-                            .padding()
+                            .padding(.vertical, 16)
+                            .padding(.horizontal, 20)
                             .background(AppColor.secondaryBackground)
                             .clipShape(RoundedRectangle(cornerRadius: 16))
                         }
                     }
-                    .padding(.horizontal, 24)
-                    .padding(.bottom, 32)
+                    .padding(.horizontal, 32)
+                    .padding(.top, 24)
 
-                    Spacer(minLength: 0)
+                    Spacer(minLength: 16)
 
-                    // Sign Out (subtle text button)
+                    // Sign Out Button
                     Button(action: { showSignOutAlert = true }) {
-                        Text("Sign Out")
-                            .font(AppFont.regular(16))
-                            .foregroundStyle(Color.gray)
-                            .frame(maxWidth: .infinity, alignment: .center)
-                            .padding(.vertical, 16)
+                        HStack {
+                            Image(systemName: "rectangle.portrait.and.arrow.right")
+                                .font(.system(size: 16))
+                            Text("Sign Out")
+                                .font(AppFont.regular(16))
+                        }
+                        .foregroundStyle(Color.red)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                        .background(Color.red.opacity(0.1))
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
                     }
+                    .padding(.horizontal, 32)
+                    .padding(.top, 8)
+                    .padding(.bottom, 16)
                 }
             }
             .background(AppColor.background)
             .navigationBarTitleDisplayMode(.inline)
+            .sheet(isPresented: $showSettingsSheet) {
+                NavigationStack {
+                    List {
+                        Section {
+                            Button(action: { 
+                                showSettingsSheet = false
+                                showEditProfile = true
+                            }) {
+                                HStack {
+                                    Text("Edit Profile")
+                                    Spacer()
+                                    Image(systemName: "chevron.right")
+                                        .font(.system(size: 14))
+                                        .foregroundStyle(AppColor.secondaryText)
+                                }
+                            }
+                            Button(action: { 
+                                showSettingsSheet = false
+                                showChangePassword = true
+                            }) {
+                                HStack {
+                                    Text("Change Password")
+                                    Spacer()
+                                    Image(systemName: "chevron.right")
+                                        .font(.system(size: 14))
+                                        .foregroundStyle(AppColor.secondaryText)
+                                }
+                            }
+                        }
+                    }
+                    .navigationTitle("Settings and Security")
+                    .navigationBarTitleDisplayMode(.inline)
+                }
+            }
             .sheet(isPresented: $showEditProfile) {
                 EditProfileView(userManager: userManager)
             }
@@ -191,7 +233,6 @@ struct ProfileView: View {
                             userManager.updateProfile(
                                 username: userManager.currentUser?.username ?? "",
                                 image: image,
-                                bio: userManager.currentUser?.bio,
                                 interests: userManager.currentUser?.topInterests
                             )
                         }

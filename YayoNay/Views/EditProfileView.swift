@@ -6,7 +6,6 @@ struct EditProfileView: View {
     @ObservedObject var userManager: UserManager
     
     @State private var username: String
-    @State private var bio: String
     @State private var selectedImage: UIImage?
     @State private var imageSelection: PhotosPickerItem? = nil
     @State private var selectedInterests: Set<String>
@@ -15,7 +14,6 @@ struct EditProfileView: View {
         self.userManager = userManager
         // Initialize state variables
         _username = State(initialValue: userManager.currentUser?.username ?? "")
-        _bio = State(initialValue: userManager.currentUser?.bio ?? "")
         _selectedInterests = State(initialValue: Set(userManager.currentUser?.topInterests ?? []))
     }
     
@@ -106,19 +104,6 @@ struct EditProfileView: View {
                 icon: "person",
                 text: $username
             )
-            
-            // Bio Field
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Bio")
-                    .font(AppFont.medium(14))
-                    .foregroundStyle(AppColor.secondaryText)
-                
-                TextEditor(text: $bio)
-                    .frame(height: 100)
-                    .padding(8)
-                    .background(AppColor.secondaryBackground)
-                    .cornerRadius(12)
-            }
         }
     }
     
@@ -189,7 +174,6 @@ struct EditProfileView: View {
         userManager.updateProfile(
             username: username,
             image: selectedImage,
-            bio: bio,
             interests: Array(selectedInterests)
         )
         dismiss()
