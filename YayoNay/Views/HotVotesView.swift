@@ -272,59 +272,6 @@ struct HotVotesView: View {
     @StateObject private var viewModel = HotVotesViewModel()
     @State private var selectedSubCategory: SubCategory?
     @State private var showSubCategoryDetail = false
-    private let db = Firestore.firestore()
-    private var topCategoriesListener: ListenerRegistration?
-    
-    init() {
-        setupTopCategoriesListener()
-    }
-    
-    private func setupTopCategoriesListener() {
-        // Listen to all subcategories for vote count changes
-        db.collection("subCategories")
-            .addSnapshotListener { [weak viewModel] snapshot, error in
-                if let error = error {
-                    print("Error listening to subcategories: \(error)")
-                    return
-                }
-                
-                // Count votes per category
-                var categoryVotes: [String: (name: String, votes: Int, imageURL: String)] = [:]
-                
-                snapshot?.documents.forEach { doc in
-                    let data = doc.data()
-                    if let categoryId = data["categoryId"] as? String,
-                       let yayCount = data["yayCount"] as? Int,
-                       let nayCount = data["nayCount"] as? Int {
-                        let totalVotes = yayCount + nayCount
-                        let current = categoryVotes[categoryId]?.votes ?? 0
-                        categoryVotes[categoryId] = (name: "", current + totalVotes, imageURL: "")
-                    }
-                }
-                
-                // Get categories and combine with vote counts
-                self.db.collection("categories").getDocuments { snapshot, error in
-                    guard let documents = snapshot?.documents else { return }
-                    
-                    viewModel?.topCategories = documents.compactMap { doc -> TopCategory? in
-                        let id = doc.documentID
-                        guard let name = doc.data()["name"] as? String,
-                              let imageURL = doc.data()["imageURL"] as? String else { return nil }
-                        let votes = categoryVotes[id]?.votes ?? 0
-                        
-                        return TopCategory(
-                            id: id,
-                            name: name,
-                            totalVotes: votes,
-                            imageURL: imageURL
-                        )
-                    }
-                    .sorted { $0.totalVotes > $1.totalVotes }
-                    .prefix(5)
-                    .map { $0 }
-                }
-            }
-    }
     
     var body: some View {
         NavigationStack {
