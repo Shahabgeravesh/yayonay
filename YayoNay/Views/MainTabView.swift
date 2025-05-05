@@ -45,11 +45,19 @@ struct MainTabView: View {
                                     Circle()
                                         .fill(selectedTab == index ? Color.blue.opacity(0.05) : Color.clear)
                                         .frame(width: 40, height: 40)
-                                    
-                                    Image(systemName: tabIcon(for: index))
-                                        .font(.system(size: 18, weight: selectedTab == index ? .semibold : .regular))
-                                        .foregroundColor(selectedTab == index ? .blue : .gray)
-                                        .scaleEffect(selectedTab == index ? 1.1 : 1.0)
+                                    if index == 3 {
+                                        Image("topicBoxIcon")
+                                            .renderingMode(.original)
+                                            .resizable()
+                                            .aspectRatio(contentMode: .fit)
+                                            .frame(width: 24, height: 24)
+                                            .scaleEffect(selectedTab == index ? 1.1 : 1.0)
+                                    } else {
+                                        Image(systemName: tabIcon(for: index))
+                                            .font(.system(size: 18, weight: selectedTab == index ? .semibold : .regular))
+                                            .foregroundColor(selectedTab == index ? .blue : .gray)
+                                            .scaleEffect(selectedTab == index ? 1.1 : 1.0)
+                                    }
                                 }
                             }
                             .frame(maxWidth: .infinity)
