@@ -53,10 +53,10 @@ struct MainTabView: View {
                                             .frame(width: 24, height: 24)
                                             .scaleEffect(selectedTab == index ? 1.1 : 1.0)
                                     } else {
-                                        Image(systemName: tabIcon(for: index))
-                                            .font(.system(size: 18, weight: selectedTab == index ? .semibold : .regular))
-                                            .foregroundColor(selectedTab == index ? .blue : .gray)
-                                            .scaleEffect(selectedTab == index ? 1.1 : 1.0)
+                                    Image(systemName: tabIcon(for: index))
+                                        .font(.system(size: 18, weight: selectedTab == index ? .semibold : .regular))
+                                        .foregroundColor(selectedTab == index ? .blue : .gray)
+                                        .scaleEffect(selectedTab == index ? 1.1 : 1.0)
                                     }
                                 }
                             }
