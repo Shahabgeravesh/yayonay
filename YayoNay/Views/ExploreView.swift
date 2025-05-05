@@ -40,9 +40,11 @@ struct ExploreView: View {
                     // Search Bar
                     HStack {
                         Image(systemName: "magnifyingglass")
-                            .foregroundStyle(.secondary)
+                            .foregroundColor(ModernColor.secondaryText)
+                            .font(.system(size: 18, weight: .medium))
                         
                         TextField("Search for items", text: $searchText)
+                            .font(AppFont.medium(16))
                             .onChange(of: searchText) { newValue in
                                 updateSearchResults(for: newValue)
                             }
@@ -52,20 +54,37 @@ struct ExploreView: View {
                                 searchText = ""
                             }) {
                                 Image(systemName: "xmark.circle.fill")
-                                    .foregroundStyle(.secondary)
+                                    .foregroundColor(ModernColor.secondaryText)
+                                    .font(.system(size: 18))
                             }
                         }
                     }
-                    .padding(12)
-                    .background(Color(.systemGray6))
-                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                    .padding(16)
+                    .background(
+                        RoundedRectangle(cornerRadius: 16)
+                            .fill(ModernColor.cardBackground)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 16)
+                                    .stroke(ModernColor.border.opacity(0.3), lineWidth: 1)
+                            )
+                    )
+                    .shadow(color: ModernDesign.CardShadow.color, radius: ModernDesign.CardShadow.radius, x: ModernDesign.CardShadow.x, y: ModernDesign.CardShadow.y)
                     .padding(.horizontal)
                     
                     if !searchResults.isEmpty {
                         VStack(alignment: .leading, spacing: 16) {
-                            Text("Search Results")
-                                .font(.system(size: 24, weight: .bold))
-                                .padding(.horizontal)
+                            HStack {
+                                Text("Search Results")
+                                    .font(AppFont.bold(24))
+                                    .foregroundColor(ModernColor.text)
+                                
+                                Spacer()
+                                
+                                Text("\(searchResults.count) found")
+                                    .font(AppFont.medium(14))
+                                    .foregroundColor(ModernColor.secondaryText)
+                            }
+                            .padding(.horizontal)
                             
                             LazyVGrid(columns: [
                                 GridItem(.flexible(), spacing: 16),
@@ -87,9 +106,18 @@ struct ExploreView: View {
                     } else {
                         // Featured Section
                         VStack(alignment: .leading, spacing: 16) {
-                            Text("Featured Categories")
-                                .font(.system(size: 24, weight: .bold))
-                                .padding(.horizontal)
+                            HStack {
+                                Text("Featured Categories")
+                                    .font(AppFont.bold(24))
+                                    .foregroundColor(ModernColor.text)
+                                
+                                Spacer()
+                                
+                                Text("\(viewModel.categories.filter { $0.id != "random" }.prefix(5).count) categories")
+                                    .font(AppFont.medium(14))
+                                    .foregroundColor(ModernColor.secondaryText)
+                            }
+                            .padding(.horizontal)
                             
                             ScrollView(.horizontal, showsIndicators: false) {
                                 HStack(spacing: 20) {
@@ -209,6 +237,7 @@ struct ExploreView: View {
 
 struct SubCategoryCard: View {
     let subCategory: SubCategory
+    @State private var isHovered = false
     
     var body: some View {
         VStack(spacing: 12) {
@@ -217,190 +246,148 @@ struct SubCategoryCard: View {
                     .resizable()
                     .aspectRatio(contentMode: .fill)
             } placeholder: {
-                Color.gray.opacity(0.2)
+                ModernDesign.cardGradient
             }
             .frame(height: 120)
-            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .clipShape(RoundedRectangle(cornerRadius: 16))
+            .overlay(
+                RoundedRectangle(cornerRadius: 16)
+                    .stroke(ModernColor.border.opacity(0.3), lineWidth: 1)
+            )
             
             Text(subCategory.name)
-                .font(.system(size: 15, weight: .medium))
-                .foregroundColor(.primary)
+                .font(AppFont.medium(15))
+                .foregroundColor(ModernColor.text)
                 .lineLimit(2)
                 .multilineTextAlignment(.center)
         }
         .padding()
-        .background(Color(.systemBackground))
-        .cornerRadius(20)
-        .shadow(color: Color.black.opacity(0.1), radius: 10, x: 0, y: 5)
+        .background(ModernColor.cardBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 20))
+        .shadow(color: ModernDesign.CardShadow.color, radius: ModernDesign.CardShadow.radius, x: ModernDesign.CardShadow.x, y: ModernDesign.CardShadow.y)
+        .scaleEffect(isHovered ? 1.02 : 1.0)
+        .animation(ModernDesign.hoverAnimation, value: isHovered)
+        .onHover { hovering in
+            isHovered = hovering
+        }
     }
 }
 
 struct FeaturedCategoryCard: View {
     let category: Category
-    
-    private var cardColor: Color {
-        let colors: [Color] = [
-            Color(red: 0.20, green: 0.60, blue: 0.86),
-            Color(red: 0.61, green: 0.35, blue: 0.71),
-            Color(red: 0.95, green: 0.40, blue: 0.50),
-            Color(red: 0.98, green: 0.55, blue: 0.38),
-            Color(red: 0.30, green: 0.69, blue: 0.31)
-        ]
-        let index = abs(category.iconName.hashValue) % colors.count
-        return colors[index]
-    }
+    @State private var isHovered = false
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             ZStack {
                 RoundedRectangle(cornerRadius: 20)
-                    .fill(
-                        LinearGradient(
-                            gradient: Gradient(colors: [
-                                cardColor.opacity(0.2),
-                                cardColor.opacity(0.1)
-                            ]),
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
+                    .fill(ModernDesign.featuredGradient)
                     .overlay(
                         RoundedRectangle(cornerRadius: 20)
-                            .stroke(
-                                LinearGradient(
-                                    gradient: Gradient(colors: [
-                                        cardColor.opacity(0.3),
-                                        cardColor.opacity(0.1)
-                                    ]),
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                ),
-                                lineWidth: 1
-                            )
+                            .stroke(ModernColor.border.opacity(0.3), lineWidth: 1)
                     )
                 
                 Image(systemName: category.iconName)
                     .font(.system(size: 36, weight: .medium))
-                    .foregroundColor(cardColor)
+                    .foregroundColor(.white)
             }
             .frame(width: 140, height: 140)
             
             Text(category.name)
-                .font(.system(size: 16, weight: .semibold))
-                .foregroundColor(.primary)
+                .font(AppFont.semibold(16))
+                .foregroundColor(ModernColor.text)
                 .lineLimit(2)
         }
         .frame(width: 140)
+        .shadow(color: ModernDesign.FeaturedShadow.color, radius: ModernDesign.FeaturedShadow.radius, x: ModernDesign.FeaturedShadow.x, y: ModernDesign.FeaturedShadow.y)
+        .scaleEffect(isHovered ? 1.05 : 1.0)
+        .animation(ModernDesign.hoverAnimation, value: isHovered)
+        .onHover { hovering in
+            isHovered = hovering
+        }
     }
 }
 
 struct CategoryCard: View {
     let category: Category
-    
-    private var cardColor: Color {
-        let colors: [Color] = [
-            Color(red: 0.20, green: 0.60, blue: 0.86),
-            Color(red: 0.61, green: 0.35, blue: 0.71),
-            Color(red: 0.95, green: 0.40, blue: 0.50),
-            Color(red: 0.98, green: 0.55, blue: 0.38),
-            Color(red: 0.30, green: 0.69, blue: 0.31)
-        ]
-        let index = abs(category.iconName.hashValue) % colors.count
-        return colors[index]
-    }
+    @State private var isHovered = false
     
     var body: some View {
         VStack(spacing: 12) {
-                    ZStack {
+            ZStack {
                 RoundedRectangle(cornerRadius: 20)
-                            .fill(
-                                LinearGradient(
-                                    gradient: Gradient(colors: [
-                                        cardColor.opacity(0.2),
-                                        cardColor.opacity(0.1)
-                                    ]),
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                )
-                            )
-                            .overlay(
+                    .fill(ModernDesign.regularGradient)
+                    .overlay(
                         RoundedRectangle(cornerRadius: 20)
-                                    .stroke(
-                                        LinearGradient(
-                                            gradient: Gradient(colors: [
-                                        cardColor.opacity(0.3),
-                                                cardColor.opacity(0.1)
-                                            ]),
-                                            startPoint: .topLeading,
-                                            endPoint: .bottomTrailing
-                                        ),
-                                        lineWidth: 1
-                                    )
-                            )
-                        
+                            .stroke(ModernColor.border.opacity(0.3), lineWidth: 1)
+                    )
+                
                 Image(systemName: category.iconName)
                     .font(.system(size: 28, weight: .medium))
-                            .foregroundColor(cardColor)
-                    }
+                    .foregroundColor(.white)
+            }
             .frame(height: 120)
-                    
+            
             Text(category.name)
-                .font(.system(size: 15, weight: .medium))
-                        .foregroundColor(.primary)
+                .font(AppFont.medium(15))
+                .foregroundColor(ModernColor.text)
                 .lineLimit(2)
-                        .multilineTextAlignment(.center)
-                }
-                .padding()
-        .background(Color(.systemBackground))
-        .cornerRadius(20)
-        .shadow(color: Color.black.opacity(0.1), radius: 10, x: 0, y: 5)
+                .multilineTextAlignment(.center)
+        }
+        .padding()
+        .background(ModernColor.cardBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 20))
+        .shadow(color: ModernDesign.RegularShadow.color, radius: ModernDesign.RegularShadow.radius, x: ModernDesign.RegularShadow.x, y: ModernDesign.RegularShadow.y)
+        .scaleEffect(isHovered ? 1.02 : 1.0)
+        .animation(ModernDesign.hoverAnimation, value: isHovered)
+        .onHover { hovering in
+            isHovered = hovering
+        }
     }
 }
 
 struct DiscoverHubCard: View {
     let category: Category
+    @State private var isHovered = false
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             ZStack {
-                // Background Image
                 AsyncImage(url: URL(string: category.imageURL ?? "")) { image in
                     image
                         .resizable()
                         .aspectRatio(contentMode: .fill)
                 } placeholder: {
-                    Color.gray.opacity(0.2)
+                    ModernDesign.cardGradient
                 }
                 .frame(height: 160)
                 .clipShape(RoundedRectangle(cornerRadius: 16))
                 
-                // Overlay
                 LinearGradient(
                     gradient: Gradient(colors: [
-                        .black.opacity(0.7),
-                        .black.opacity(0.3)
+                        ModernColor.primary.opacity(0.8),
+                        ModernColor.primary.opacity(0.4)
                     ]),
                     startPoint: .bottom,
                     endPoint: .top
                 )
                 .clipShape(RoundedRectangle(cornerRadius: 16))
                 
-                // Content
                 VStack(alignment: .leading, spacing: 8) {
                     Spacer()
                     
                     HStack {
                         Image(systemName: "dice.fill")
                             .font(.system(size: 24, weight: .bold))
-                            .foregroundColor(.white)
+                            .foregroundStyle(ModernDesign.primaryGradient)
                         
                         VStack(alignment: .leading, spacing: 4) {
                             Text(category.name)
-                                .font(.system(size: 32, weight: .bold))
+                                .font(AppFont.bold(32))
                                 .foregroundColor(.white)
                             
                             Text(category.description)
-                                .font(.system(size: 14))
+                                .font(AppFont.regular(14))
                                 .foregroundColor(.white.opacity(0.9))
                         }
                     }
@@ -408,7 +395,12 @@ struct DiscoverHubCard: View {
                 .padding(16)
             }
         }
-        .shadow(color: .black.opacity(0.2), radius: 8, x: 0, y: 4)
+        .shadow(color: ModernDesign.ElevatedShadow.color, radius: ModernDesign.ElevatedShadow.radius, x: ModernDesign.ElevatedShadow.x, y: ModernDesign.ElevatedShadow.y)
+        .scaleEffect(isHovered ? 1.02 : 1.0)
+        .animation(ModernDesign.hoverAnimation, value: isHovered)
+        .onHover { hovering in
+            isHovered = hovering
+        }
     }
 }
 
