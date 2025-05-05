@@ -20,7 +20,9 @@ struct ContentView: View {
             
             TopicBoxView()
                 .tabItem {
-                    Label("Topics", systemImage: "list.bullet")
+                    Image("topicBoxIcon")
+                        .renderingMode(.original)
+                    Text("Topics")
                 }
                 .tag(2)
             

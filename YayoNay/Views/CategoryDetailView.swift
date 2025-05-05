@@ -70,13 +70,13 @@ struct CategoryDetailView: View {
                                         .onChanged { gesture in
                                             if !isAnimatingCard {
                                                 // Only handle vertical swipe
-                                                offset = gesture.translation.height
-                                                updateBackgroundColor(for: offset, isHorizontal: false)
+                                                    offset = gesture.translation.height
+                                                    updateBackgroundColor(for: offset, isHorizontal: false)
                                             }
                                         }
                                         .onEnded { gesture in
                                             if !isAnimatingCard {
-                                                handleSwipe(gesture.translation.height, for: currentSubCategory)
+                                                    handleSwipe(gesture.translation.height, for: currentSubCategory)
                                             }
                                         }
                                 )
@@ -290,27 +290,27 @@ struct CategoryDetailView: View {
     private func saveVote(for subCategory: SubCategory, isYay: Bool) {
         guard let userId = Auth.auth().currentUser?.uid else { return }
         let db = Firestore.firestore()
-        let batch = db.batch()
+                    let batch = db.batch()
         
         func actuallySaveVote(categoryName: String) {
-            let voteData: [String: Any] = [
-                "itemName": subCategory.name,
-                "imageURL": subCategory.imageURL,
-                "isYay": isYay,
-                "date": Timestamp(date: Date()),
+        let voteData: [String: Any] = [
+            "itemName": subCategory.name,
+            "imageURL": subCategory.imageURL,
+            "isYay": isYay,
+            "date": Timestamp(date: Date()),
                 "categoryName": categoryName,
                 "categoryId": self.category.id,
-                "subCategoryId": subCategory.id,
-                "userId": userId
-            ]
+            "subCategoryId": subCategory.id,
+            "userId": userId
+        ]
             print("DEBUG: 📝 Saving vote with data: \(voteData)")
-            
+        
             // Create vote document
-            let voteRef = db.collection("votes").document()
-            batch.setData(voteData, forDocument: voteRef)
-            
+        let voteRef = db.collection("votes").document()
+        batch.setData(voteData, forDocument: voteRef)
+        
             // Create or update subcategory document
-            let subCategoryRef = db.collection("subCategories").document(subCategory.id)
+        let subCategoryRef = db.collection("subCategories").document(subCategory.id)
             let subCategoryData: [String: Any] = [
                 "name": subCategory.name,
                 "imageURL": subCategory.imageURL,
@@ -319,33 +319,33 @@ struct CategoryDetailView: View {
                 "nayCount": isYay ? 0 : 1
             ]
             batch.setData(subCategoryData, forDocument: subCategoryRef, merge: true)
-            
+        
             // Update user document
-            let userRef = db.collection("users").document(userId)
-            batch.updateData([
-                "votesCount": FieldValue.increment(Int64(1)),
-                "lastVoteDate": Timestamp(date: Date())
-            ], forDocument: userRef)
-            
-            let activity = [
-                "type": "vote",
-                "itemId": subCategory.id,
-                "title": subCategory.name,
-                "timestamp": Timestamp(date: Date())
-            ] as [String: Any]
-            batch.updateData([
-                "recentActivity": FieldValue.arrayUnion([activity])
-            ], forDocument: userRef)
-            
-            batch.commit { error in
-                if let error = error {
-                    print("Error saving vote: \(error.localizedDescription)")
-                } else {
-                    print("Successfully saved vote")
-                    DispatchQueue.main.async {
-                        self.votedSubCategoryIds.insert(subCategory.id)
-                    }
+        let userRef = db.collection("users").document(userId)
+        batch.updateData([
+            "votesCount": FieldValue.increment(Int64(1)),
+            "lastVoteDate": Timestamp(date: Date())
+        ], forDocument: userRef)
+        
+        let activity = [
+            "type": "vote",
+            "itemId": subCategory.id,
+            "title": subCategory.name,
+            "timestamp": Timestamp(date: Date())
+        ] as [String: Any]
+        batch.updateData([
+            "recentActivity": FieldValue.arrayUnion([activity])
+        ], forDocument: userRef)
+        
+        batch.commit { error in
+            if let error = error {
+                print("Error saving vote: \(error.localizedDescription)")
+            } else {
+                print("Successfully saved vote")
+                DispatchQueue.main.async {
+                    self.votedSubCategoryIds.insert(subCategory.id)
                 }
+            }
             }
         }
         
