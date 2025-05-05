@@ -25,12 +25,17 @@ struct ProfileView: View {
                                  matching: .images,
                                  photoLibrary: .shared()) {
                         profileImage
+                            .overlay(
+                                Circle()
+                                    .stroke(ModernDesign.primaryGradient, lineWidth: 5)
+                            )
+                            .shadow(color: Color.black.opacity(0.10), radius: 10, y: 4)
                     }
                     .frame(width: 140, height: 140)
                     .padding(.top, 40)
                     .overlay(
                         Circle()
-                            .fill(AppColor.gradient)
+                            .fill(ModernDesign.primaryGradient)
                             .frame(width: 36, height: 36)
                             .overlay(
                                 Image(systemName: "camera.fill")
@@ -42,39 +47,59 @@ struct ProfileView: View {
                     )
 
                     // Stats Row (Votes and Last Vote)
-                    HStack(spacing: 32) {
+                    HStack(spacing: 24) {
                         VStack(spacing: 8) {
                             Text("\(userManager.currentUser?.votesCount ?? 0)")
                                 .font(AppFont.bold(24))
-                                .foregroundStyle(AppColor.text)
+                                .foregroundColor(.primary)
                             Text("Votes")
                                 .font(AppFont.regular(14))
-                                .foregroundStyle(AppColor.secondaryText)
+                                .foregroundColor(.secondary)
                         }
                         .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(
+                            RoundedRectangle(cornerRadius: 16)
+                                .fill(Color(.systemBackground))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 16)
+                                        .stroke(Color.cyan.opacity(0.10), lineWidth: 1)
+                                )
+                        )
+                        .shadow(color: Color.black.opacity(0.04), radius: 4, y: 2)
                         
                         VStack(spacing: 8) {
                             if let user = userManager.currentUser {
                                 Text(formatDate(user.lastVoteDate))
                                     .font(AppFont.bold(20))
-                                    .foregroundStyle(AppColor.text)
+                                    .foregroundColor(.primary)
                             } else {
                                 Text("-")
                                     .font(AppFont.bold(20))
-                                    .foregroundStyle(AppColor.text)
+                                    .foregroundColor(.primary)
                             }
                             Text("Last vote")
                                 .font(AppFont.regular(14))
-                                .foregroundStyle(AppColor.secondaryText)
+                                .foregroundColor(.secondary)
                         }
                         .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(
+                            RoundedRectangle(cornerRadius: 16)
+                                .fill(Color(.systemBackground))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 16)
+                                        .stroke(Color.cyan.opacity(0.10), lineWidth: 1)
+                                )
+                        )
+                        .shadow(color: Color.black.opacity(0.04), radius: 4, y: 2)
                     }
-                    .padding(.horizontal, 32)
+                    .padding(.horizontal, 24)
 
                     // Username
                     Text(userManager.currentUser?.username ?? "")
                         .font(AppFont.bold(24))
-                        .foregroundStyle(AppColor.text)
+                        .foregroundColor(.primary)
                         .padding(.top, 8)
 
                     // Top Interests
@@ -82,7 +107,7 @@ struct ProfileView: View {
                         let topInterests = interests.prefix(3).joined(separator: ", ")
                         Text("Top interests: \(topInterests)")
                             .font(AppFont.regular(16))
-                            .foregroundStyle(Color.blue)
+                            .foregroundColor(Color.cyan)
                             .padding(.top, 4)
                     }
 
@@ -93,8 +118,9 @@ struct ProfileView: View {
                             .foregroundStyle(.white)
                             .frame(height: 56)
                             .frame(maxWidth: .infinity)
-                            .background(AppColor.gradient)
+                            .background(ModernDesign.primaryGradient)
                             .clipShape(RoundedRectangle(cornerRadius: 16))
+                            .shadow(color: Color.cyan.opacity(0.18), radius: 8, y: 3)
                     }
                     .padding(.horizontal, 32)
                     .padding(.top, 24)
@@ -105,46 +131,67 @@ struct ProfileView: View {
                             HStack {
                                 Text("Settings and security")
                                     .font(AppFont.regular(16))
-                                    .foregroundStyle(AppColor.text)
+                                    .foregroundColor(.primary)
                                 Spacer()
                                 Image(systemName: "chevron.right")
                                     .font(.system(size: 14))
-                                    .foregroundStyle(AppColor.secondaryText)
+                                    .foregroundColor(.secondary)
                             }
                             .padding(.vertical, 16)
                             .padding(.horizontal, 20)
-                            .background(AppColor.secondaryBackground)
-                            .clipShape(RoundedRectangle(cornerRadius: 16))
+                            .background(
+                                RoundedRectangle(cornerRadius: 16)
+                                    .fill(Color(.systemBackground))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 16)
+                                            .stroke(Color.cyan.opacity(0.10), lineWidth: 1)
+                                    )
+                            )
+                            .shadow(color: Color.black.opacity(0.04), radius: 4, y: 2)
                         }
                         Button(action: { showNotificationPreferences = true }) {
                             HStack {
                                 Text("Notification preferences")
                                     .font(AppFont.regular(16))
-                                    .foregroundStyle(AppColor.text)
+                                    .foregroundColor(.primary)
                                 Spacer()
                                 Image(systemName: "chevron.right")
                                     .font(.system(size: 14))
-                                    .foregroundStyle(AppColor.secondaryText)
+                                    .foregroundColor(.secondary)
                             }
                             .padding(.vertical, 16)
                             .padding(.horizontal, 20)
-                            .background(AppColor.secondaryBackground)
-                            .clipShape(RoundedRectangle(cornerRadius: 16))
+                            .background(
+                                RoundedRectangle(cornerRadius: 16)
+                                    .fill(Color(.systemBackground))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 16)
+                                            .stroke(Color.cyan.opacity(0.10), lineWidth: 1)
+                                    )
+                            )
+                            .shadow(color: Color.black.opacity(0.04), radius: 4, y: 2)
                         }
                         Button(action: { /* Privacy and support action */ }) {
                             HStack {
                                 Text("Privacy and support")
                                     .font(AppFont.regular(16))
-                                    .foregroundStyle(AppColor.text)
+                                    .foregroundColor(.primary)
                                 Spacer()
                                 Image(systemName: "chevron.right")
                                     .font(.system(size: 14))
-                                    .foregroundStyle(AppColor.secondaryText)
+                                    .foregroundColor(.secondary)
                             }
                             .padding(.vertical, 16)
                             .padding(.horizontal, 20)
-                            .background(AppColor.secondaryBackground)
-                            .clipShape(RoundedRectangle(cornerRadius: 16))
+                            .background(
+                                RoundedRectangle(cornerRadius: 16)
+                                    .fill(Color(.systemBackground))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 16)
+                                            .stroke(Color.cyan.opacity(0.10), lineWidth: 1)
+                                    )
+                            )
+                            .shadow(color: Color.black.opacity(0.04), radius: 4, y: 2)
                         }
                     }
                     .padding(.horizontal, 32)
@@ -160,11 +207,18 @@ struct ProfileView: View {
                             Text("Sign Out")
                                 .font(AppFont.regular(16))
                         }
-                        .foregroundStyle(Color.red)
+                        .foregroundColor(Color.red)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 12)
-                        .background(Color.red.opacity(0.1))
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                        .background(
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(Color.red.opacity(0.08))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .stroke(Color.red.opacity(0.18), lineWidth: 1)
+                                )
+                        )
+                        .shadow(color: Color.red.opacity(0.06), radius: 4, y: 2)
                     }
                     .padding(.horizontal, 32)
                     .padding(.top, 8)

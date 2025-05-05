@@ -180,9 +180,18 @@ struct FilterButton: View {
                 .fontWeight(.medium)
                 .padding(.horizontal, 16)
                 .padding(.vertical, 8)
-                .background(isSelected ? Color.blue : Color.gray.opacity(0.1))
+                .background(
+                    isSelected
+                        ? ModernDesign.primaryGradient
+                        : LinearGradient(
+                            colors: [Color.gray.opacity(0.1), Color.gray.opacity(0.1)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                )
                 .foregroundColor(isSelected ? .white : .primary)
                 .clipShape(Capsule())
+                .shadow(color: isSelected ? Color.black.opacity(0.1) : .clear, radius: 2, y: 1)
         }
     }
 }
@@ -206,9 +215,18 @@ struct SortButton: View {
             .fontWeight(.medium)
             .padding(.horizontal, 16)
             .padding(.vertical, 8)
-            .background(isSelected ? Color.blue : Color.gray.opacity(0.1))
+            .background(
+                isSelected
+                    ? ModernDesign.primaryGradient
+                    : LinearGradient(
+                        colors: [Color.gray.opacity(0.1), Color.gray.opacity(0.1)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+            )
             .foregroundColor(isSelected ? .white : .primary)
             .clipShape(Capsule())
+            .shadow(color: isSelected ? Color.black.opacity(0.1) : .clear, radius: 2, y: 1)
         }
     }
 }
@@ -217,22 +235,24 @@ struct EmptyStateView: View {
     let searchText: String
     
     var body: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: 20) {
             Image(systemName: "square.stack.3d.up.slash")
                 .font(.system(size: 60))
-                .foregroundColor(.gray)
+                .foregroundStyle(ModernDesign.primaryGradient)
             
             if searchText.isEmpty {
                 Text("No votes yet")
                     .font(.title2)
-                    .foregroundColor(.gray)
+                    .fontWeight(.medium)
+                    .foregroundColor(.primary)
                 Text("Start voting on items to see them here")
                     .font(.subheadline)
                     .foregroundColor(.secondary)
             } else {
                 Text("No matches found")
                     .font(.title2)
-                    .foregroundColor(.gray)
+                    .fontWeight(.medium)
+                    .foregroundColor(.primary)
                 Text("Try adjusting your search or filters")
                     .font(.subheadline)
                     .foregroundColor(.secondary)
@@ -313,7 +333,11 @@ struct VoteCard: View {
                     .fill(Color.gray.opacity(0.2))
             }
             .frame(width: 80, height: 80)
-            .clipShape(RoundedRectangle(cornerRadius: 8))
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(Color.gray.opacity(0.1), lineWidth: 1)
+            )
             
             VStack(alignment: .leading, spacing: 8) {
                 // Single line for name, vote status, and date
@@ -328,10 +352,14 @@ struct VoteCard: View {
                     // Vote status with background
                     Text(vote.isYay ? "Yay!" : "Nay!")
                         .font(.system(size: 13, weight: .semibold))
-                        .foregroundColor(vote.isYay ? .green : .red)
+                        .foregroundColor(.white)
                         .padding(.horizontal, 8)
                         .padding(.vertical, 4)
-                        .background(vote.isYay ? Color.green.opacity(0.1) : Color.red.opacity(0.1))
+                        .background(
+                            vote.isYay ? 
+                            Color.green :
+                            Color.red
+                        )
                         .clipShape(Capsule())
                     
                     // Date
@@ -344,8 +372,8 @@ struct VoteCard: View {
         }
         .padding(12)
         .background(Color(.systemBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 12))
-        .shadow(color: Color.black.opacity(0.05), radius: 3, y: 1)
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .shadow(color: Color.black.opacity(0.05), radius: 4, y: 2)
     }
     
     private func formatDate(_ date: Date) -> String {
@@ -396,7 +424,7 @@ struct VoteStatsView: View {
                     
                     // Foreground bar (Yay)
                     Rectangle()
-                        .fill(Color.green.opacity(0.7))
+                        .fill(Color.green)
                         .frame(width: geometry.size.width * CGFloat(yayPercentage / 100), height: 8)
                         .cornerRadius(4)
                 }

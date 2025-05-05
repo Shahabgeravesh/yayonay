@@ -653,7 +653,7 @@ struct SubCategoryStatsView: View {
                 // Fallback to Instagram app with the deep link
                 if let appURL = URL(string: "instagram://app?url=\(deepLink.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")") {
                     if UIApplication.shared.canOpenURL(appURL) {
-                        UIApplication.shared.open(appURL)
+                    UIApplication.shared.open(appURL)
                     } else {
                         // Final fallback to Instagram web
                         if let webURL = URL(string: "https://www.instagram.com/") {

@@ -74,8 +74,8 @@ struct SubmitTopicSheet: View {
                                     HStack(spacing: 8) {
                                         ForEach(processedTags, id: \.self) { tag in
                                             HStack(spacing: 4) {
-                                                Text(tag)
-                                                    .font(.system(size: 12))
+                                            Text(tag)
+                                                .font(.system(size: 12))
                                                 Button(action: {
                                                     // Remove this tag
                                                     let updatedTags = processedTags.filter { $0 != tag }
@@ -86,11 +86,11 @@ struct SubmitTopicSheet: View {
                                                         .foregroundColor(.gray)
                                                 }
                                             }
-                                            .padding(.horizontal, 8)
-                                            .padding(.vertical, 4)
-                                            .background(Color.blue.opacity(0.1))
-                                            .foregroundColor(.blue)
-                                            .clipShape(Capsule())
+                                                .padding(.horizontal, 8)
+                                                .padding(.vertical, 4)
+                                                .background(Color.blue.opacity(0.1))
+                                                .foregroundColor(.blue)
+                                                .clipShape(Capsule())
                                         }
                                     }
                                     .padding(.top, 4)

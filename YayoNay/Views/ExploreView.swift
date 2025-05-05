@@ -241,31 +241,34 @@ struct SubCategoryCard: View {
     
     var body: some View {
         VStack(spacing: 12) {
-            AsyncImage(url: URL(string: subCategory.imageURL)) { image in
-                image
-                    .resizable()
-                    .aspectRatio(contentMode: .fill)
-            } placeholder: {
-                ModernDesign.cardGradient
+            ZStack {
+                // Gradient border effect
+                RoundedRectangle(cornerRadius: 18)
+                    .strokeBorder(ModernDesign.primaryGradient, lineWidth: 2)
+                    .frame(height: 124)
+                
+                AsyncImage(url: URL(string: subCategory.imageURL)) { image in
+                    image
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                } placeholder: {
+                    ModernDesign.cardGradient
+                }
+                .frame(height: 120)
+                .clipShape(RoundedRectangle(cornerRadius: 16))
             }
-            .frame(height: 120)
-            .clipShape(RoundedRectangle(cornerRadius: 16))
-            .overlay(
-                RoundedRectangle(cornerRadius: 16)
-                    .stroke(ModernColor.border.opacity(0.3), lineWidth: 1)
-            )
             
             Text(subCategory.name)
                 .font(AppFont.medium(15))
-                .foregroundColor(ModernColor.text)
+                .foregroundColor(.primary)
                 .lineLimit(2)
                 .multilineTextAlignment(.center)
         }
         .padding()
-        .background(ModernColor.cardBackground)
+        .background(ModernDesign.primaryGradient)
         .clipShape(RoundedRectangle(cornerRadius: 20))
-        .shadow(color: ModernDesign.CardShadow.color, radius: ModernDesign.CardShadow.radius, x: ModernDesign.CardShadow.x, y: ModernDesign.CardShadow.y)
-        .scaleEffect(isHovered ? 1.02 : 1.0)
+        .shadow(color: Color.black.opacity(0.10), radius: 8, y: 4)
+        .scaleEffect(isHovered ? 1.03 : 1.0)
         .animation(ModernDesign.hoverAnimation, value: isHovered)
         .onHover { hovering in
             isHovered = hovering
