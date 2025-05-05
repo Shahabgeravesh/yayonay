@@ -272,59 +272,6 @@ struct HotVotesView: View {
     @StateObject private var viewModel = HotVotesViewModel()
     @State private var selectedSubCategory: SubCategory?
     @State private var showSubCategoryDetail = false
-    private let db = Firestore.firestore()
-    private var topCategoriesListener: ListenerRegistration?
-    
-    init() {
-        setupTopCategoriesListener()
-    }
-    
-    private func setupTopCategoriesListener() {
-        // Listen to all subcategories for vote count changes
-        db.collection("subCategories")
-            .addSnapshotListener { [weak viewModel] snapshot, error in
-                if let error = error {
-                    print("Error listening to subcategories: \(error)")
-                    return
-                }
-                
-                // Count votes per category
-                var categoryVotes: [String: (name: String, votes: Int, imageURL: String)] = [:]
-                
-                snapshot?.documents.forEach { doc in
-                    let data = doc.data()
-                    if let categoryId = data["categoryId"] as? String,
-                       let yayCount = data["yayCount"] as? Int,
-                       let nayCount = data["nayCount"] as? Int {
-                        let totalVotes = yayCount + nayCount
-                        let current = categoryVotes[categoryId]?.votes ?? 0
-                        categoryVotes[categoryId] = (name: "", current + totalVotes, imageURL: "")
-                    }
-                }
-                
-                // Get categories and combine with vote counts
-                self.db.collection("categories").getDocuments { snapshot, error in
-                    guard let documents = snapshot?.documents else { return }
-                    
-                    viewModel?.topCategories = documents.compactMap { doc -> TopCategory? in
-                        let id = doc.documentID
-                        guard let name = doc.data()["name"] as? String,
-                              let imageURL = doc.data()["imageURL"] as? String else { return nil }
-                        let votes = categoryVotes[id]?.votes ?? 0
-                        
-                        return TopCategory(
-                            id: id,
-                            name: name,
-                            totalVotes: votes,
-                            imageURL: imageURL
-                        )
-                    }
-                    .sorted { $0.totalVotes > $1.totalVotes }
-                    .prefix(5)
-                    .map { $0 }
-                }
-            }
-    }
     
     var body: some View {
         NavigationStack {
@@ -389,7 +336,7 @@ struct TopCategoryRow: View {
                     Circle()
                         .fill(getRankColor(index))
                         .frame(width: 32, height: 32)
-                    
+                        .shadow(color: Color.black.opacity(0.10), radius: 4, y: 2)
                     Text("\(index)")
                         .font(.system(size: 17, weight: .semibold))
                         .foregroundColor(.white)
@@ -403,16 +350,21 @@ struct TopCategoryRow: View {
                             .resizable()
                             .aspectRatio(contentMode: .fill)
                     } placeholder: {
-                    Image(systemName: category.iconName)
-                        .font(.system(size: 20))
-                        .foregroundStyle(category.accentColor)
+                        Image(systemName: category.iconName)
+                            .font(.system(size: 20))
+                            .foregroundStyle(category.accentColor)
                     }
-                    .frame(width: 40, height: 40)
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                    .frame(width: 44, height: 44)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(Color.cyan.opacity(0.18), lineWidth: 2)
+                    )
                     .accessibilityHidden(true)
                     
                     Text(category.name)
                         .font(.system(size: 17, weight: .semibold))
+                        .foregroundColor(.primary)
                 }
                 
                 Spacer()
@@ -423,9 +375,20 @@ struct TopCategoryRow: View {
                     .foregroundStyle(.secondary)
             }
             .padding()
-            .background(Color(.systemBackground))
-            .clipShape(RoundedRectangle(cornerRadius: 16))
-            .shadow(color: Color.black.opacity(0.1), radius: 5, y: 2)
+            .background(
+                RoundedRectangle(cornerRadius: 18)
+                    .fill(LinearGradient(
+                        colors: [Color.white, Color.cyan.opacity(0.04)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 18)
+                            .stroke(Color.cyan.opacity(0.10), lineWidth: 1)
+                    )
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 18))
+            .shadow(color: Color.black.opacity(0.06), radius: 6, y: 2)
         }
         .buttonStyle(PlainButtonStyle())
         .accessibilityElement(children: .combine)
@@ -470,7 +433,7 @@ struct HotVoteCard: View {
                     Circle()
                         .fill(getRankColor(index))
                         .frame(width: 32, height: 32)
-                    
+                        .shadow(color: Color.black.opacity(0.10), radius: 4, y: 2)
                     Text("\(index)")
                         .font(.system(size: 17, weight: .semibold))
                         .foregroundColor(.white)
@@ -486,11 +449,16 @@ struct HotVoteCard: View {
                     } placeholder: {
                         Color.gray.opacity(0.1)
                     }
-                    .frame(width: 40, height: 40)
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                    .frame(width: 44, height: 44)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(Color.cyan.opacity(0.18), lineWidth: 2)
+                    )
                     
                     Text(item.name)
                         .font(.system(size: 17, weight: .semibold))
+                        .foregroundColor(.primary)
                         .lineLimit(1)
                 }
                 
@@ -502,9 +470,20 @@ struct HotVoteCard: View {
                     .foregroundStyle(.secondary)
             }
             .padding()
-            .background(Color(.systemBackground))
-            .clipShape(RoundedRectangle(cornerRadius: 16))
-            .shadow(color: Color.black.opacity(0.1), radius: 5, y: 2)
+            .background(
+                RoundedRectangle(cornerRadius: 18)
+                    .fill(LinearGradient(
+                        colors: [Color.white, Color.cyan.opacity(0.04)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 18)
+                            .stroke(Color.cyan.opacity(0.10), lineWidth: 1)
+                    )
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 18))
+            .shadow(color: Color.black.opacity(0.06), radius: 6, y: 2)
             .onAppear {
                 // Fetch subcategory details
                 let db = Firestore.firestore()
