@@ -46,7 +46,7 @@ struct MainTabView: View {
                                         .fill(selectedTab == index ? Color.blue.opacity(0.05) : Color.clear)
                                         .frame(width: 40, height: 40)
                                     if index == 3 {
-                                        Image("topicBoxIcon")
+                                        Image(systemName: "square.text.square.fill")
                                             .renderingMode(.original)
                                             .resizable()
                                             .aspectRatio(contentMode: .fit)
