@@ -10,6 +10,28 @@ class ShareManager: NSObject, MFMessageComposeViewControllerDelegate {
     private let baseURL = "yayonay://vote"
     private let db = Firestore.firestore()
     
+    // MARK: - Share Tracking
+    private func trackShare(itemId: String, type: Share.ShareType, platform: Share.SharePlatform, successful: Bool = true) {
+        guard let userId = Auth.auth().currentUser?.uid else { return }
+        
+        let share = Share(
+            userId: userId,
+            sharedItemId: itemId,
+            sharedItemType: type,
+            platform: platform,
+            successful: successful
+        )
+        
+        // Add to user's shares subcollection
+        db.collection("users").document(userId).collection("shares").document(share.id)
+            .setData(share.dictionary) { error in
+                if let error = error {
+                    print("Error tracking share: \(error.localizedDescription)")
+                }
+            }
+    }
+    
+    // MARK: - Dynamic Links
     func createShareURL(for topic: Topic) -> URL? {
         let urlString = "\(baseURL)?id=\(topic.id)"
         return URL(string: urlString)
@@ -73,6 +95,24 @@ class ShareManager: NSObject, MFMessageComposeViewControllerDelegate {
             .addToReadingList,
             .openInIBooks
         ]
+        
+        // Track share when completed
+        activityVC.completionWithItemsHandler = { [weak self] activityType, completed, _, _ in
+            if completed {
+                let platform: Share.SharePlatform
+                if let activity = activityType?.rawValue {
+                    switch activity {
+                    case "com.apple.UIKit.activity.PostToFacebook": platform = .facebook
+                    case "com.apple.UIKit.activity.PostToTwitter": platform = .twitter
+                    case "com.apple.UIKit.activity.Message": platform = .message
+                    default: platform = .other
+                    }
+                } else {
+                    platform = .other
+                }
+                self?.trackShare(itemId: topic.id, type: .topic, platform: platform)
+            }
+        }
         
         // Present the share sheet
         DispatchQueue.main.async {
@@ -145,6 +185,9 @@ class ShareManager: NSObject, MFMessageComposeViewControllerDelegate {
                 topVC.present(messageVC, animated: true)
             }
         }
+        
+        // Track the share
+        trackShare(itemId: topic.id, type: .topic, platform: .message)
     }
     
     // MARK: - MFMessageComposeViewControllerDelegate
@@ -185,6 +228,40 @@ class ShareManager: NSObject, MFMessageComposeViewControllerDelegate {
         }
         
         return image
+    }
+    
+    // MARK: - Share Analytics
+    func getShareStats(for userId: String, completion: @escaping ([Share]) -> Void) {
+        db.collection("users").document(userId).collection("shares")
+            .order(by: "timestamp", descending: true)
+            .limit(to: 100)
+            .getDocuments { snapshot, error in
+                if let error = error {
+                    print("Error fetching share stats: \(error.localizedDescription)")
+                    completion([])
+                    return
+                }
+                
+                let shares = snapshot?.documents.compactMap { Share(document: $0) } ?? []
+                completion(shares)
+            }
+    }
+    
+    func getShareCount(for userId: String, completion: @escaping (Int) -> Void) {
+        db.collection("users").document(userId).collection("shares")
+            .count.getAggregation(source: .server) { snapshot, error in
+                if let error = error {
+                    print("Error getting share count: \(error.localizedDescription)")
+                    completion(0)
+                    return
+                }
+                
+                if let count = snapshot?.count {
+                    completion(Int(truncating: count))
+                } else {
+                    completion(0)
+                }
+            }
     }
 }
 

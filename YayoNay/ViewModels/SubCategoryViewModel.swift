@@ -30,23 +30,18 @@ class SubCategoryViewModel: ObservableObject {
     
     private func setupVoteCountListener() {
         // Listen to all subcategories in this category for vote count changes
-        let collectionName = categoryId == "random" ? "random_subcategories" : "subCategories"
-        voteCountListener = db.collection(collectionName)
-            .whereField("categoryId", isEqualTo: categoryId)
+        let subCategoriesRef = db.collection("categories").document(categoryId).collection("subcategories")
+        voteCountListener = subCategoriesRef
             .addSnapshotListener { [weak self] snapshot, error in
                 guard let self = self else { return }
-                
                 if let error = error {
                     print("DEBUG: ❌ Error listening to vote counts: \(error.localizedDescription)")
                     return
                 }
-                
                 guard let documents = snapshot?.documents else {
                     print("DEBUG: ❌ No documents in vote count listener")
                     return
                 }
-                
-                // Update vote counts in our local subcategories
                 DispatchQueue.main.async {
                     for document in documents {
                         if let index = self.subCategories.firstIndex(where: { $0.id == document.documentID }),
@@ -64,6 +59,7 @@ class SubCategoryViewModel: ObservableObject {
     
     func fetchSubCategories(for categoryId: String) {
         print("DEBUG: 🔍 Fetching subcategories for categoryId: \(categoryId)")
+        print("DEBUG: Firestore path: categories/\(categoryId)/subcategories")
         print("DEBUG: Current hasReachedEnd state: \(hasReachedEnd)")
         
         guard let userId = Auth.auth().currentUser?.uid else {
@@ -72,8 +68,8 @@ class SubCategoryViewModel: ObservableObject {
         }
         
         // First, get all votes from the last 7 days
-        let votesRef = Firestore.firestore().collection("votes")
-            .whereField("userId", isEqualTo: userId)
+        let votesRef = Firestore.firestore().collection("users").document(userId).collection("votes")
+            .whereField("date", isGreaterThan: Timestamp(date: Calendar.current.date(byAdding: .day, value: -7, to: Date()) ?? Date()))
         
         votesRef.getDocuments { [weak self] (votesSnapshot, votesError) in
             guard let self = self else { return }
@@ -84,22 +80,17 @@ class SubCategoryViewModel: ObservableObject {
             }
             
             // Get the IDs of recently voted items
-            let sevenDaysAgo = Calendar.current.date(byAdding: .day, value: -7, to: Date()) ?? Date()
             let recentlyVotedIds = votesSnapshot?.documents.compactMap { document -> String? in
-                if let timestamp = document.data()["date"] as? Timestamp,
-                   timestamp.dateValue() > sevenDaysAgo {
                     return document.data()["subCategoryId"] as? String
-                }
-                return nil
             } ?? []
             
             print("📊 Found \(recentlyVotedIds.count) recently voted items")
+            print("📊 Recently voted IDs: \(recentlyVotedIds)")
             
             // Now fetch subcategories, excluding recently voted ones
-            let collectionName = categoryId == "random" ? "random_subcategories" : "subCategories"
-            let subCategoriesRef = Firestore.firestore().collection(collectionName)
-                .whereField("categoryId", isEqualTo: categoryId)
-            
+            let subCategoriesRef = Firestore.firestore()
+                .collection("categories").document(self.categoryId).collection("subcategories")
+            print("DEBUG: Querying path: categories/\(self.categoryId)/subcategories")
             subCategoriesRef.getDocuments { [weak self] (snapshot, error) in
                 guard let self = self else { return }
                 
@@ -113,40 +104,44 @@ class SubCategoryViewModel: ObservableObject {
                     return
                 }
                 
-                print("DEBUG: 📄 Found \(documents.count) subcategories")
+                print("DEBUG: 📄 Found \(documents.count) subcategories in Firestore")
+                for doc in documents {
+                    print("DEBUG: Subcategory doc id: \(doc.documentID), data: \(doc.data())")
+                }
                 
                 var validSubCategories: [SubCategory] = []
                 var allItemsVoted = true
                 
                 for document in documents {
                     let data = document.data()
+                    let subCategoryId = document.documentID
                     
                     // Skip if this item was recently voted on, unless it's the initial subcategory
-                    if recentlyVotedIds.contains(document.documentID) && document.documentID != self.initialSubCategoryId {
-                        print("⏳ Skipping recently voted item: \(data["name"] as? String ?? "Unknown")")
+                    if recentlyVotedIds.contains(subCategoryId) && subCategoryId != self.initialSubCategoryId {
+                        print("⏳ Skipping recently voted item: \(data["name"] as? String ?? "Unknown") (ID: \(subCategoryId))")
                         continue
                     }
                     
                     if let name = data["name"] as? String,
                        let imageURL = data["imageURL"] as? String,
                        let categoryId = data["categoryId"] as? String,
-                       let order = data["order"] as? Int,
-                       let yayCount = data["yayCount"] as? Int,
-                       let nayCount = data["nayCount"] as? Int {
+                       let order = data["order"] as? Int {
                         
                         let subCategory = SubCategory(
-                            id: document.documentID,
+                            id: subCategoryId,
                             name: name,
                             imageURL: imageURL,
                             categoryId: categoryId,
                             order: order,
-                            yayCount: yayCount,
-                            nayCount: nayCount
+                            yayCount: data["yayCount"] as? Int ?? 0,
+                            nayCount: data["nayCount"] as? Int ?? 0
                         )
                         
                         validSubCategories.append(subCategory)
                         allItemsVoted = false
-                        print("DEBUG: Processing subcategory - ID: \(document.documentID), Name: \(name)")
+                        print("DEBUG: ✅ Added subcategory - ID: \(subCategoryId), Name: \(name)")
+                    } else {
+                        print("❌ Invalid subcategory data for ID: \(subCategoryId)")
                     }
                 }
                 
@@ -193,18 +188,17 @@ class SubCategoryViewModel: ObservableObject {
         generator.impactOccurred()
         
         let field = isYay ? "yayCount" : "nayCount"
-        let collectionName = categoryId == "random" ? "random_subcategories" : "subCategories"
-        db.collection(collectionName)
-            .document(subCategory.id)
-            .updateData([
-                field: FieldValue.increment(Int64(1))
-            ]) { error in
-                if let error = error {
-                    print("DEBUG: ❌ Error voting: \(error.localizedDescription)")
-                } else {
-                    print("DEBUG: ✅ Vote recorded successfully")
-                }
+        let subCategoryRef = db.collection("categories").document(categoryId).collection("subcategories").document(subCategory.id)
+        subCategoryRef.updateData([
+            field: FieldValue.increment(Int64(1)),
+            "lastVoteDate": Timestamp(date: Date())
+        ]) { error in
+            if let error = error {
+                print("DEBUG: ❌ Error voting: \(error.localizedDescription)")
+            } else {
+                print("DEBUG: ✅ Vote recorded successfully")
             }
+        }
     }
     
     func nextItem() {

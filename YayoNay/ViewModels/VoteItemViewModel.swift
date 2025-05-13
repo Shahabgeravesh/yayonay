@@ -33,7 +33,7 @@ class VoteItemViewModel: ObservableObject {
     }
     
     func vote(for subCategory: SubCategory, attribute: CategoryAttribute, isYay: Bool) {
-        let docRef = db.collection("subCategories").document(subCategory.id)
+        let docRef = db.collection("categories").document(subCategory.categoryId).collection("subcategories").document(subCategory.id)
         
         // Create vote record
         let voteRef = db.collection("votes").document()
@@ -51,11 +51,12 @@ class VoteItemViewModel: ObservableObject {
         // Batch write
         let batch = db.batch()
         
-        // Update subcategory counts
+        // Update subcategory counts and lastVoteDate
         let field = isYay ? "yayCount" : "nayCount"
         batch.updateData([
             "attributes.\(attribute.name).\(field)": FieldValue.increment(Int64(1)),
-            field: FieldValue.increment(Int64(1))
+            field: FieldValue.increment(Int64(1)),
+            "lastVoteDate": Timestamp(date: Date())
         ], forDocument: docRef)
         
         // Save vote

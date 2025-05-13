@@ -9,14 +9,6 @@ struct SubQuestion: Identifiable, Codable {
     var yayCount: Int
     var nayCount: Int
     
-    var totalVotes: Int { yayCount + nayCount }
-    var yayPercentage: Double {
-        totalVotes > 0 ? Double(yayCount) / Double(totalVotes) * 100 : 0
-    }
-    var nayPercentage: Double {
-        totalVotes > 0 ? Double(nayCount) / Double(totalVotes) * 100 : 0
-    }
-    
     init(id: String = UUID().uuidString,
          categoryId: String,
          subCategoryId: String,

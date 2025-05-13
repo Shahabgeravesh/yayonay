@@ -879,6 +879,16 @@ struct SubQuestionRow: View {
         viewModel.getNextVoteDateForSubQuestion(question.id)
     }
     
+    private var totalVotes: Int {
+        question.yayCount + question.nayCount
+    }
+    private var yayPercentage: Double {
+        totalVotes > 0 ? Double(question.yayCount) / Double(totalVotes) * 100 : 0
+    }
+    private var nayPercentage: Double {
+        totalVotes > 0 ? Double(question.nayCount) / Double(totalVotes) * 100 : 0
+    }
+    
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
         HStack(spacing: 8) {
@@ -891,21 +901,19 @@ struct SubQuestionRow: View {
             
             // Vote Bar with Percentage and Total Votes
                 VStack(alignment: .trailing, spacing: 4) {
-                    Text("\(question.totalVotes) votes")
+                    Text("\(totalVotes) votes")
                         .font(.system(size: 10))
                         .foregroundColor(.secondary)
-                    
                     HStack(spacing: 0) {
                         // Yay bar
                         Rectangle()
                             .fill(Color.green)
-                            .frame(width: CGFloat(question.yayPercentage) * 0.5, height: 4)
+                            .frame(width: CGFloat(yayPercentage) * 0.5, height: 4)
                             .cornerRadius(2)
-                        
                         // Nay bar
                         Rectangle()
                             .fill(Color.red)
-                            .frame(width: CGFloat(question.nayPercentage) * 0.5, height: 4)
+                            .frame(width: CGFloat(nayPercentage) * 0.5, height: 4)
                             .cornerRadius(2)
                     }
                     .frame(width: 50)

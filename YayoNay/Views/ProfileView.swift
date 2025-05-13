@@ -15,6 +15,7 @@ struct ProfileView: View {
     @State private var showChangePassword = false
     @State private var showNotificationPreferences = false
     @State private var showSettingsSheet = false
+    @State private var showPrivacyAndSupport = false
     
     var body: some View {
         NavigationStack {
@@ -171,7 +172,7 @@ struct ProfileView: View {
                             )
                             .shadow(color: Color.black.opacity(0.04), radius: 4, y: 2)
                         }
-                        Button(action: { /* Privacy and support action */ }) {
+                        Button(action: { showPrivacyAndSupport = true }) {
                             HStack {
                                 Text("Privacy and support")
                                     .font(AppFont.regular(16))
@@ -204,8 +205,8 @@ struct ProfileView: View {
                         HStack {
                             Image(systemName: "rectangle.portrait.and.arrow.right")
                                 .font(.system(size: 16))
-                            Text("Sign Out")
-                                .font(AppFont.regular(16))
+                        Text("Sign Out")
+                            .font(AppFont.regular(16))
                         }
                         .foregroundColor(Color.red)
                         .frame(maxWidth: .infinity)
@@ -277,6 +278,11 @@ struct ProfileView: View {
             }
             .sheet(isPresented: $showNotificationPreferences) {
                 NotificationPreferencesView()
+            }
+            .sheet(isPresented: $showPrivacyAndSupport) {
+                NavigationStack {
+                    PrivacyAndSupportView()
+                }
             }
             .onChange(of: imageSelection) { oldValue, newValue in
                 Task {

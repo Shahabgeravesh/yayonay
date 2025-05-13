@@ -10,117 +10,37 @@ const db = admin.firestore();
 
 // Define sub-questions for each category
 const categoryQuestions = {
-  "Food": [
-    "Taste",
-    "Presentation",
-    "Portion Size",
-    "Value",
-    "Service",
-    "Ambiance"
+  "Politics": [
+    "Policy",
+    "Leadership",
+    "Integrity",
+    "Communication",
+    "Experience",
+    "Vision"
   ],
-  "Drinks": [
-    "Taste",
-    "Presentation",
-    "Quality",
-    "Value",
-    "Service",
-    "Atmosphere"
-  ],
-  "Dessert": [
-    "Taste",
-    "Presentation",
-    "Sweetness",
-    "Texture",
-    "Portion Size",
-    "Value"
-  ],
-  "Sports": [
-    "Skill Level",
-    "Entertainment Value",
-    "Athleticism",
-    "Strategy",
-    "Teamwork",
-    "Competition"
-  ],
-  "Travel": [
-    "Location",
-    "Accessibility",
-    "Cleanliness",
-    "Atmosphere",
-    "Facilities",
-    "Value"
-  ],
-  "Art": [
-    "Creativity",
-    "Technique",
-    "Originality",
-    "Emotional Impact",
-    "Aesthetics",
-    "Message"
-  ],
-  "Music": [
-    "Melody",
-    "Lyrics",
-    "Production",
-    "Vocals",
-    "Instrumentation",
-    "Vibe"
-  ],
-  "Movies": [
+  "TV Shows": [
     "Plot",
     "Acting",
-    "Cinematography",
-    "Soundtrack",
-    "Pacing",
-    "Ending"
-  ],
-  "Books": [
-    "Writing Style",
+    "Production",
+    "Entertainment",
     "Character Development",
-    "Plot",
-    "Pacing",
-    "World Building",
-    "Ending"
+    "Pacing"
   ],
-  "Technology": [
-    "Functionality",
-    "Design",
-    "Performance",
-    "User Experience",
+  "Business Test": [
     "Innovation",
+    "Strategy",
+    "Leadership",
+    "Market Impact",
+    "Growth",
     "Value"
   ],
-  "Fashion": [
-    "Style",
-    "Quality",
-    "Fit",
-    "Trendiness",
-    "Versatility",
-    "Value"
-  ],
-  "Pets": [
-    "Temperament",
-    "Trainability",
-    "Health",
-    "Grooming Needs",
-    "Compatibility",
-    "Lifespan"
-  ],
-  "Home Decor": [
-    "Style",
-    "Quality",
-    "Functionality",
-    "Aesthetics",
-    "Durability",
-    "Value"
-  ],
-  "Fitness": [
-    "Effectiveness",
-    "Difficulty",
-    "Equipment Needs",
-    "Time Commitment",
-    "Results",
-    "Enjoyment"
+  "Nature": [
+    "Beauty",
+    "Accessibility",
+    "Wildlife",
+    "Conservation",
+    "Educational Value",
+    "Experience"
   ],
   "Gaming": [
     "Gameplay",
@@ -130,13 +50,21 @@ const categoryQuestions = {
     "Replay Value",
     "Multiplayer"
   ],
-  "Beauty": [
-    "Quality",
+  "Sport": [
+    "Skill Level",
+    "Entertainment Value",
+    "Athleticism",
+    "Strategy",
+    "Teamwork",
+    "Competition"
+  ],
+  "DIY": [
+    "Difficulty",
+    "Cost",
+    "Time Required",
     "Results",
-    "Application",
-    "Packaging",
-    "Ingredients",
-    "Value"
+    "Learning Value",
+    "Satisfaction"
   ],
   "Cars": [
     "Performance",
@@ -153,30 +81,6 @@ const categoryQuestions = {
     "Technical Quality",
     "Creativity",
     "Impact"
-  ],
-  "Nature": [
-    "Beauty",
-    "Accessibility",
-    "Wildlife",
-    "Conservation",
-    "Educational Value",
-    "Experience"
-  ],
-  "DIY": [
-    "Difficulty",
-    "Cost",
-    "Time Required",
-    "Results",
-    "Learning Value",
-    "Satisfaction"
-  ],
-  "Politics": [
-    "Policy",
-    "Leadership",
-    "Integrity",
-    "Communication",
-    "Experience",
-    "Vision"
   ]
 };
 
@@ -195,17 +99,23 @@ async function createSubQuestions() {
     
     console.log('Found categories:', categoryIdMap);
     
-    // Clear existing subQuestions
-    const subQuestionsSnapshot = await db.collection('subQuestions').get();
-    const batch = db.batch();
-    subQuestionsSnapshot.docs.forEach(doc => {
-      batch.delete(doc.ref);
-    });
-    await batch.commit();
-    console.log('Cleared existing subQuestions');
+    // Get all subcategories using the new nested structure
+    const subCategories = {};
+    for (const [categoryName, categoryId] of Object.entries(categoryIdMap)) {
+      const subCategoriesSnapshot = await db.collection('categories')
+        .doc(categoryId)
+        .collection('subcategories')
+        .get();
+      
+      subCategories[categoryId] = subCategoriesSnapshot.docs.map(doc => ({
+        id: doc.id,
+        name: doc.data().name
+      }));
+    }
     
-    // Create new subQuestions
-    const newBatch = db.batch();
+    console.log('Found subcategories:', subCategories);
+    
+    // Create new subQuestions using nested structure
     let count = 0;
     
     for (const [categoryName, questions] of Object.entries(categoryQuestions)) {
@@ -215,31 +125,83 @@ async function createSubQuestions() {
         continue;
       }
       
-      for (const question of questions) {
-        const subQuestionRef = db.collection('subQuestions').doc();
-        const subQuestion = {
-          categoryId: categoryId,
-          question: question,
-          yayCount: 0,
-          nayCount: 0
-        };
+      const categorySubCategories = subCategories[categoryId] || [];
+      console.log(`Creating sub-questions for ${categoryName} (${categorySubCategories.length} subcategories)`);
+      
+      for (const subCategory of categorySubCategories) {
+        let batch = db.batch();
         
-        newBatch.set(subQuestionRef, subQuestion);
-        count++;
+        // First, delete existing subquestions
+        const existingSubQuestionsSnapshot = await db.collection('categories')
+          .doc(categoryId)
+          .collection('subcategories')
+          .doc(subCategory.id)
+          .collection('subquestions')
+          .get();
+          
+        existingSubQuestionsSnapshot.docs.forEach(doc => {
+          batch.delete(doc.ref);
+        });
         
-        // Firestore has a limit of 500 operations per batch
-        if (count % 450 === 0) {
-          await newBatch.commit();
-          console.log(`Committed batch of ${count} subQuestions`);
+        // Then create new subquestions using question text as document ID
+        for (const question of questions) {
+          const docId = question.toLowerCase().replace(/[^a-z0-9]/g, '_');
+          const subQuestionRef = db.collection('categories')
+            .doc(categoryId)
+            .collection('subcategories')
+            .doc(subCategory.id)
+            .collection('subquestions')
+            .doc(docId);
+            
+          const subQuestion = {
+            categoryId: categoryId,
+            subCategoryId: subCategory.id,
+            question: question,
+            yayCount: 0,
+            nayCount: 0,
+            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+            // Add metadata for votes subcollection
+            votesMetadata: {
+              lastVoteAt: null,
+              totalVotes: 0,
+              uniqueVoters: 0
+            }
+          };
+          
+          batch.set(subQuestionRef, subQuestion);
+          count++;
+          
+          // Create votes subcollection with an example structure document
+          const votesMetadataRef = subQuestionRef.collection('votes').doc('_metadata');
+          batch.set(votesMetadataRef, {
+            description: 'This collection stores individual votes. Each document ID is the user ID who voted.',
+            schema: {
+              userId: 'string',
+              vote: 'boolean (true for yay, false for nay)',
+              timestamp: 'timestamp',
+              previousVote: 'boolean | null (for tracking vote changes)',
+              lastChangeAt: 'timestamp | null'
+            },
+            updatedAt: admin.firestore.FieldValue.serverTimestamp()
+          });
+          
+          // Firestore has a limit of 500 operations per batch
+          if (count % 450 === 0) {
+            await batch.commit();
+            console.log(`Committed batch of ${count} subQuestions`);
+            count = 0;
+            batch = db.batch(); // Create a new batch
+          }
+        }
+        
+        // Commit any remaining operations for this subcategory
+        if (count > 0) {
+          await batch.commit();
+          console.log(`Committed batch of ${count} subQuestions for subcategory ${subCategory.name}`);
           count = 0;
         }
       }
-    }
-    
-    // Commit any remaining operations
-    if (count > 0) {
-      await newBatch.commit();
-      console.log(`Committed final batch of ${count} subQuestions`);
     }
     
     console.log('Successfully created all subQuestions');

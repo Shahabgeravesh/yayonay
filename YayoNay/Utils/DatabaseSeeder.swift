@@ -322,7 +322,7 @@ class DatabaseSeeder {
                         print("  - SubCategory ID: \(subQuestion.subCategoryId)")
                         print("  - Question: \(subQuestion.question)")
                         
-                        let docRef = self.db.collection("subQuestions").document(subQuestion.id)
+                        let docRef = self.db.collection("categories").document(subQuestion.categoryId).collection("subcategories").document(subQuestion.subCategoryId).collection("subquestions").document(subQuestion.id)
                         batch.setData(subQuestion.dictionary, forDocument: docRef)
                         questionCount += 1
                     }

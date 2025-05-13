@@ -127,8 +127,7 @@ struct CategoryDetailView: View {
     private func loadVotedSubCategories() {
         guard let userId = Auth.auth().currentUser?.uid else { return }
         
-        let votesRef = Firestore.firestore().collection("votes")
-            .whereField("userId", isEqualTo: userId)
+        let votesRef = Firestore.firestore().collection("users").document(userId).collection("votes")
         
         votesRef.getDocuments { snapshot, error in
             if let error = error {
@@ -171,8 +170,7 @@ struct CategoryDetailView: View {
             
             // Check cooldown first
             let db = Firestore.firestore()
-            let votesRef = db.collection("votes")
-                .whereField("userId", isEqualTo: Auth.auth().currentUser?.uid ?? "")
+            let votesRef = db.collection("users").document(Auth.auth().currentUser?.uid ?? "").collection("votes")
                 .whereField("subCategoryId", isEqualTo: subCategory.id)
             
             votesRef.getDocuments { (snapshot, error) in
@@ -304,22 +302,20 @@ struct CategoryDetailView: View {
             "userId": userId
         ]
             print("DEBUG: 📝 Saving vote with data: \(voteData)")
-        
             // Create vote document
-        let voteRef = db.collection("votes").document()
-        batch.setData(voteData, forDocument: voteRef)
-        
+            let voteRef = db.collection("users").document(userId).collection("votes").document()
+            batch.setData(voteData, forDocument: voteRef)
             // Create or update subcategory document
-        let subCategoryRef = db.collection("subCategories").document(subCategory.id)
+            let subCategoryRef = db.collection("categories").document(self.category.id).collection("subcategories").document(subCategory.id)
             let subCategoryData: [String: Any] = [
                 "name": subCategory.name,
                 "imageURL": subCategory.imageURL,
                 "categoryId": self.category.id,
                 "yayCount": isYay ? 1 : 0,
-                "nayCount": isYay ? 0 : 1
+                "nayCount": isYay ? 0 : 1,
+                "lastVoteDate": Timestamp(date: Date())
             ]
             batch.setData(subCategoryData, forDocument: subCategoryRef, merge: true)
-        
             // Update user document
         let userRef = db.collection("users").document(userId)
         batch.updateData([

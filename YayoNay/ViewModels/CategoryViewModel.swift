@@ -70,24 +70,16 @@ class CategoryViewModel: ObservableObject {
     func fetchSubcategories(for category: Category) async {
         isLoading = true
         defer { isLoading = false }
-        
         do {
-            let collectionName = category.id == "random" ? "random_subcategories" : "subCategories"
-            let categoryId = category.id == "random" ? "random" : category.id
             print("Fetching subcategories for category: \(category.name) (ID: \(category.id))")
-            print("Using collection: \(collectionName)")
-            print("Using categoryId: \(categoryId)")
-            
-            let query = db.collection(collectionName)
-                .whereField("categoryId", isEqualTo: categoryId)
+            let query = db.collection("categories")
+                .document(category.id)
+                .collection("subcategories")
                 .order(by: "order")
-            
             let snapshot = try await query.getDocuments()
             print("Found \(snapshot.documents.count) subcategories")
-            
             let subcategories = snapshot.documents.compactMap { SubCategory(document: $0) }
             print("Successfully mapped \(subcategories.count) subcategories")
-            
             await MainActor.run {
                 self.subcategories = subcategories
             }
