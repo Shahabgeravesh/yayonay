@@ -2,6 +2,8 @@ import SwiftUI
 import FirebaseFirestore
 import FirebaseAuth
 
+typealias FIRFieldValue = FirebaseFirestore.FieldValue
+
 class SubCategoryStatsViewModel: ObservableObject {
     @Published var attributeVotes: [String: AttributeVotes] = [:]
     @Published var comments: [Comment] = []
@@ -472,12 +474,12 @@ class SubCategoryStatsViewModel: ObservableObject {
             } else {
                 // New vote
                 batch.updateData([
-                    "yayCount": FieldValue.increment(Int64(isYay ? 1 : 0)),
-                    "nayCount": FieldValue.increment(Int64(isYay ? 0 : 1)),
+                    "yayCount": FIRFieldValue.increment(Int64(isYay ? 1 : 0)),
+                    "nayCount": FIRFieldValue.increment(Int64(isYay ? 0 : 1)),
                     "updatedAt": now,
                     "votesMetadata.lastVoteAt": now,
-                    "votesMetadata.totalVotes": FieldValue.increment(1),
-                    "votesMetadata.uniqueVoters": FieldValue.increment(1)
+                    "votesMetadata.totalVotes": FIRFieldValue.increment(Int64(1)),
+                    "votesMetadata.uniqueVoters": FIRFieldValue.increment(Int64(1))
                 ], forDocument: subQuestionRef)
                 
                 // Create new vote document
@@ -591,8 +593,8 @@ class SubCategoryStatsViewModel: ObservableObject {
         if comment.isLiked {
             // Unlike
             docRef.updateData([
-                "likes": FieldValue.increment(Int64(-1)),
-                "likedBy.\(userId)": FieldValue.delete()
+                "likes": FIRFieldValue.increment(Int64(-1)),
+                "likedBy.\(userId)": FIRFieldValue.delete()
             ]) { [weak self] error in
                 DispatchQueue.main.async {
                     self?.isProcessingCommentAction = false
@@ -605,7 +607,7 @@ class SubCategoryStatsViewModel: ObservableObject {
         } else {
             // Like
             docRef.updateData([
-                "likes": FieldValue.increment(Int64(1)),
+                "likes": FIRFieldValue.increment(Int64(1)),
                 "likedBy.\(userId)": true
             ]) { [weak self] error in
                 DispatchQueue.main.async {
