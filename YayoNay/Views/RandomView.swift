@@ -73,34 +73,42 @@ class DiscoverHubViewModel: ObservableObject {
     }
     
     func fetchRandomSubCategory() {
-        db.collection("subCategories")
-            .getDocuments { [weak self] snapshot, error in
-                guard let documents = snapshot?.documents,
-                      !documents.isEmpty else { return }
+        db.collection("categories").getDocuments { [weak self] snapshot, error in
+            guard let self = self,
+                  let documents = snapshot?.documents else { return }
+            
+            // Get a random category
+            let randomCategory = documents.randomElement()
+            guard let categoryId = randomCategory?.documentID else { return }
+            
+            // Get subcategories from the nested structure
+            db.collection("categories").document(categoryId).collection("subcategories").getDocuments { subSnapshot, subError in
+                guard let subDocuments = subSnapshot?.documents else { return }
                 
-                // Get a random document
-                let randomIndex = Int.random(in: 0..<documents.count)
-                let doc = documents[randomIndex]
-                let data = doc.data()
-                guard let name = data["name"] as? String,
-                      let imageURL = data["imageURL"] as? String,
-                      let categoryId = data["categoryId"] as? String,
-                      let yayCount = data["yayCount"] as? Int,
-                      let nayCount = data["nayCount"] as? Int else { return }
-                let subCategory = SubCategory(
-                    id: doc.documentID,
-                    name: name,
-                    imageURL: imageURL,
-                    categoryId: categoryId,
-                    order: 0,
-                    yayCount: yayCount,
-                    nayCount: nayCount,
-                    attributes: [:]
-                )
-                DispatchQueue.main.async {
-                    self?.currentSubCategory = subCategory
+                // Get a random subcategory
+                if let randomSubCategory = subDocuments.randomElement() {
+                    // Process the random subcategory
+                    let data = randomSubCategory.data()
+                    guard let name = data["name"] as? String,
+                          let imageURL = data["imageURL"] as? String,
+                          let categoryId = data["categoryId"] as? String,
+                          let yayCount = data["yayCount"] as? Int,
+                          let nayCount = data["nayCount"] as? Int else { return }
+                    let subCategory = SubCategory(
+                        id: randomSubCategory.documentID,
+                        name: name,
+                        imageURL: imageURL,
+                        categoryId: categoryId,
+                        order: 0,
+                        yayCount: yayCount,
+                        nayCount: nayCount
+                    )
+                    DispatchQueue.main.async {
+                        self.currentSubCategory = subCategory
+                    }
                 }
             }
+        }
     }
 }
 

@@ -7,6 +7,7 @@
 
 import SwiftUI
 import FirebaseFirestore
+import Dispatch
 
 struct HotVoteItem: Identifiable {
     let id: String
@@ -70,6 +71,7 @@ class HotVotesViewModel: ObservableObject {
     private var todaysVotesListener: ListenerRegistration?
     private var topCategoriesListener: ListenerRegistration?
     private var subCategoriesListener: ListenerRegistration?
+    private var categoryVotes: [String: Int] = [:]
     
     func fetchData() {
         fetchHotVotes()
@@ -82,44 +84,54 @@ class HotVotesViewModel: ObservableObject {
         hotVotesListener?.remove()
         
         // Add new listener and store the registration
-        hotVotesListener = db.collection("subCategories")
-            .whereField("yayCount", isGreaterThan: 0)  // Only get items with votes
-            .order(by: "yayCount", descending: true)
-            .limit(to: 50)
-            .addSnapshotListener { [weak self] snapshot, error in
-                if let error = error {
-                    print("Error fetching hot votes: \(error)")
-                    return
-                }
-                
-                // First get all categories to map IDs to names
-                self?.db.collection("categories").getDocuments { categorySnapshot, error in
-                    guard let categoryDocuments = categorySnapshot?.documents else { return }
-                    let categoryMap = Dictionary(uniqueKeysWithValues: categoryDocuments.map { ($0.documentID, $0["name"] as? String ?? "") })
-                    
-                    self?.hotVotes = snapshot?.documents.compactMap { document in
-                        let data = document.data()
-                        guard let name = data["name"] as? String,
-                              let imageURL = data["imageURL"] as? String,
-                              let yayCount = data["yayCount"] as? Int,
-                              let nayCount = data["nayCount"] as? Int,
-                              let categoryId = data["categoryId"] as? String,
-                              yayCount + nayCount > 0  // Double check total votes
-                        else { return nil }
-                        
-                        return HotVoteItem(
-                            id: document.documentID,
-                            name: name,
-                            imageURL: imageURL,
-                            yayCount: yayCount,
-                            nayCount: nayCount,
-                            categoryId: categoryId,
-                            categoryName: categoryMap[categoryId] ?? ""
-                        )
+        hotVotesListener = db.collection("categories").addSnapshotListener { [weak self] (categorySnapshot, error) in
+            guard let self = self, let categoryDocuments = categorySnapshot?.documents else { return }
+            let categoryMap = Dictionary(uniqueKeysWithValues: categoryDocuments.map { ($0.documentID, $0["name"] as? String ?? "") })
+            var allSubCategories: [QueryDocumentSnapshot] = []
+            let group = DispatchGroup()
+            
+            for categoryDoc in categoryDocuments {
+                group.enter()
+                db.collection("categories")
+                    .document(categoryDoc.documentID)
+                    .collection("subcategories")
+                    .whereField("yayCount", isGreaterThan: 0)
+                    .order(by: "yayCount", descending: true)
+                    .limit(to: 50)
+                    .addSnapshotListener { (snapshot, error) in
+                        defer { group.leave() }
+                        if let error = error {
+                            print("Error fetching subcategories: \(error)")
+                            return
+                        }
+                        if let snapshot = snapshot {
+                            allSubCategories.append(contentsOf: snapshot.documents)
+                        }
                     }
-                    ?? []  // Remove redundant sorting since Firestore query is already sorted
-                }
             }
+            
+            group.notify(queue: .main) {
+                self.hotVotes = allSubCategories.compactMap { document in
+                    let data = document.data()
+                    guard let name = data["name"] as? String,
+                          let imageURL = data["imageURL"] as? String,
+                          let yayCount = data["yayCount"] as? Int,
+                          let nayCount = data["nayCount"] as? Int,
+                          let categoryId = data["categoryId"] as? String,
+                          yayCount + nayCount > 0
+                    else { return nil }
+                    return HotVoteItem(
+                        id: document.documentID,
+                        name: name,
+                        imageURL: imageURL,
+                        yayCount: yayCount,
+                        nayCount: nayCount,
+                        categoryId: categoryId,
+                        categoryName: categoryMap[categoryId] ?? ""
+                    )
+                }.sorted { $0.yayCount > $1.yayCount }
+            }
+        }
     }
     
     private func setupTopCategoriesListener() {
@@ -127,58 +139,63 @@ class HotVotesViewModel: ObservableObject {
         topCategoriesListener?.remove()
         subCategoriesListener?.remove()
         
-        // First, listen to all subcategories for vote count changes
-        subCategoriesListener = db.collection("subCategories")
-            .addSnapshotListener { [weak self] snapshot, error in
-                guard let self = self else { return }
-                
-                if let error = error {
-                    print("Error listening to subcategories: \(error)")
-                    return
+        // First, set up a listener for all categories to get their details
+        topCategoriesListener = db.collection("categories").addSnapshotListener { [weak self] (categorySnapshot, error) in
+            guard let self = self, let categoryDocuments = categorySnapshot?.documents else { return }
+            
+            // Create a dictionary to store category details
+            var categoryDetails: [String: (name: String, imageURL: String)] = [:]
+            for doc in categoryDocuments {
+                if let name = doc.data()["name"] as? String,
+                   let imageURL = doc.data()["imageURL"] as? String {
+                    categoryDetails[doc.documentID] = (name: name, imageURL: imageURL)
                 }
+            }
+            
+            // For each category, listen to its subcategories for vote counts
+            for categoryDoc in categoryDocuments {
+                let categoryId = categoryDoc.documentID
                 
-                // Count votes per category
-                var categoryVotes: [String: Int] = [:]
-                
-                snapshot?.documents.forEach { doc in
-                    let data = doc.data()
-                    if let categoryId = data["categoryId"] as? String,
-                       let yayCount = data["yayCount"] as? Int,
-                       let nayCount = data["nayCount"] as? Int {
-                        let totalVotes = yayCount + nayCount
-                        categoryVotes[categoryId] = (categoryVotes[categoryId] ?? 0) + totalVotes
-                    }
-                }
-                
-                // Then, listen to categories to get their details
-                self.topCategoriesListener = self.db.collection("categories")
-                    .addSnapshotListener { [weak self] snapshot, error in
-                        guard let self = self else { return }
-                        
+                // Set up real-time listener for subcategories
+                self.subCategoriesListener = db.collection("categories")
+                    .document(categoryId)
+                    .collection("subcategories")
+                    .addSnapshotListener { (snapshot, error) in
                         if let error = error {
-                            print("Error listening to categories: \(error)")
+                            print("Error listening to subcategories: \(error)")
                             return
                         }
                         
-                    guard let documents = snapshot?.documents else { return }
-                    
-                        self.topCategories = documents.compactMap { doc -> TopCategory? in
-                        let id = doc.documentID
-                            guard let name = doc.data()["name"] as? String,
-                                  let imageURL = doc.data()["imageURL"] as? String else { return nil }
+                        // Calculate total votes for this category
+                        var totalVotes = 0
+                        snapshot?.documents.forEach { doc in
+                            let data = doc.data()
+                            if let yayCount = data["yayCount"] as? Int,
+                               let nayCount = data["nayCount"] as? Int {
+                                totalVotes += yayCount + nayCount
+                            }
+                        }
                         
-                        return TopCategory(
-                            id: id,
-                            name: name,
-                                totalVotes: categoryVotes[id] ?? 0,
-                                imageURL: imageURL
-                        )
+                        // Update categoryVotes
+                        self.categoryVotes[categoryId] = totalVotes
+                        
+                        // Update topCategories
+                        DispatchQueue.main.async {
+                            self.topCategories = categoryDetails.compactMap { categoryId, details -> TopCategory? in
+                                TopCategory(
+                                    id: categoryId,
+                                    name: details.name,
+                                    totalVotes: self.categoryVotes[categoryId] ?? 0,
+                                    imageURL: details.imageURL
+                                )
+                            }
+                            .sorted { $0.totalVotes > $1.totalVotes }
+                            .prefix(5)
+                            .map { $0 }
+                        }
                     }
-                    .sorted { $0.totalVotes > $1.totalVotes }
-                    .prefix(5)
-                    .map { $0 }
-                }
             }
+        }
     }
     
     private func fetchTodaysTopVotes() {
@@ -194,68 +211,63 @@ class HotVotesViewModel: ObservableObject {
         
         // First get all categories to map IDs to names
         db.collection("categories").getDocuments { [weak self] categorySnapshot, error in
-            guard let categoryDocuments = categorySnapshot?.documents else { return }
+            guard let self = self,
+                  let categoryDocuments = categorySnapshot?.documents else { return }
+            
             let categoryMap = Dictionary(uniqueKeysWithValues: categoryDocuments.map { ($0.documentID, $0["name"] as? String ?? "") })
             
-            // Add new listener and store the registration
-            self?.todaysVotesListener = self?.db.collection("votes")
-                .whereField("date", isGreaterThan: Timestamp(date: startOfDay))
-                .whereField("date", isLessThan: Timestamp(date: endOfDay))
-                .addSnapshotListener { snapshot, error in
-                    if let error = error {
-                        print("Error fetching today's votes: \(error)")
-                        return
-                    }
-                    
-                    // Count votes by item
-                    var itemVotes: [String: (name: String, imageURL: String, yay: Int, nay: Int, categoryId: String, categoryName: String)] = [:]
-                    
-                    snapshot?.documents.forEach { doc in
-                        let data = doc.data()
-                        if let itemId = data["subCategoryId"] as? String,
-                           let name = data["itemName"] as? String,
-                           let imageURL = data["imageURL"] as? String,
-                           let isYay = data["isYay"] as? Bool,
-                           let categoryId = data["categoryId"] as? String {
-                            if let existing = itemVotes[itemId] {
-                                itemVotes[itemId] = (
-                                    name: name,
-                                    imageURL: imageURL,
-                                    yay: existing.yay + (isYay ? 1 : 0),
-                                    nay: existing.nay + (isYay ? 0 : 1),
-                                    categoryId: categoryId,
-                                    categoryName: categoryMap[categoryId] ?? ""
-                                )
+            // Listen to all subcategories that have been voted on today
+            for categoryDoc in categoryDocuments {
+                db.collection("categories")
+                    .document(categoryDoc.documentID)
+                    .collection("subcategories")
+                    .whereField("lastVoteDate", isGreaterThan: Timestamp(date: startOfDay))
+                    .whereField("lastVoteDate", isLessThan: Timestamp(date: endOfDay))
+                    .addSnapshotListener { [weak self] snapshot, error in
+                        guard let self = self else { return }
+                        
+                        if let error = error {
+                            print("Error fetching today's votes: \(error)")
+                            return
+                        }
+                        
+                        let todayItems = snapshot?.documents.compactMap { document -> HotVoteItem? in
+                            let data = document.data()
+                            guard let name = data["name"] as? String,
+                                  let imageURL = data["imageURL"] as? String,
+                                  let yayCount = data["yayCount"] as? Int,
+                                  let nayCount = data["nayCount"] as? Int,
+                                  let categoryId = data["categoryId"] as? String
+                            else { return nil }
+                            
+                            return HotVoteItem(
+                                id: document.documentID,
+                                name: name,
+                                imageURL: imageURL,
+                                yayCount: yayCount,
+                                nayCount: nayCount,
+                                categoryId: categoryId,
+                                categoryName: categoryMap[categoryId] ?? ""
+                            )
+                        } ?? []
+                        
+                        // Merge with existing items
+                        var existingItems = self.todaysTopVotes
+                        for item in todayItems {
+                            if let index = existingItems.firstIndex(where: { $0.id == item.id }) {
+                                existingItems[index] = item
                             } else {
-                                itemVotes[itemId] = (
-                                    name: name,
-                                    imageURL: imageURL,
-                                    yay: isYay ? 1 : 0,
-                                    nay: isYay ? 0 : 1,
-                                    categoryId: categoryId,
-                                    categoryName: categoryMap[categoryId] ?? ""
-                                )
+                                existingItems.append(item)
                             }
                         }
+                        
+                        // Update and sort
+                        self.todaysTopVotes = existingItems
+                            .sorted { $0.yayCount > $1.yayCount }
+                            .prefix(10)
+                            .map { $0 }
                     }
-                    
-                    // Convert to HotVoteItem array and sort by yay count instead of total votes
-                    self?.todaysTopVotes = itemVotes
-                        .map { id, info in
-                            HotVoteItem(
-                                id: id,
-                                name: info.name,
-                                imageURL: info.imageURL,
-                                yayCount: info.yay,
-                                nayCount: info.nay,
-                                categoryId: info.categoryId,
-                                categoryName: info.categoryName
-                            )
-                        }
-                        .sorted { $0.yayCount > $1.yayCount }  // Sort by yay count instead of total votes
-                        .prefix(10)
-                        .map { $0 }
-                }
+            }
         }
     }
     
@@ -350,9 +362,9 @@ struct TopCategoryRow: View {
                             .resizable()
                             .aspectRatio(contentMode: .fill)
                     } placeholder: {
-                        Image(systemName: category.iconName)
-                            .font(.system(size: 20))
-                            .foregroundStyle(category.accentColor)
+                    Image(systemName: category.iconName)
+                        .font(.system(size: 20))
+                        .foregroundStyle(category.accentColor)
                     }
                     .frame(width: 44, height: 44)
                     .clipShape(RoundedRectangle(cornerRadius: 12))
@@ -485,9 +497,9 @@ struct HotVoteCard: View {
             .clipShape(RoundedRectangle(cornerRadius: 18))
             .shadow(color: Color.black.opacity(0.06), radius: 6, y: 2)
             .onAppear {
-                // Fetch subcategory details
+                // Fetch subcategory details from nested structure
                 let db = Firestore.firestore()
-                db.collection("subCategories").document(item.id).getDocument { snapshot, error in
+                db.collection("categories").document(item.categoryId).collection("subcategories").document(item.id).getDocument { snapshot, error in
                     if let data = snapshot?.data(),
                        let name = data["name"] as? String,
                        let imageURL = data["imageURL"] as? String,
@@ -495,17 +507,16 @@ struct HotVoteCard: View {
                        let order = data["order"] as? Int,
                        let yayCount = data["yayCount"] as? Int,
                        let nayCount = data["nayCount"] as? Int {
-                        
-                        selectedSubCategory = SubCategory(
+                        let subCategory = SubCategory(
                             id: item.id,
                             name: name,
                             imageURL: imageURL,
                             categoryId: categoryId,
                             order: order,
                             yayCount: yayCount,
-                            nayCount: nayCount,
-                            attributes: [:]
+                            nayCount: nayCount
                         )
+                        selectedSubCategory = subCategory
                     }
                 }
             }

@@ -418,7 +418,7 @@ class SubCategoryImporter {
         print("📱 First item categoryId:", subcategories.first?.categoryId ?? "none")
         
         for subcategory in subcategories {
-            let docRef = db.collection("subCategories").document()
+            let docRef = db.collection("categories").document(subcategory.categoryId).collection("subcategories").document()
             let data: [String: Any] = [
                 "name": subcategory.name,
                 "imageURL": subcategory.imageURL,

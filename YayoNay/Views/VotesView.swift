@@ -33,8 +33,7 @@ class VotesViewModel: ObservableObject {
             return
         }
         
-        db.collection("votes")
-            .whereField("userId", isEqualTo: userId)
+        db.collection("users").document(userId).collection("votes")
             .order(by: "date", descending: true)
             .addSnapshotListener { [weak self] snapshot, error in
                 if let error = error {
@@ -49,7 +48,12 @@ class VotesViewModel: ObservableObject {
     }
     
     func deleteVote(_ vote: Vote) {
-        db.collection("votes").document(vote.id).delete() { error in
+        guard let userId = Auth.auth().currentUser?.uid else {
+            print("Error: No authenticated user")
+            return
+        }
+        
+        db.collection("users").document(userId).collection("votes").document(vote.id).delete() { error in
             if let error = error {
                 print("Error deleting vote: \(error)")
             }

@@ -42,7 +42,7 @@ struct TopicBoxView: View {
                     
                     if viewModel.dailySubmissionCount >= viewModel.DAILY_SUBMISSION_LIMIT {
                         Text("(Limit reached)")
-                            .font(.system(size: 12))
+                    .font(.system(size: 12))
                             .foregroundColor(.red)
                     }
                 }
@@ -160,41 +160,41 @@ struct TopicRow: View {
                 VStack(alignment: .trailing, spacing: 4) {
                     // Voting and Share Buttons
                     HStack(spacing: 8) {
-                        // Downvote button
-                        Button(action: { onVote(false) }) {
-                            HStack(spacing: 2) {
-                                Image(systemName: "hand.thumbsdown")
+                // Downvote button
+                Button(action: { onVote(false) }) {
+                    HStack(spacing: 2) {
+                        Image(systemName: "hand.thumbsdown")
                                     .font(.system(size: 13, weight: .medium))
-                                    .foregroundColor(topic.userVoteStatus == .downvoted ? .red : .gray)
-                                Text("\(topic.downvotes)")
+                            .foregroundColor(topic.userVoteStatus == .downvoted ? .red : .gray)
+                        Text("\(topic.downvotes)")
                                     .font(.system(size: 12))
-                                    .foregroundColor(topic.userVoteStatus == .downvoted ? .red : .gray)
-                            }
+                            .foregroundColor(topic.userVoteStatus == .downvoted ? .red : .gray)
+                    }
                             .frame(height: 30)
                             .padding(.horizontal, 8)
                             .background(topic.userVoteStatus == .downvoted ? Color.red.opacity(0.12) : Color.clear)
-                            .clipShape(Capsule())
+                    .clipShape(Capsule())
                             .shadow(color: topic.userVoteStatus == .downvoted ? Color.red.opacity(0.08) : .clear, radius: 2, y: 1)
-                        }
-                        .buttonStyle(PlainButtonStyle())
-                        
-                        // Upvote button
-                        Button(action: { onVote(true) }) {
-                            HStack(spacing: 2) {
-                                Image(systemName: "hand.thumbsup")
+                }
+                .buttonStyle(PlainButtonStyle())
+                
+                // Upvote button
+                Button(action: { onVote(true) }) {
+                    HStack(spacing: 2) {
+                        Image(systemName: "hand.thumbsup")
                                     .font(.system(size: 13, weight: .medium))
-                                    .foregroundColor(topic.userVoteStatus == .upvoted ? .green : .gray)
-                                Text("\(topic.upvotes)")
+                            .foregroundColor(topic.userVoteStatus == .upvoted ? .green : .gray)
+                        Text("\(topic.upvotes)")
                                     .font(.system(size: 12))
-                                    .foregroundColor(topic.userVoteStatus == .upvoted ? .green : .gray)
-                            }
+                            .foregroundColor(topic.userVoteStatus == .upvoted ? .green : .gray)
+                    }
                             .frame(height: 30)
                             .padding(.horizontal, 8)
                             .background(topic.userVoteStatus == .upvoted ? Color.green.opacity(0.12) : Color.clear)
-                            .clipShape(Capsule())
+                    .clipShape(Capsule())
                             .shadow(color: topic.userVoteStatus == .upvoted ? Color.green.opacity(0.08) : .clear, radius: 2, y: 1)
-                        }
-                        .buttonStyle(PlainButtonStyle())
+                }
+                .buttonStyle(PlainButtonStyle())
                         
                         // Share button
                         Button(action: onShare) {

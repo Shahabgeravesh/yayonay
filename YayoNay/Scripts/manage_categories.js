@@ -20,34 +20,34 @@ const categories = [
     votesCount: 0
   },
   { 
-    name: "Fashion", 
+    name: "Politics",
     order: 1, 
     imageURL: "https://images.unsplash.com/photo-1445208345000-3c1a1c3b8d1a?w=800",
     isTopCategory: true,
-    description: "Style and trends",
+    description: "US Politics",
     featured: true,
     votesCount: 0
   },
   { 
-    name: "Pets", 
+    name: "Economy",
     order: 2, 
     imageURL: "https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=800",
     isTopCategory: true,
-    description: "Furry friends and companions",
+    description: "Economy",
     featured: true,
     votesCount: 0
   },
   { 
-    name: "Home Decor", 
+    name: "TV Shows",
     order: 3, 
     imageURL: "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=800",
     isTopCategory: true,
-    description: "Interior design and decoration",
+    description: "TV Shows",
     featured: true,
     votesCount: 0
   },
   { 
-    name: "Fitness", 
+    name: "Sport",
     order: 4, 
     imageURL: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800",
     isTopCategory: true,
@@ -65,7 +65,7 @@ const categories = [
     votesCount: 0
   },
   { 
-    name: "Beauty", 
+    name: "Speaker",
     order: 6, 
     imageURL: "https://images.unsplash.com/photo-1596462502278-27bfdc403348?w=800",
     isTopCategory: true,
@@ -113,7 +113,7 @@ const categories = [
 
 // Define subcategories for each category
 const categorySubcategories = {
-  "Fashion": [
+  "Politics": [
     { name: "Streetwear", imageURL: "https://images.unsplash.com/photo-1445208345000-3c1a1c3b8d1a?w=800" },
     { name: "Formal", imageURL: "https://images.unsplash.com/photo-1593032465175-8d1a0b1c4b1a?w=800" },
     { name: "Casual", imageURL: "https://images.unsplash.com/photo-1593032465175-8d1a0b1c4b1a?w=800" },
@@ -125,7 +125,7 @@ const categorySubcategories = {
     { name: "Jewelry", imageURL: "https://images.unsplash.com/photo-1593032465175-8d1a0b1c4b1a?w=800" },
     { name: "Bags", imageURL: "https://images.unsplash.com/photo-1593032465175-8d1a0b1c4b1a?w=800" }
   ],
-  "Pets": [
+  "Economy": [
     { name: "Dogs", imageURL: "https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=800" },
     { name: "Cats", imageURL: "https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=800" },
     { name: "Birds", imageURL: "https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=800" },
@@ -137,7 +137,7 @@ const categorySubcategories = {
     { name: "Pet Care", imageURL: "https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=800" },
     { name: "Pet Training", imageURL: "https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=800" }
   ],
-  "Home Decor": [
+  "TV Shows": [
     { name: "Living Room", imageURL: "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=800" },
     { name: "Bedroom", imageURL: "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=800" },
     { name: "Kitchen", imageURL: "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=800" },
@@ -149,7 +149,7 @@ const categorySubcategories = {
     { name: "Rugs", imageURL: "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=800" },
     { name: "Storage", imageURL: "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=800" }
   ],
-  "Fitness": [
+  "Sport": [
     { name: "Cardio", imageURL: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800" },
     { name: "Strength Training", imageURL: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800" },
     { name: "Yoga", imageURL: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800" },

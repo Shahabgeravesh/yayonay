@@ -1,7 +1,7 @@
 import Foundation
 import FirebaseFirestore
 
-struct UserProfile: Codable, Identifiable {
+struct UserProfile: Identifiable, Codable {
     let id: String
     var username: String
     var imageURL: String // URL to the profile image in Firebase Storage
@@ -12,6 +12,7 @@ struct UserProfile: Codable, Identifiable {
     var joinDate: Date
     var socialLinks: [String: String]
     var recentActivity: [Activity]
+    var sharesCount: Int // New property
     
     struct Activity: Codable {
         let type: String
@@ -28,7 +29,8 @@ struct UserProfile: Codable, Identifiable {
          topInterests: [String] = [],
          joinDate: Date = Date(),
          socialLinks: [String: String] = [:],
-         recentActivity: [Activity] = []) {
+         recentActivity: [Activity] = [],
+         sharesCount: Int = 0) {
         self.id = id
         self.username = username
         self.imageURL = imageURL
@@ -39,6 +41,7 @@ struct UserProfile: Codable, Identifiable {
         self.joinDate = joinDate
         self.socialLinks = socialLinks
         self.recentActivity = recentActivity
+        self.sharesCount = sharesCount
     }
     
     var dictionary: [String: Any] {
@@ -58,7 +61,8 @@ struct UserProfile: Codable, Identifiable {
                     "itemId": activity.itemId,
                     "timestamp": Timestamp(date: activity.timestamp)
                 ]
-            }
+            },
+            "sharesCount": sharesCount
         ]
     }
     
@@ -76,15 +80,16 @@ struct UserProfile: Codable, Identifiable {
         self.topInterests = data["topInterests"] as? [String] ?? []
         self.joinDate = (data["joinDate"] as? Timestamp)?.dateValue() ?? Date()
         self.socialLinks = data["socialLinks"] as? [String: String] ?? [:]
+        self.sharesCount = data["sharesCount"] as? Int ?? 0
         
         // Parse recent activity
-        if let activities = data["recentActivity"] as? [[String: Any]] {
-            self.recentActivity = activities.compactMap { activityData in
-                guard let type = activityData["type"] as? String,
-                      let itemId = activityData["itemId"] as? String,
-                      let timestamp = (activityData["timestamp"] as? Timestamp)?.dateValue() else {
-                    return nil
-                }
+        if let activityData = data["recentActivity"] as? [[String: Any]] {
+            self.recentActivity = activityData.compactMap { dict in
+                guard let type = dict["type"] as? String,
+                      let itemId = dict["itemId"] as? String,
+                      let timestamp = (dict["timestamp"] as? Timestamp)?.dateValue()
+                else { return nil }
+                
                 return Activity(type: type, itemId: itemId, timestamp: timestamp)
             }
         } else {

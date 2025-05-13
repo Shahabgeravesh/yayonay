@@ -9,7 +9,6 @@ struct SubCategory: Identifiable, Codable, Equatable {
     let order: Int
     var yayCount: Int
     var nayCount: Int
-    var attributes: [String: AttributeVotes]
     
     enum CodingKeys: String, CodingKey {
         case id
@@ -19,7 +18,6 @@ struct SubCategory: Identifiable, Codable, Equatable {
         case order
         case yayCount
         case nayCount
-        case attributes
     }
     
     init(from decoder: Decoder) throws {
@@ -31,7 +29,6 @@ struct SubCategory: Identifiable, Codable, Equatable {
         order = try container.decode(Int.self, forKey: .order)
         yayCount = try container.decode(Int.self, forKey: .yayCount)
         nayCount = try container.decode(Int.self, forKey: .nayCount)
-        attributes = try container.decode([String: AttributeVotes].self, forKey: .attributes)
     }
     
     func encode(to encoder: Encoder) throws {
@@ -43,7 +40,6 @@ struct SubCategory: Identifiable, Codable, Equatable {
         try container.encode(order, forKey: .order)
         try container.encode(yayCount, forKey: .yayCount)
         try container.encode(nayCount, forKey: .nayCount)
-        try container.encode(attributes, forKey: .attributes)
     }
     
     init(id: String = UUID().uuidString,
@@ -52,8 +48,7 @@ struct SubCategory: Identifiable, Codable, Equatable {
          categoryId: String,
          order: Int,
          yayCount: Int = 0,
-         nayCount: Int = 0,
-         attributes: [String: AttributeVotes] = [:]) {
+         nayCount: Int = 0) {
         self.id = id
         self.name = name
         self.imageURL = imageURL
@@ -61,7 +56,6 @@ struct SubCategory: Identifiable, Codable, Equatable {
         self.order = order
         self.yayCount = yayCount
         self.nayCount = nayCount
-        self.attributes = attributes
     }
     
     var dictionary: [String: Any] {
@@ -71,13 +65,7 @@ struct SubCategory: Identifiable, Codable, Equatable {
             "categoryId": categoryId,
             "order": order,
             "yayCount": yayCount,
-            "nayCount": nayCount,
-            "attributes": attributes.mapValues { votes in
-                [
-                    "yayCount": votes.yayCount,
-                    "nayCount": votes.nayCount
-                ]
-            }
+            "nayCount": nayCount
         ]
     }
     
@@ -88,22 +76,21 @@ struct SubCategory: Identifiable, Codable, Equatable {
                lhs.categoryId == rhs.categoryId &&
                lhs.order == rhs.order &&
                lhs.yayCount == rhs.yayCount &&
-               lhs.nayCount == rhs.nayCount &&
-               lhs.attributes == rhs.attributes
+               lhs.nayCount == rhs.nayCount
     }
 }
 
 extension SubCategory {
     init?(document: DocumentSnapshot) {
         let data = document.data() ?? [:]
-        
+        print("DEBUG SubCategory data for doc id \(document.documentID):", data)
         guard let name = data["name"] as? String,
               let imageURL = data["imageURL"] as? String,
               let categoryId = data["categoryId"] as? String,
               let order = data["order"] as? Int else {
+            print("Missing required field in subcategory doc id: \(document.documentID)")
             return nil
         }
-        
         self.id = document.documentID
         self.name = name
         self.imageURL = imageURL
@@ -111,16 +98,5 @@ extension SubCategory {
         self.order = order
         self.yayCount = data["yayCount"] as? Int ?? 0
         self.nayCount = data["nayCount"] as? Int ?? 0
-        
-        if let attributesData = data["attributes"] as? [String: [String: Int]] {
-            self.attributes = attributesData.mapValues { votes in
-                AttributeVotes(
-                    yayCount: votes["yayCount"] ?? 0,
-                    nayCount: votes["nayCount"] ?? 0
-                )
-            }
-        } else {
-            self.attributes = [:]
-        }
     }
 } 
