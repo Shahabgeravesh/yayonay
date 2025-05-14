@@ -8,206 +8,100 @@ admin.initializeApp({
 
 const db = admin.firestore();
 
-// Define sub-questions for each category
-const categoryQuestions = {
-  "Politics": [
-    "Policy",
-    "Leadership",
-    "Integrity",
-    "Communication",
-    "Experience",
-    "Vision"
-  ],
-  "TV Shows": [
-    "Plot",
-    "Acting",
-    "Production",
-    "Entertainment",
-    "Character Development",
-    "Pacing"
-  ],
-  "Business Test": [
-    "Innovation",
-    "Strategy",
-    "Leadership",
-    "Market Impact",
-    "Growth",
-    "Value"
-  ],
-  "Nature": [
-    "Beauty",
-    "Accessibility",
-    "Wildlife",
-    "Conservation",
-    "Educational Value",
-    "Experience"
-  ],
-  "Gaming": [
-    "Gameplay",
-    "Graphics",
-    "Story",
-    "Controls",
-    "Replay Value",
-    "Multiplayer"
-  ],
-  "Sport": [
-    "Skill Level",
-    "Entertainment Value",
-    "Athleticism",
-    "Strategy",
-    "Teamwork",
-    "Competition"
-  ],
-  "DIY": [
-    "Difficulty",
-    "Cost",
-    "Time Required",
-    "Results",
-    "Learning Value",
-    "Satisfaction"
-  ],
-  "Cars": [
-    "Performance",
-    "Design",
-    "Comfort",
-    "Reliability",
-    "Features",
-    "Value"
-  ],
-  "Photography": [
-    "Composition",
-    "Lighting",
-    "Subject",
-    "Technical Quality",
-    "Creativity",
-    "Impact"
-  ]
-};
+// Default questions that will be added to every subcategory
+const defaultQuestions = [
+  { question: "How would you rate this?", order: 1 },
+  { question: "Would you recommend this?", order: 2 },
+  { question: "Is this worth the price?", order: 3 },
+  { question: "Would you use/do this again?", order: 4 },
+  { question: "Is this better than alternatives?", order: 5 }
+];
 
 async function createSubQuestions() {
   try {
-    // First, get all categories to map names to IDs
+    console.log('Starting subquestions creation...');
+    
+    // Get all categories
     const categoriesSnapshot = await db.collection('categories').get();
+    console.log(`Found ${categoriesSnapshot.size} categories`);
     
-    const categoryIdMap = {};
-    categoriesSnapshot.forEach(doc => {
-      const data = doc.data();
-      if (data.name) {
-        categoryIdMap[data.name] = doc.id;
-      }
-    });
+    let totalSubquestions = 0;
     
-    console.log('Found categories:', categoryIdMap);
-    
-    // Get all subcategories using the new nested structure
-    const subCategories = {};
-    for (const [categoryName, categoryId] of Object.entries(categoryIdMap)) {
-      const subCategoriesSnapshot = await db.collection('categories')
+    // Process each category
+    for (const categoryDoc of categoriesSnapshot.docs) {
+      const categoryId = categoryDoc.id;
+      const categoryData = categoryDoc.data();
+      console.log(`Processing category: ${categoryData.name} (${categoryId})`);
+      
+      // Get subcategories for this category
+      const subcategoriesSnapshot = await db.collection('categories')
         .doc(categoryId)
         .collection('subcategories')
         .get();
       
-      subCategories[categoryId] = subCategoriesSnapshot.docs.map(doc => ({
-        id: doc.id,
-        name: doc.data().name
-      }));
-    }
-    
-    console.log('Found subcategories:', subCategories);
-    
-    // Create new subQuestions using nested structure
-    let count = 0;
-    
-    for (const [categoryName, questions] of Object.entries(categoryQuestions)) {
-      const categoryId = categoryIdMap[categoryName];
-      if (!categoryId) {
-        console.log(`No ID found for category: ${categoryName}`);
-        continue;
-      }
+      console.log(`Found ${subcategoriesSnapshot.size} subcategories for category ${categoryData.name}`);
       
-      const categorySubCategories = subCategories[categoryId] || [];
-      console.log(`Creating sub-questions for ${categoryName} (${categorySubCategories.length} subcategories)`);
-      
-      for (const subCategory of categorySubCategories) {
-        let batch = db.batch();
+      // Process each subcategory
+      for (const subcategoryDoc of subcategoriesSnapshot.docs) {
+        const subcategoryId = subcategoryDoc.id;
+        const subcategoryData = subcategoryDoc.data();
+        console.log(`Processing subcategory: ${subcategoryData.name} (${subcategoryId})`);
         
-        // First, delete existing subquestions
-        const existingSubQuestionsSnapshot = await db.collection('categories')
+        // Delete existing subquestions
+        const existingSubquestionsSnapshot = await db.collection('categories')
           .doc(categoryId)
           .collection('subcategories')
-          .doc(subCategory.id)
+          .doc(subcategoryId)
           .collection('subquestions')
           .get();
           
-        existingSubQuestionsSnapshot.docs.forEach(doc => {
+        const batch = db.batch();
+        
+        // Delete existing subquestions
+        existingSubquestionsSnapshot.docs.forEach(doc => {
           batch.delete(doc.ref);
         });
         
-        // Then create new subquestions using question text as document ID
-      for (const question of questions) {
-          const docId = question.toLowerCase().replace(/[^a-z0-9]/g, '_');
-          const subQuestionRef = db.collection('categories')
+        // Create new subquestions
+        for (const questionData of defaultQuestions) {
+          const subquestionRef = db.collection('categories')
             .doc(categoryId)
             .collection('subcategories')
-            .doc(subCategory.id)
+            .doc(subcategoryId)
             .collection('subquestions')
-            .doc(docId);
+            .doc();
             
-        const subQuestion = {
-          categoryId: categoryId,
-            subCategoryId: subCategory.id,
-          question: question,
-          yayCount: 0,
+          const subquestion = {
+            categoryId: categoryId,
+            subCategoryId: subcategoryId,
+            question: questionData.question,
+            order: questionData.order,
+            active: true,
+            yayCount: 0,
             nayCount: 0,
             createdAt: admin.firestore.FieldValue.serverTimestamp(),
             updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-            // Add metadata for votes subcollection
             votesMetadata: {
               lastVoteAt: null,
               totalVotes: 0,
               uniqueVoters: 0
             }
-        };
-        
-          batch.set(subQuestionRef, subQuestion);
-        count++;
+          };
           
-          // Create votes subcollection with an example structure document
-          const votesMetadataRef = subQuestionRef.collection('votes').doc('_metadata');
-          batch.set(votesMetadataRef, {
-            description: 'This collection stores individual votes. Each document ID is the user ID who voted.',
-            schema: {
-              userId: 'string',
-              vote: 'boolean (true for yay, false for nay)',
-              timestamp: 'timestamp',
-              previousVote: 'boolean | null (for tracking vote changes)',
-              lastChangeAt: 'timestamp | null'
-            },
-            updatedAt: admin.firestore.FieldValue.serverTimestamp()
-          });
-        
-        // Firestore has a limit of 500 operations per batch
-        if (count % 450 === 0) {
-            await batch.commit();
-          console.log(`Committed batch of ${count} subQuestions`);
-            count = 0;
-            batch = db.batch(); // Create a new batch
-          }
+          batch.set(subquestionRef, subquestion);
+          totalSubquestions++;
         }
         
-        // Commit any remaining operations for this subcategory
-        if (count > 0) {
-          await batch.commit();
-          console.log(`Committed batch of ${count} subQuestions for subcategory ${subCategory.name}`);
-          count = 0;
-        }
+        // Commit the batch
+        await batch.commit();
+        console.log(`Created ${defaultQuestions.length} subquestions for subcategory ${subcategoryData.name}`);
       }
     }
     
-    console.log('Successfully created all subQuestions');
+    console.log(`Successfully created ${totalSubquestions} subquestions across all categories`);
     
   } catch (error) {
-    console.error('Error creating subQuestions:', error);
+    console.error('Error creating subquestions:', error);
   }
 }
 

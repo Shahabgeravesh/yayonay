@@ -589,3 +589,117 @@ async function loadCategories() {
         hideOperationStatus();
     }
 }
+
+// Subquestions CRUD Operations
+window.subquestionsCRUD = {
+    create: async function(categoryId, subcategoryId, data) {
+        try {
+            if (!categoryId || !subcategoryId || !data.question) {
+                throw new Error('Missing required fields');
+            }
+
+            const db = firebase.firestore();
+            const subquestionsRef = db.collection('categories')
+                .doc(categoryId)
+                .collection('subcategories')
+                .doc(subcategoryId)
+                .collection('subquestions');
+
+            // Add timestamp and defaults
+            const subquestionData = {
+                ...data,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                yayCount: 0,
+                nayCount: 0,
+                votesMetadata: {
+                    totalVotes: 0,
+                    uniqueVoters: 0
+                }
+            };
+
+            const docRef = await subquestionsRef.add(subquestionData);
+            return docRef.id;
+        } catch (error) {
+            console.error('Error creating subquestion:', error);
+            throw error;
+        }
+    },
+
+    update: async function(categoryId, subcategoryId, subquestionId, data) {
+        try {
+            if (!categoryId || !subcategoryId || !subquestionId) {
+                throw new Error('Missing required IDs');
+            }
+
+            const db = firebase.firestore();
+            const subquestionRef = db.collection('categories')
+                .doc(categoryId)
+                .collection('subcategories')
+                .doc(subcategoryId)
+                .collection('subquestions')
+                .doc(subquestionId);
+
+            // Add updated timestamp
+            const updateData = {
+                ...data,
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            };
+
+            await subquestionRef.update(updateData);
+        } catch (error) {
+            console.error('Error updating subquestion:', error);
+            throw error;
+        }
+    },
+
+    delete: async function(categoryId, subcategoryId, subquestionId) {
+        try {
+            if (!categoryId || !subcategoryId || !subquestionId) {
+                throw new Error('Missing required IDs');
+            }
+
+            const db = firebase.firestore();
+            const subquestionRef = db.collection('categories')
+                .doc(categoryId)
+                .collection('subcategories')
+                .doc(subcategoryId)
+                .collection('subquestions')
+                .doc(subquestionId);
+
+            await subquestionRef.delete();
+        } catch (error) {
+            console.error('Error deleting subquestion:', error);
+            throw error;
+        }
+    },
+
+    get: async function(categoryId, subcategoryId, subquestionId) {
+        try {
+            if (!categoryId || !subcategoryId || !subquestionId) {
+                throw new Error('Missing required IDs');
+            }
+
+            const db = firebase.firestore();
+            const subquestionRef = db.collection('categories')
+                .doc(categoryId)
+                .collection('subcategories')
+                .doc(subcategoryId)
+                .collection('subquestions')
+                .doc(subquestionId);
+
+            const doc = await subquestionRef.get();
+            if (!doc.exists) {
+                throw new Error('Subquestion not found');
+            }
+
+            return {
+                id: doc.id,
+                ...doc.data()
+            };
+        } catch (error) {
+            console.error('Error getting subquestion:', error);
+            throw error;
+        }
+    }
+};

@@ -1191,52 +1191,55 @@
             </div>
         </div>
 
-        <!-- Subquestions Modal -->
-        <div class="modal fade" id="subquestionModal" tabindex="-1">
+        <!-- Subquestion Modal -->
+        <div class="modal fade" id="subquestionModal" tabindex="-1" aria-labelledby="subquestionModalLabel" aria-hidden="true">
             <div class="modal-dialog">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title" id="subquestionModalTitle">Add New Subquestion</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        <h5 class="modal-title" id="subquestionModalLabel">Manage Subquestion</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
-                        <form id="subquestionForm">
+                        <form id="subquestionForm" class="needs-validation" novalidate>
                             <input type="hidden" id="subquestionId">
+                            
                             <div class="mb-3">
-                                <label class="form-label">Category</label>
+                                <label for="subquestionCategory" class="form-label">Category</label>
                                 <select class="form-select" id="subquestionCategory" required onchange="loadSubcategoriesForCategory(this.value)">
                                     <option value="">Select a category</option>
                                 </select>
+                                <div class="invalid-feedback">Please select a category</div>
                             </div>
+                            
                             <div class="mb-3">
-                                <label class="form-label">Subcategory</label>
+                                <label for="subquestionSubcategory" class="form-label">Subcategory</label>
                                 <select class="form-select" id="subquestionSubcategory" required>
                                     <option value="">Select a subcategory</option>
                                 </select>
+                                <div class="invalid-feedback">Please select a subcategory</div>
                             </div>
+                            
                             <div class="mb-3">
-                                <label class="form-label">Question Text</label>
+                                <label for="subquestionText" class="form-label">Question</label>
                                 <input type="text" class="form-control" id="subquestionText" required>
-                                <div class="form-text">Enter the subquestion text</div>
+                                <div class="invalid-feedback">Please enter a question</div>
                             </div>
+                            
                             <div class="mb-3">
-                                <label class="form-label">Order</label>
-                                <input type="number" class="form-control" id="subquestionOrder" required>
-                                <div class="form-text">Lower numbers appear first</div>
+                                <label for="subquestionOrder" class="form-label">Display Order</label>
+                                <input type="number" class="form-control" id="subquestionOrder" required min="0">
+                                <div class="invalid-feedback">Please enter a valid order number (0 or greater)</div>
                             </div>
-                            <div class="mb-3">
-                                <div class="form-check">
-                                    <input type="checkbox" class="form-check-input" id="subquestionActive">
-                                    <label class="form-check-label">Active</label>
-                                </div>
+                            
+                            <div class="mb-3 form-check">
+                                <input type="checkbox" class="form-check-input" id="subquestionActive">
+                                <label class="form-check-label" for="subquestionActive">Active</label>
                             </div>
                         </form>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="button" class="btn btn-primary" onclick="saveSubquestion()">
-                            <i class="fas fa-save"></i> Save Subquestion
-                        </button>
+                        <button type="button" class="btn btn-primary" onclick="handleSaveSubquestion()">Save Subquestion</button>
                     </div>
                 </div>
             </div>
@@ -1570,13 +1573,13 @@
             }
         }
 
-        async function handleSaveSubcategory() {
+        async function handleSaveSubquestion() {
             const button = event.target;
-            if (!validateSubcategoryForm()) return;
+            if (!validateSubquestionForm()) return;
 
             try {
                 setButtonLoading(button, true);
-                await saveSubcategory();
+                await saveSubquestion();
             } finally {
                 setButtonLoading(button, false);
             }

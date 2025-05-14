@@ -186,13 +186,15 @@ class SubCategoryStatsViewModel: ObservableObject {
             .collection("subcategories")
             .document(currentSubCategory.id)
             .collection("subquestions")
+            .whereField("active", isEqualTo: true)
+            .order(by: "order", descending: false)
         
         subQuestionsListener = subQuestionsRef.addSnapshotListener { [weak self] (snapshot: QuerySnapshot?, error: Error?) in
             guard let self = self,
                   let documents = snapshot?.documents else {
-            if let error = error {
-                print("DEBUG: Error fetching sub-questions: \(error.localizedDescription)")
-            }
+                if let error = error {
+                    print("DEBUG: Error fetching sub-questions: \(error.localizedDescription)")
+                }
                 return
             }
             
@@ -211,56 +213,74 @@ class SubCategoryStatsViewModel: ObservableObject {
     }
     
     private func setupVoteHistoryListeners(for questions: [SubQuestion]) {
-        // Remove old listeners
-        voteHistoryListeners.values.forEach { $0.remove() }
+        // Remove existing listeners
+        for (_, listener) in voteHistoryListeners {
+            listener.remove()
+        }
         voteHistoryListeners.removeAll()
         
-        // Set up new listeners
-                for question in questions {
+        for question in questions {
             let votesRef = db.collection("categories")
-                .document(currentSubCategory.categoryId)
+                .document(question.categoryId)
                 .collection("subcategories")
-                .document(currentSubCategory.id)
+                .document(question.subCategoryId)
                 .collection("subquestions")
                 .document(question.id)
                 .collection("votes")
-                .whereField("userId", isNotEqualTo: "__metadata__") // Exclude metadata document
             
             let listener = votesRef.addSnapshotListener { [weak self] (snapshot, error) in
-                guard let self = self else { return }
-                
                 if let error = error {
-                    print("DEBUG: Error fetching vote history: \(error.localizedDescription)")
+                    print("DEBUG: Error listening to votes: \(error.localizedDescription)")
                     return
                 }
                 
-                let votes = snapshot?.documents.compactMap { doc -> UserVote? in
-                    let data = doc.data()
-                    guard let userId = data["userId"] as? String,
-                          let vote = data["vote"] as? Bool,
-                          let timestamp = data["timestamp"] as? Timestamp else {
-                        return nil
-                    }
-                    
-                    return UserVote(
-                        userId: userId,
-                        subCategoryId: self.currentSubCategory.id,
-                        subQuestionId: question.id,
-                        isYay: vote,
-                        itemName: self.currentSubCategory.name,
-                        categoryName: question.question,
-                        categoryId: self.currentSubCategory.categoryId,
-                        imageURL: self.currentSubCategory.imageURL
-                    )
-                } ?? []
+                guard let documents = snapshot?.documents else { return }
                 
-                DispatchQueue.main.async {
-                    self.subQuestionVoteHistory[question.id] = votes
+                // Update vote counts
+                var yayCount = 0
+                var nayCount = 0
+                var uniqueVoters = Set<String>()
+                
+                for doc in documents {
+                    if doc.documentID == "_metadata" { continue } // Skip metadata document
+                    
+                    if let vote = doc.data()["vote"] as? Bool {
+                        if vote {
+                            yayCount += 1
+                        } else {
+                            nayCount += 1
+                        }
+                        uniqueVoters.insert(doc.documentID) // documentID is userId
+                    }
                 }
+                
+                // Update metadata
+                let metadataRef = votesRef.document("_metadata")
+                let metadata: [String: Any] = [
+                    "totalVotes": yayCount + nayCount,
+                    "uniqueVoters": uniqueVoters.count,
+                    "lastVoteAt": Timestamp(date: Date())
+                ]
+                
+                metadataRef.setData(metadata, merge: true)
+                
+                // Update subquestion document
+                let subquestionRef = self?.db.collection("categories")
+                    .document(question.categoryId)
+                    .collection("subcategories")
+                    .document(question.subCategoryId)
+                    .collection("subquestions")
+                    .document(question.id)
+                
+                subquestionRef?.updateData([
+                    "yayCount": yayCount,
+                    "nayCount": nayCount,
+                    "votesMetadata": metadata
+                ])
             }
             
             voteHistoryListeners[question.id] = listener
-    }
+        }
     }
     
     private func setupUserVotesListener() {
