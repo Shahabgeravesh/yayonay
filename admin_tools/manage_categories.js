@@ -1,274 +1,192 @@
-const admin = require('firebase-admin');
-const serviceAccount = require('../serviceAccountKey.json');
-const readline = require('readline');
+// Browser-compatible category management functions
+async function addCategory(name, imageURL, order) {
+    try {
+        showOperationStatus('Adding new category...', 'Preparing data');
+        debugLog('Adding new category:', { name, imageURL, order });
 
-// Initialize Firebase Admin
-if (!admin.apps.length) {
-  admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount)
-  });
+        // Check if Firebase is initialized
+        if (!firebase || !firebase.apps.length) {
+            throw new Error('Firebase is not initialized');
+        }
+
+        // Check authentication status
+        const currentUser = firebase.auth().currentUser;
+        if (!currentUser) {
+            throw new Error('User is not authenticated. Please log in again.');
+        }
+        debugLog('Current user:', currentUser.email);
+
+        const categoryData = {
+            name,
+            imageURL: imageURL || 'https://firebasestorage.googleapis.com/v0/b/yayonay-e7f58.appspot.com/o/default_category.png?alt=media',
+            order: parseInt(order),
+            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+            createdBy: currentUser.uid
+        };
+
+        const db = firebase.firestore();
+        await db.collection('categories').add(categoryData);
+        showSuccess('Category added successfully!');
+        await loadCategories();
+    } catch (error) {
+        console.error('Error adding category:', error);
+        showError('Error adding category: ' + error.message);
+    }
 }
 
-const db = admin.firestore();
+async function updateCategory(categoryId, name, imageURL, order) {
+    try {
+        const categoryData = {
+            name,
+            imageURL,
+            order: parseInt(order),
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        };
 
-// Create interface for reading user input
-const rl = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout
-});
-
-// Helper function to ask questions
-const question = (query) => new Promise((resolve) => rl.question(query, resolve));
-
-// Main menu options
-const MENU_OPTIONS = {
-  '1': 'Add new category',
-  '2': 'Add subcategory to existing category',
-  '3': 'List all categories and subcategories',
-  '4': 'Update category',
-  '5': 'Update subcategory',
-  '6': 'Delete category',
-  '7': 'Delete subcategory',
-  '8': 'Exit'
-};
-
-// Function to display the main menu
-function displayMenu() {
-  console.log('\n=== YayoNay Admin Tool ===');
-  console.log('Choose an option:');
-  Object.entries(MENU_OPTIONS).forEach(([key, value]) => {
-    console.log(`${key}. ${value}`);
-  });
+        await firebase.firestore().collection('categories').doc(categoryId).update(categoryData);
+        showSuccess('Category updated successfully!');
+        await loadCategories();
+    } catch (error) {
+        console.error('Error updating category:', error);
+        showError('Error updating category: ' + error.message);
+    }
 }
 
-// Function to add a new category
-async function addCategory() {
-  try {
-    const name = await question('Enter category name: ');
-    const imageURL = await question('Enter category image URL (or press Enter for default): ');
-    const order = parseInt(await question('Enter display order number: '));
+async function deleteCategory(categoryId) {
+    try {
+        // First, delete all subcategories
+        const subcategoriesSnapshot = await firebase.firestore()
+            .collection('categories')
+            .doc(categoryId)
+            .collection('subcategories')
+            .get();
 
-    const categoryData = {
-      name,
-      imageURL: imageURL || 'https://firebasestorage.googleapis.com/v0/b/yayonay-e7f58.appspot.com/o/default_category.png?alt=media',
-      order,
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
-      updatedAt: admin.firestore.FieldValue.serverTimestamp()
-    };
+        const batch = firebase.firestore().batch();
+        subcategoriesSnapshot.docs.forEach(doc => {
+            batch.delete(doc.ref);
+        });
 
-    await db.collection('categories').add(categoryData);
-    console.log('✅ Category added successfully!');
-  } catch (error) {
-    console.error('❌ Error adding category:', error.message);
-  }
+        // Then delete the category
+        batch.delete(firebase.firestore().collection('categories').doc(categoryId));
+        
+        await batch.commit();
+        showSuccess('Category deleted successfully!');
+        await loadCategories();
+    } catch (error) {
+        console.error('Error deleting category:', error);
+        showError('Error deleting category: ' + error.message);
+    }
 }
 
-// Function to add a subcategory
-async function addSubcategory() {
-  try {
-    // First, list all categories
-    const categories = await db.collection('categories').get();
-    console.log('\nAvailable categories:');
-    categories.forEach(doc => {
-      console.log(`- ${doc.data().name} (ID: ${doc.id})`);
+// Authentication and Event Management Functions
+async function login(email, password) {
+    try {
+        debugLog('Attempting login...');
+        const userCredential = await firebase.auth().signInWithEmailAndPassword(email, password);
+        debugLog('Login successful');
+        showSuccess('Login successful!');
+        return userCredential;
+    } catch (error) {
+        console.error('Login error:', error);
+        debugLog('Login error: ' + error.message);
+        showError('Login failed: ' + error.message);
+        throw error;
+    }
+}
+
+function logout() {
+    return firebase.auth().signOut()
+        .then(() => {
+            showSuccess('Logged out successfully');
+            window.location.reload();
+        })
+        .catch((error) => {
+            showError('Error logging out: ' + error.message);
+        });
+}
+
+// Event Listeners
+document.addEventListener('DOMContentLoaded', function() {
+    // Login form handler
+    const loginForm = document.getElementById('loginForm');
+    if (loginForm) {
+        loginForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            try {
+                await login(email, password);
+            } catch (error) {
+                console.error('Login failed:', error);
+            }
+        });
+    }
+
+    // Category form handler
+    const categoryForm = document.getElementById('categoryForm');
+    if (categoryForm) {
+        categoryForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            handleSaveCategory();
+        });
+    }
+
+    // Subcategory form handler
+    const subcategoryForm = document.getElementById('subcategoryForm');
+    if (subcategoryForm) {
+        subcategoryForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            handleSaveSubcategory();
+        });
+    }
+
+    // Initialize tooltips
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
     });
 
-    const categoryId = await question('\nEnter category ID: ');
-    const name = await question('Enter subcategory name: ');
-    const imageURL = await question('Enter subcategory image URL (or press Enter for default): ');
-    const order = parseInt(await question('Enter display order number: '));
-
-    const subcategoryData = {
-      name,
-      imageURL: imageURL || 'https://firebasestorage.googleapis.com/v0/b/yayonay-e7f58.appspot.com/o/default_subcategory.png?alt=media',
-      order,
-      categoryId,
-      yayCount: 0,
-      nayCount: 0,
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
-      updatedAt: admin.firestore.FieldValue.serverTimestamp()
-    };
-
-    await db.collection('categories').doc(categoryId).collection('subcategories').add(subcategoryData);
-    console.log('✅ Subcategory added successfully!');
-  } catch (error) {
-    console.error('❌ Error adding subcategory:', error.message);
-  }
-}
-
-// Function to list all categories and subcategories
-async function listAll() {
-  try {
-    const categories = await db.collection('categories').orderBy('order').get();
-    console.log('\n=== Current Categories and Subcategories ===');
-    
-    for (const category of categories.docs) {
-      const categoryData = category.data();
-      console.log(`\n📁 ${categoryData.name} (Order: ${categoryData.order})`);
-      
-      const subcategories = await category.ref.collection('subcategories').orderBy('order').get();
-      subcategories.forEach(subcat => {
-        const subcatData = subcat.data();
-        console.log(`  └─ 📑 ${subcatData.name} (Order: ${subcatData.order})`);
-      });
-    }
-  } catch (error) {
-    console.error('❌ Error listing categories:', error.message);
-  }
-}
-
-// Function to update a category
-async function updateCategory() {
-  try {
-    const categories = await db.collection('categories').get();
-    console.log('\nAvailable categories:');
-    categories.forEach(doc => {
-      console.log(`- ${doc.data().name} (ID: ${doc.id})`);
+    // Add click handlers for navigation buttons
+    document.querySelectorAll('[data-nav]').forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            const section = this.getAttribute('data-nav');
+            showSection(section);
+        });
     });
 
-    const categoryId = await question('\nEnter category ID to update: ');
-    const name = await question('Enter new name (or press Enter to skip): ');
-    const imageURL = await question('Enter new image URL (or press Enter to skip): ');
-    const orderStr = await question('Enter new order number (or press Enter to skip): ');
-
-    const updateData = {};
-    if (name) updateData.name = name;
-    if (imageURL) updateData.imageURL = imageURL;
-    if (orderStr) updateData.order = parseInt(orderStr);
-    updateData.updatedAt = admin.firestore.FieldValue.serverTimestamp();
-
-    await db.collection('categories').doc(categoryId).update(updateData);
-    console.log('✅ Category updated successfully!');
-  } catch (error) {
-    console.error('❌ Error updating category:', error.message);
-  }
-}
-
-// Function to update a subcategory
-async function updateSubcategory() {
-  try {
-    const categories = await db.collection('categories').get();
-    console.log('\nAvailable categories:');
-    for (const category of categories.docs) {
-      console.log(`\n${category.data().name} (ID: ${category.id})`);
-      const subcategories = await category.ref.collection('subcategories').get();
-      subcategories.forEach(subcat => {
-        console.log(`  └─ ${subcat.data().name} (ID: ${subcat.id})`);
-      });
-    }
-
-    const categoryId = await question('\nEnter category ID: ');
-    const subcategoryId = await question('Enter subcategory ID to update: ');
-    const name = await question('Enter new name (or press Enter to skip): ');
-    const imageURL = await question('Enter new image URL (or press Enter to skip): ');
-    const orderStr = await question('Enter new order number (or press Enter to skip): ');
-
-    const updateData = {};
-    if (name) updateData.name = name;
-    if (imageURL) updateData.imageURL = imageURL;
-    if (orderStr) updateData.order = parseInt(orderStr);
-    updateData.updatedAt = admin.firestore.FieldValue.serverTimestamp();
-
-    await db.collection('categories').doc(categoryId).collection('subcategories').doc(subcategoryId).update(updateData);
-    console.log('✅ Subcategory updated successfully!');
-  } catch (error) {
-    console.error('❌ Error updating subcategory:', error.message);
-  }
-}
-
-// Function to delete a category
-async function deleteCategory() {
-  try {
-    const categories = await db.collection('categories').get();
-    console.log('\nAvailable categories:');
-    categories.forEach(doc => {
-      console.log(`- ${doc.data().name} (ID: ${doc.id})`);
+    // Add click handlers for modal buttons
+    document.querySelectorAll('[data-modal]').forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            const modalFunction = this.getAttribute('data-modal');
+            if (typeof window[modalFunction] === 'function') {
+                window[modalFunction]();
+            }
+        });
     });
 
-    const categoryId = await question('\nEnter category ID to delete: ');
-    const confirm = await question('Are you sure you want to delete this category? (yes/no): ');
-
-    if (confirm.toLowerCase() === 'yes') {
-      await db.collection('categories').doc(categoryId).delete();
-      console.log('✅ Category deleted successfully!');
-    } else {
-      console.log('Deletion cancelled.');
-    }
-  } catch (error) {
-    console.error('❌ Error deleting category:', error.message);
-  }
-}
-
-// Function to delete a subcategory
-async function deleteSubcategory() {
-  try {
-    const categories = await db.collection('categories').get();
-    console.log('\nAvailable categories and subcategories:');
-    for (const category of categories.docs) {
-      console.log(`\n${category.data().name} (ID: ${category.id})`);
-      const subcategories = await category.ref.collection('subcategories').get();
-      subcategories.forEach(subcat => {
-        console.log(`  └─ ${subcat.data().name} (ID: ${subcat.id})`);
-      });
-    }
-
-    const categoryId = await question('\nEnter category ID: ');
-    const subcategoryId = await question('Enter subcategory ID to delete: ');
-    const confirm = await question('Are you sure you want to delete this subcategory? (yes/no): ');
-
-    if (confirm.toLowerCase() === 'yes') {
-      await db.collection('categories').doc(categoryId).collection('subcategories').doc(subcategoryId).delete();
-      console.log('✅ Subcategory deleted successfully!');
-    } else {
-      console.log('Deletion cancelled.');
-    }
-  } catch (error) {
-    console.error('❌ Error deleting subcategory:', error.message);
-  }
-}
-
-// Main function to run the admin tool
-async function main() {
-  while (true) {
-    displayMenu();
-    const choice = await question('\nEnter your choice (1-8): ');
-
-    switch (choice) {
-      case '1':
-        await addCategory();
-        break;
-      case '2':
-        await addSubcategory();
-        break;
-      case '3':
-        await listAll();
-        break;
-      case '4':
-        await updateCategory();
-        break;
-      case '5':
-        await updateSubcategory();
-        break;
-      case '6':
-        await deleteCategory();
-        break;
-      case '7':
-        await deleteSubcategory();
-        break;
-      case '8':
-        console.log('Goodbye! 👋');
-        rl.close();
-        process.exit(0);
-      default:
-        console.log('Invalid option. Please try again.');
-    }
-  }
-}
-
-// Start the admin tool
-console.log('Welcome to YayoNay Admin Tool! 🚀');
-main().catch(error => {
-  console.error('Error:', error);
-  rl.close();
-  process.exit(1);
+    // Add click handlers for action buttons
+    document.querySelectorAll('[data-action]').forEach(button => {
+        button.addEventListener('click', async function(e) {
+            e.preventDefault();
+            const action = this.getAttribute('data-action');
+            const id = this.getAttribute('data-id');
+            const parentId = this.getAttribute('data-parent-id');
+            
+            try {
+                setButtonLoading(this, true);
+                if (typeof window[action] === 'function') {
+                    if (parentId) {
+                        await window[action](parentId, id);
+                    } else {
+                        await window[action](id);
+                    }
+                }
+            } finally {
+                setButtonLoading(this, false);
+            }
+        });
+    });
 }); 

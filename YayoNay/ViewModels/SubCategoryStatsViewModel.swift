@@ -190,9 +190,9 @@ class SubCategoryStatsViewModel: ObservableObject {
         subQuestionsListener = subQuestionsRef.addSnapshotListener { [weak self] (snapshot: QuerySnapshot?, error: Error?) in
             guard let self = self,
                   let documents = snapshot?.documents else {
-                if let error = error {
-                    print("DEBUG: Error fetching sub-questions: \(error.localizedDescription)")
-                }
+            if let error = error {
+                print("DEBUG: Error fetching sub-questions: \(error.localizedDescription)")
+            }
                 return
             }
             
@@ -216,7 +216,7 @@ class SubCategoryStatsViewModel: ObservableObject {
         voteHistoryListeners.removeAll()
         
         // Set up new listeners
-        for question in questions {
+                for question in questions {
             let votesRef = db.collection("categories")
                 .document(currentSubCategory.categoryId)
                 .collection("subcategories")
@@ -260,7 +260,7 @@ class SubCategoryStatsViewModel: ObservableObject {
             }
             
             voteHistoryListeners[question.id] = listener
-        }
+    }
     }
     
     private func setupUserVotesListener() {
@@ -448,7 +448,7 @@ class SubCategoryStatsViewModel: ObservableObject {
         voteRef.getDocument { [weak self] (snapshot, error) in
             guard let self = self else { return }
             
-            let batch = self.db.batch()
+                    let batch = self.db.batch()
             let now = Timestamp(date: Date())
             
             if let existingVote = snapshot?.data()?["vote"] as? Bool {
@@ -481,8 +481,8 @@ class SubCategoryStatsViewModel: ObservableObject {
                     "votesMetadata.totalVotes": FIRFieldValue.increment(Int64(1)),
                     "votesMetadata.uniqueVoters": FIRFieldValue.increment(Int64(1))
                 ], forDocument: subQuestionRef)
-                
-                // Create new vote document
+            
+            // Create new vote document
                 batch.setData([
                     "userId": userId,
                     "vote": isYay,

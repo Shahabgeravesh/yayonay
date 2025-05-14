@@ -1,0 +1,8 @@
+{
+  "name": "admin-tools",
+  "version": "1.0.0",
+  "dependencies": {
+    "firebase": "^10.8.0",
+    "firebase-admin": "^13.4.0"
+  }
+}

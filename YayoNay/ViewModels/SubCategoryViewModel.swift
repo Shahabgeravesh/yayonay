@@ -87,98 +87,97 @@ class SubCategoryViewModel: ObservableObject {
             print("📊 Found \(recentlyVotedIds.count) recently voted items")
             print("📊 Recently voted IDs: \(recentlyVotedIds)")
             
-            // Now fetch subcategories, excluding recently voted ones
-            let subCategoriesRef = Firestore.firestore()
+            // Try fetching from nested collection first
+            let nestedRef = Firestore.firestore()
                 .collection("categories").document(self.categoryId).collection("subcategories")
-            print("DEBUG: Querying path: categories/\(self.categoryId)/subcategories")
-            subCategoriesRef.getDocuments { [weak self] (snapshot, error) in
+            print("DEBUG: Querying nested path: categories/\(self.categoryId)/subcategories")
+            
+            nestedRef.getDocuments { [weak self] (snapshot, error) in
                 guard let self = self else { return }
                 
                 if let error = error {
-                    print("❌ Error fetching subcategories: \(error.localizedDescription)")
+                    print("❌ Error fetching nested subcategories: \(error.localizedDescription)")
+                    // If nested fetch fails, try root collection
+                    self.fetchFromRootCollection(categoryId: categoryId, recentlyVotedIds: recentlyVotedIds)
                     return
                 }
                 
-                guard let documents = snapshot?.documents else {
-                    print("❌ No subcategories found")
-                    return
-                }
-                
-                print("DEBUG: 📄 Found \(documents.count) subcategories in Firestore")
-                for doc in documents {
-                    print("DEBUG: Subcategory doc id: \(doc.documentID), data: \(doc.data())")
-                }
-                
-                var validSubCategories: [SubCategory] = []
-                var allItemsVoted = true
-                
-                for document in documents {
-                    let data = document.data()
-                    let subCategoryId = document.documentID
-                    
-                    // Skip if this item was recently voted on, unless it's the initial subcategory
-                    if recentlyVotedIds.contains(subCategoryId) && subCategoryId != self.initialSubCategoryId {
-                        print("⏳ Skipping recently voted item: \(data["name"] as? String ?? "Unknown") (ID: \(subCategoryId))")
-                        continue
-                    }
-                    
-                    if let name = data["name"] as? String,
-                       let imageURL = data["imageURL"] as? String,
-                       let categoryId = data["categoryId"] as? String,
-                       let order = data["order"] as? Int {
-                        
-                        let subCategory = SubCategory(
-                            id: subCategoryId,
-                            name: name,
-                            imageURL: imageURL,
-                            categoryId: categoryId,
-                            order: order,
-                            yayCount: data["yayCount"] as? Int ?? 0,
-                            nayCount: data["nayCount"] as? Int ?? 0
-                        )
-                        
-                        validSubCategories.append(subCategory)
-                        allItemsVoted = false
-                        print("DEBUG: ✅ Added subcategory - ID: \(subCategoryId), Name: \(name)")
-                    } else {
-                        print("❌ Invalid subcategory data for ID: \(subCategoryId)")
-                    }
-                }
-                
-                print("DEBUG: 📦 Processed \(validSubCategories.count) valid subcategories")
-                
-                DispatchQueue.main.async {
-                    // If we have an initial subcategory, make sure it's included
-                    if let initialId = self.initialSubCategoryId,
-                       let initialSubCategory = validSubCategories.first(where: { $0.id == initialId }) {
-                        // Remove it from its current position
-                        validSubCategories.removeAll(where: { $0.id == initialId })
-                        // Add it at the beginning
-                        validSubCategories.insert(initialSubCategory, at: 0)
-                        print("DEBUG: 📍 Added initial subcategory to the beginning: \(initialSubCategory.name)")
-                        allItemsVoted = false
-                    }
-                    
-                    self.subCategories = validSubCategories
-                    
-                    // If all items have been voted on, set hasReachedEnd to true
-                    if allItemsVoted {
-                        print("DEBUG: 🎉 All items have been voted on")
-                        self.hasReachedEnd = true
-                    } else {
-                        // If we previously reached the end and there are no new items, keep the end state
-                        if self.hasReachedEnd && validSubCategories.isEmpty {
-                            print("DEBUG: 🔄 Preserving end state - no new items")
-                            return
-                        }
-                        // Otherwise reset the end state
-                        self.hasReachedEnd = false
-                    }
-                    
-                    print("DEBUG: ✅ Updating subcategories in ViewModel")
-                    print("DEBUG: New hasReachedEnd state: \(self.hasReachedEnd)")
+                if let documents = snapshot?.documents, !documents.isEmpty {
+                    self.processSubcategories(documents: documents, recentlyVotedIds: recentlyVotedIds)
+                } else {
+                    print("DEBUG: No subcategories found in nested collection, trying root collection")
+                    self.fetchFromRootCollection(categoryId: categoryId, recentlyVotedIds: recentlyVotedIds)
                 }
             }
+        }
+    }
+    
+    private func fetchFromRootCollection(categoryId: String, recentlyVotedIds: [String]) {
+        print("DEBUG: Querying root collection: subcategories")
+        let rootRef = Firestore.firestore().collection("subcategories")
+            .whereField("categoryId", isEqualTo: categoryId)
+        
+        rootRef.getDocuments { [weak self] (snapshot, error) in
+            guard let self = self else { return }
+            
+            if let error = error {
+                print("❌ Error fetching root subcategories: \(error.localizedDescription)")
+                return
+            }
+            
+            if let documents = snapshot?.documents {
+                self.processSubcategories(documents: documents, recentlyVotedIds: recentlyVotedIds)
+            }
+        }
+    }
+    
+    private func processSubcategories(documents: [QueryDocumentSnapshot], recentlyVotedIds: [String]) {
+        print("DEBUG: 📄 Found \(documents.count) subcategories in Firestore")
+        for doc in documents {
+            print("DEBUG: Subcategory doc id: \(doc.documentID), data: \(doc.data())")
+        }
+        
+        var validSubCategories: [SubCategory] = []
+        var allItemsVoted = true
+        
+        for document in documents {
+            let data = document.data()
+            let subCategoryId = document.documentID
+            
+            // Skip if this item was recently voted on, unless it's the initial subcategory
+            if recentlyVotedIds.contains(subCategoryId) && subCategoryId != self.initialSubCategoryId {
+                print("⏳ Skipping recently voted item: \(data["name"] as? String ?? "Unknown") (ID: \(subCategoryId))")
+                continue
+            }
+            
+            if let name = data["name"] as? String,
+               let imageURL = data["imageURL"] as? String,
+               let categoryId = data["categoryId"] as? String,
+               let order = data["order"] as? Int {
+                
+                let subCategory = SubCategory(
+                    id: subCategoryId,
+                    name: name,
+                    imageURL: imageURL,
+                    categoryId: categoryId,
+                    order: order,
+                    yayCount: data["yayCount"] as? Int ?? 0,
+                    nayCount: data["nayCount"] as? Int ?? 0
+                )
+                
+                validSubCategories.append(subCategory)
+                allItemsVoted = false
+                print("DEBUG: ✅ Added subcategory - ID: \(subCategoryId), Name: \(name)")
+            } else {
+                print("❌ Invalid subcategory data for ID: \(subCategoryId)")
+            }
+        }
+        
+        print("DEBUG: 📦 Processed \(validSubCategories.count) valid subcategories")
+        
+        DispatchQueue.main.async {
+            self.subCategories = validSubCategories
+            self.hasReachedEnd = allItemsVoted
         }
     }
     

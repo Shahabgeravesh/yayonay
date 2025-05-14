@@ -1,66 +1,91 @@
-# YayoNay Admin Tools
+# YayoNay Admin Panel
 
-This folder contains easy-to-use tools for managing your YayoNay app's content.
+A comprehensive web-based admin interface for managing the YayoNay application.
 
-## Setup (One-time only)
-1. Make sure you have Node.js installed on your computer
-2. Copy your `serviceAccountKey.json` file to the parent directory
-3. Open Terminal/Command Prompt
-4. Navigate to this directory
-5. Run `npm install firebase-admin`
+## Features
 
-## Using the Admin Tool
+- Category and subcategory management
+- User statistics and management
+- Content moderation tools
+- Database maintenance utilities
+- Backup and restore functionality
+- Real-time updates
 
-### To start the tool:
-1. Open Terminal/Command Prompt
-2. Navigate to this directory
-3. Run: `node manage_categories.js`
+## Setup
 
-### Available Options:
-1. **Add new category**
-   - Enter category name
-   - Optionally add an image URL
-   - Set display order (lower numbers appear first)
+1. Clone the repository
+```bash
+git clone <repository-url>
+cd admin_tools
+```
 
-2. **Add subcategory**
-   - Choose a parent category
-   - Enter subcategory name
-   - Optionally add an image URL
-   - Set display order
+2. Set up Firebase configuration
+```bash
+# Copy the template configuration file
+cp config.template.js config.js
 
-3. **List all categories**
-   - Shows all categories and subcategories
-   - Useful for checking current structure
+# Edit config.js with your Firebase credentials
+# Get these from your Firebase Console
+```
 
-4. **Update category**
-   - Choose a category to update
-   - Update name, image, or order
-   - Skip any field you don't want to change
+3. Install Firebase CLI
+```bash
+npm install -g firebase-tools
+```
 
-5. **Update subcategory**
-   - Choose a subcategory to update
-   - Update name, image, or order
-   - Skip any field you don't want to change
+4. Login to Firebase
+```bash
+firebase login
+```
 
-6. **Delete category**
-   - Remove a category and all its subcategories
-   - Requires confirmation
+5. Initialize Firebase
+```bash
+firebase init
+```
+Select the following options:
+- Choose "Hosting"
+- Select your Firebase project
+- Use "." as your public directory
+- Configure as a single-page app
+- Don't overwrite existing files
 
-7. **Delete subcategory**
-   - Remove a specific subcategory
-   - Requires confirmation
+6. Deploy
+```bash
+firebase deploy
+```
 
-8. **Exit**
-   - Safely close the admin tool
+## Security
 
-### Tips:
-- Always keep track of the order numbers you use
-- Use descriptive names for categories and subcategories
-- When in doubt, use the "List all" option to see the current structure
-- Be careful with the delete options - they cannot be undone!
+- The admin panel requires Firebase Authentication
+- Only authorized administrators can access the panel
+- All database operations are protected by Firebase Security Rules
+- Sensitive configuration is not included in version control
 
-### Need Help?
-If you encounter any issues:
-1. Make sure your `serviceAccountKey.json` file is in the correct location
-2. Check your internet connection
-3. Contact the development team if problems persist 
+## Development
+
+To run locally:
+```bash
+# Install local server (if needed)
+npm install -g http-server
+
+# Start local server
+http-server
+```
+
+## Contributing
+
+1. Create a new branch for your feature
+2. Make your changes
+3. Test thoroughly
+4. Submit a pull request
+
+## Important Notes
+
+- Never commit `config.js` with real Firebase credentials
+- Always use environment variables for sensitive data
+- Keep Firebase security rules up to date
+- Regularly backup your database
+
+## License
+
+[Your License] 

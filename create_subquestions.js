@@ -144,7 +144,7 @@ async function createSubQuestions() {
         });
         
         // Then create new subquestions using question text as document ID
-        for (const question of questions) {
+      for (const question of questions) {
           const docId = question.toLowerCase().replace(/[^a-z0-9]/g, '_');
           const subQuestionRef = db.collection('categories')
             .doc(categoryId)
@@ -153,11 +153,11 @@ async function createSubQuestions() {
             .collection('subquestions')
             .doc(docId);
             
-          const subQuestion = {
-            categoryId: categoryId,
+        const subQuestion = {
+          categoryId: categoryId,
             subCategoryId: subCategory.id,
-            question: question,
-            yayCount: 0,
+          question: question,
+          yayCount: 0,
             nayCount: 0,
             createdAt: admin.firestore.FieldValue.serverTimestamp(),
             updatedAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -167,10 +167,10 @@ async function createSubQuestions() {
               totalVotes: 0,
               uniqueVoters: 0
             }
-          };
-          
+        };
+        
           batch.set(subQuestionRef, subQuestion);
-          count++;
+        count++;
           
           // Create votes subcollection with an example structure document
           const votesMetadataRef = subQuestionRef.collection('votes').doc('_metadata');
@@ -185,11 +185,11 @@ async function createSubQuestions() {
             },
             updatedAt: admin.firestore.FieldValue.serverTimestamp()
           });
-          
-          // Firestore has a limit of 500 operations per batch
-          if (count % 450 === 0) {
+        
+        // Firestore has a limit of 500 operations per batch
+        if (count % 450 === 0) {
             await batch.commit();
-            console.log(`Committed batch of ${count} subQuestions`);
+          console.log(`Committed batch of ${count} subQuestions`);
             count = 0;
             batch = db.batch(); // Create a new batch
           }
