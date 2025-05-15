@@ -52,62 +52,53 @@ struct DiscoverHubView: View {
 }
 
 class DiscoverHubViewModel: ObservableObject {
-    @Published var currentTopic: Topic?
     @Published var currentSubCategory: SubCategory?
     private let db = Firestore.firestore()
     
-    func fetchRandomTopic() {
-        db.collection("subCategories")
-            .getDocuments { [weak self] snapshot, error in
-                guard let documents = snapshot?.documents,
-                      !documents.isEmpty else { return }
-                
-                // Get a random document
-                let randomIndex = Int.random(in: 0..<documents.count)
-                if let topic = Topic(document: documents[randomIndex]) {
-                    DispatchQueue.main.async {
-                        self?.currentTopic = topic
-                    }
-                }
-            }
-    }
-    
     func fetchRandomSubCategory() {
+        // First get all categories
         db.collection("categories").getDocuments { [weak self] snapshot, error in
             guard let self = self,
-                  let documents = snapshot?.documents else { return }
+                  let documents = snapshot?.documents,
+                  !documents.isEmpty else { return }
             
             // Get a random category
             let randomCategory = documents.randomElement()
             guard let categoryId = randomCategory?.documentID else { return }
             
-            // Get subcategories from the nested structure
-            db.collection("categories").document(categoryId).collection("subcategories").getDocuments { subSnapshot, subError in
-                guard let subDocuments = subSnapshot?.documents else { return }
-                
-                // Get a random subcategory
-                if let randomSubCategory = subDocuments.randomElement() {
-                    // Process the random subcategory
-                    let data = randomSubCategory.data()
-                    guard let name = data["name"] as? String,
-                          let imageURL = data["imageURL"] as? String,
-                          let categoryId = data["categoryId"] as? String,
-                          let yayCount = data["yayCount"] as? Int,
-                          let nayCount = data["nayCount"] as? Int else { return }
-                    let subCategory = SubCategory(
-                        id: randomSubCategory.documentID,
-                        name: name,
-                        imageURL: imageURL,
-                        categoryId: categoryId,
-                        order: 0,
-                        yayCount: yayCount,
-                        nayCount: nayCount
-                    )
-                    DispatchQueue.main.async {
-                        self.currentSubCategory = subCategory
+            // Then get subcategories from the nested structure
+            db.collection("categories")
+                .document(categoryId)
+                .collection("subcategories")
+                .getDocuments { subSnapshot, subError in
+                    guard let subDocuments = subSnapshot?.documents,
+                          !subDocuments.isEmpty else { return }
+                    
+                    // Get a random subcategory
+                    if let randomSubCategory = subDocuments.randomElement() {
+                        let data = randomSubCategory.data()
+                        guard let name = data["name"] as? String,
+                              let imageURL = data["imageURL"] as? String,
+                              let categoryId = data["categoryId"] as? String,
+                              let order = data["order"] as? Int,
+                              let yayCount = data["yayCount"] as? Int,
+                              let nayCount = data["nayCount"] as? Int else { return }
+                        
+                        let subCategory = SubCategory(
+                            id: randomSubCategory.documentID,
+                            name: name,
+                            imageURL: imageURL,
+                            categoryId: categoryId,
+                            order: order,
+                            yayCount: yayCount,
+                            nayCount: nayCount
+                        )
+                        
+                        DispatchQueue.main.async {
+                            self.currentSubCategory = subCategory
+                        }
                     }
                 }
-            }
         }
     }
 }
