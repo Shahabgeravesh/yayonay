@@ -11,71 +11,67 @@ import FirebaseStorage
 
 struct AddVoteItemView: View {
     @Environment(\.dismiss) private var dismiss
-    @StateObject private var viewModel = VotingViewModel()
-    @State private var selectedVoteType: Bool?
-    @State private var showingError = false
+    @StateObject private var viewModel: VotingViewModel
+    @State private var selectedVoteType: VoteType = .yay
     
     let topicId: String
-    let categoryId: String
-    let subCategoryId: String
     let topicTitle: String
+    let categoryId: String
     let categoryName: String
+    let subCategoryId: String
+    
+    init(topicId: String, topicTitle: String, categoryId: String, categoryName: String, subCategoryId: String) {
+        self.topicId = topicId
+        self.topicTitle = topicTitle
+        self.categoryId = categoryId
+        self.categoryName = categoryName
+        self.subCategoryId = subCategoryId
+        _viewModel = StateObject(wrappedValue: VotingViewModel())
+    }
     
     var body: some View {
         NavigationView {
-            VStack(spacing: 20) {
-                Text("Vote on this topic")
-                    .font(.title2)
-                    .fontWeight(.bold)
-                
-                HStack(spacing: 30) {
-                    VoteButton(
-                        type: .yay,
-                        isSelected: selectedVoteType == true,
-                        action: { selectedVoteType = true }
-                    )
-                    
-                    VoteButton(
-                        type: .nay,
-                        isSelected: selectedVoteType == false,
-                        action: { selectedVoteType = false }
-                    )
+            Form {
+                Section(header: Text("Vote Type")) {
+                    Picker("Vote Type", selection: $selectedVoteType) {
+                        Text("Yay").tag(VoteType.yay)
+                        Text("Nay").tag(VoteType.nay)
+                    }
+                    .pickerStyle(SegmentedPickerStyle())
                 }
                 
-                if let errorMessage = viewModel.errorMessage {
-                    Text(errorMessage)
-                        .foregroundColor(.red)
-                        .font(.caption)
+                Section {
+                    Button(action: submitVote) {
+                        Text("Submit Vote")
+                            .frame(maxWidth: .infinity)
+                            .foregroundColor(.white)
+                    }
+                    .listRowBackground(Color.blue)
                 }
-                
-                Spacer()
             }
-            .padding()
-            .navigationBarItems(
-                leading: Button("Cancel") { dismiss() },
-                trailing: Button("Submit") {
-                    submitVote()
+            .navigationTitle("Add Vote")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("Cancel") {
+                        dismiss()
+                    }
                 }
-                .disabled(selectedVoteType == nil || viewModel.isLoading)
-            )
+            }
         }
     }
     
     private func submitVote() {
-        guard let voteType = selectedVoteType else { return }
-        
         Task {
             await viewModel.createVote(
                 topicId: topicId,
-                voteType: voteType,
+                voteType: selectedVoteType,
                 categoryId: categoryId,
                 subCategoryId: subCategoryId,
                 itemName: topicTitle,
                 categoryName: categoryName
             )
-            if viewModel.errorMessage == nil {
-                dismiss()
-            }
+            dismiss()
         }
     }
 }
@@ -117,5 +113,11 @@ struct VoteButton: View {
 }
 
 #Preview {
-    AddVoteItemView(topicId: "preview", categoryId: "preview", subCategoryId: "preview", topicTitle: "Preview Topic", categoryName: "Preview Category")
+    AddVoteItemView(
+        topicId: "123",
+        topicTitle: "Sample Topic",
+        categoryId: "456",
+        categoryName: "Sample Category",
+        subCategoryId: "789"
+    )
 } 

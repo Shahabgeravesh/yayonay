@@ -23,9 +23,11 @@ class MySQLManager {
         )
         
         let source = MySQLConnectionSource(configuration: configuration)
+        let poolConfiguration = ConnectionPoolConfiguration(maxConnections: 8)
         self.pool = EventLoopGroupConnectionPool(
             source: source,
-            on: eventLoopGroup
+            on: eventLoopGroup,
+            poolConfiguration: poolConfiguration
         )
     }
     
@@ -36,7 +38,7 @@ class MySQLManager {
     
     // MARK: - Query Execution
     
-    private func executeQuery<T: Decodable>(_ query: String, _ parameters: [MySQLData] = []) async throws -> [T] {
+    private func executeQuery<T: Decodable>(_ query: String, parameters: [MySQLData] = []) async throws -> [T] {
         try await pool.withConnection { connection in
             let rows = try await connection.query(query, parameters).get()
             return try rows.map { row in
@@ -47,7 +49,7 @@ class MySQLManager {
         }
     }
     
-    private func executeUpdate(_ query: String, _ parameters: [MySQLData] = []) async throws {
+    private func executeUpdate(_ query: String, parameters: [MySQLData] = []) async throws {
         try await pool.withConnection { connection in
             _ = try await connection.query(query, parameters).get()
         }
@@ -65,20 +67,20 @@ class MySQLManager {
             .init(string: user.email),
             .init(string: user.name)
         ]
-        try await executeUpdate(query, parameters)
+        try await executeUpdate(query, parameters: parameters)
     }
     
     func authenticateUser(email: String, password: String) async throws -> User? {
         let query = "SELECT * FROM users WHERE email = ?"
         let parameters: [MySQLData] = [.init(string: email)]
-        let users: [User] = try await executeQuery(query, parameters)
+        let users: [User] = try await executeQuery(query, parameters: parameters)
         return users.first
     }
     
     func getUser(id: String) async throws -> User? {
         let query = "SELECT * FROM users WHERE id = ?"
         let parameters: [MySQLData] = [.init(string: id)]
-        let users: [User] = try await executeQuery(query, parameters)
+        let users: [User] = try await executeQuery(query, parameters: parameters)
         return users.first
     }
     
@@ -93,7 +95,7 @@ class MySQLManager {
             .init(string: user.name),
             .init(string: user.id)
         ]
-        try await executeUpdate(query, parameters)
+        try await executeUpdate(query, parameters: parameters)
     }
     
     // MARK: - Vote Operations
@@ -109,9 +111,9 @@ class MySQLManager {
             .init(string: vote.categoryId),
             .init(string: vote.subCategoryId),
             .init(string: vote.topicId),
-            .init(bool: vote.voteType)
+            .init(bool: vote.voteType == .yay)
         ]
-        try await executeUpdate(query, parameters)
+        try await executeUpdate(query, parameters: parameters)
     }
     
     func getVotes(categoryId: String, subCategoryId: String) async throws -> [Vote] {
@@ -126,7 +128,7 @@ class MySQLManager {
             .init(string: categoryId),
             .init(string: subCategoryId)
         ]
-        return try await executeQuery(query, parameters)
+        return try await executeQuery(query, parameters: parameters)
     }
     
     // MARK: - Comment Operations
@@ -142,7 +144,7 @@ class MySQLManager {
             .init(string: comment.topicId),
             .init(string: comment.content)
         ]
-        try await executeUpdate(query, parameters)
+        try await executeUpdate(query, parameters: parameters)
     }
     
     func getComments(topicId: String) async throws -> [Comment] {
@@ -152,13 +154,13 @@ class MySQLManager {
             ORDER BY created_at DESC
         """
         let parameters: [MySQLData] = [.init(string: topicId)]
-        return try await executeQuery(query, parameters)
+        return try await executeQuery(query, parameters: parameters)
     }
     
     func deleteComment(id: String) async throws {
         let query = "DELETE FROM comments WHERE id = ?"
         let parameters: [MySQLData] = [.init(string: id)]
-        try await executeUpdate(query, parameters)
+        try await executeUpdate(query, parameters: parameters)
     }
     
     // MARK: - Topic Operations
@@ -176,7 +178,7 @@ class MySQLManager {
             .init(string: topic.categoryId),
             .init(string: topic.subCategoryId)
         ]
-        try await executeUpdate(query, parameters)
+        try await executeUpdate(query, parameters: parameters)
     }
     
     func getTopics(categoryId: String, subCategoryId: String) async throws -> [Topic] {
@@ -189,7 +191,7 @@ class MySQLManager {
             .init(string: categoryId),
             .init(string: subCategoryId)
         ]
-        return try await executeQuery(query, parameters)
+        return try await executeQuery(query, parameters: parameters)
     }
     
     // MARK: - Category Operations
@@ -199,7 +201,6 @@ class MySQLManager {
             FROM categories
             ORDER BY name
         """
-        
         return try await executeQuery(query)
     }
     
@@ -209,7 +210,6 @@ class MySQLManager {
             FROM categories
             WHERE id = ?
         """
-        
         let parameters: [MySQLData] = [.init(string: id)]
         let categories: [Category] = try await executeQuery(query, parameters: parameters)
         
@@ -227,7 +227,6 @@ class MySQLManager {
             WHERE category_id = ?
             ORDER BY name
         """
-        
         let parameters: [MySQLData] = [.init(string: categoryId)]
         return try await executeQuery(query, parameters: parameters)
     }
@@ -239,13 +238,11 @@ class MySQLManager {
             VALUES (?, ?, NOW())
             RETURNING id, user_id, content, created_at
         """
-        
         let parameters: [MySQLData] = [
             .init(string: userId),
             .init(string: content)
         ]
-        
-        let questions: [Question] = try await executeQuery(query, parameters)
+        let questions: [Question] = try await executeQuery(query, parameters: parameters)
         guard let question = questions.first else {
             throw DatabaseError.insertFailed
         }
@@ -258,7 +255,6 @@ class MySQLManager {
             FROM questions
             ORDER BY created_at DESC
         """
-        
         return try await executeQuery(query)
     }
     
@@ -268,14 +264,12 @@ class MySQLManager {
             INSERT INTO shares (user_id, item_id, item_type, platform, created_at)
             VALUES (?, ?, ?, ?, NOW())
         """
-        
         let parameters: [MySQLData] = [
             .init(string: userId),
             .init(string: itemId),
             .init(string: itemType),
             .init(string: platform)
         ]
-        
         try await executeUpdate(query, parameters: parameters)
     }
     
@@ -288,7 +282,6 @@ class MySQLManager {
             FROM shares
             WHERE user_id = ?
         """
-        
         let parameters: [MySQLData] = [.init(string: userId)]
         let stats: [ShareStats] = try await executeQuery(query, parameters: parameters)
         
@@ -304,12 +297,10 @@ class MySQLManager {
             FROM shares
             WHERE item_id = ? AND item_type = ?
         """
-        
         let parameters: [MySQLData] = [
             .init(string: itemId),
             .init(string: itemType)
         ]
-        
         let counts: [ShareCount] = try await executeQuery(query, parameters: parameters)
         return counts.first?.count ?? 0
     }

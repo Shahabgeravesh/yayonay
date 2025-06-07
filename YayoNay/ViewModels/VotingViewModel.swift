@@ -47,7 +47,7 @@ class VotingViewModel: ObservableObject {
     
     func createVote(
         topicId: String,
-        voteType: Bool,
+        voteType: VoteType,
         categoryId: String,
         subCategoryId: String,
         itemName: String,

@@ -6,7 +6,7 @@ struct Vote: Codable, Identifiable {
     let categoryId: String
     let subCategoryId: String
     let topicId: String
-    let voteType: Bool
+    let voteType: VoteType
     let timestamp: Date
     let itemName: String
     let imageURL: String?
@@ -38,7 +38,8 @@ struct Vote: Codable, Identifiable {
         categoryId = try container.decode(String.self, forKey: .categoryId)
         subCategoryId = try container.decode(String.self, forKey: .subCategoryId)
         topicId = try container.decode(String.self, forKey: .topicId)
-        voteType = try container.decode(Bool.self, forKey: .voteType)
+        let boolValue = try container.decode(Bool.self, forKey: .voteType)
+        voteType = boolValue ? .yay : .nay
         timestamp = try container.decode(Date.self, forKey: .timestamp)
         itemName = try container.decode(String.self, forKey: .itemName)
         imageURL = try container.decodeIfPresent(String.self, forKey: .imageURL)
@@ -55,7 +56,7 @@ struct Vote: Codable, Identifiable {
         try container.encode(categoryId, forKey: .categoryId)
         try container.encode(subCategoryId, forKey: .subCategoryId)
         try container.encode(topicId, forKey: .topicId)
-        try container.encode(voteType, forKey: .voteType)
+        try container.encode(voteType == .yay, forKey: .voteType)
         try container.encode(timestamp, forKey: .timestamp)
         try container.encode(itemName, forKey: .itemName)
         try container.encodeIfPresent(imageURL, forKey: .imageURL)
