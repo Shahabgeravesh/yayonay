@@ -1,0 +1,25 @@
+{
+  "name": "yayonay",
+  "version": "1.0.0",
+  "main": "functions/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Shahabgeravesh/yayonay.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Shahabgeravesh/yayonay/issues"
+  },
+  "homepage": "https://github.com/Shahabgeravesh/yayonay#readme",
+  "description": "",
+  "dependencies": {
+    "firebase": "^11.7.1",
+    "firebase-admin": "^13.4.0",
+    "firebase-functions": "^4.7.0"
+  }
+}

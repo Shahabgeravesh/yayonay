@@ -1,0 +1,1857 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YayoNay Admin Panel</title>
+    
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
+    
+    <!-- Firebase Configuration -->
+    <script>
+        const firebaseConfig = {
+            projectId: "yayonay-e7f58",
+            appId: "1:1057578166868:web:08a14e5604180ddf5a9bc1",
+            storageBucket: "yayonay-e7f58.firebasestorage.app",
+            apiKey: "AIzaSyDXSbgxpk5oLMl4YmCtjEJy1AbMKgb4G1o",
+            authDomain: "yayonay-e7f58.firebaseapp.com",
+            messagingSenderId: "1057578166868",
+            measurementId: "G-FQ115VP93E"
+        };
+
+        // Initialize Firebase and Firestore globally
+        let db;
+
+        // Wait for DOM content to be loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize Firebase with error handling
+            try {
+                debugLog('Starting Firebase initialization...');
+                
+                if (typeof firebase === 'undefined') {
+                    throw new Error('Firebase SDK failed to load');
+                }
+
+                // Initialize Firebase only if not already initialized
+                if (!firebase.apps.length) {
+                    firebase.initializeApp(firebaseConfig);
+                    debugLog('Firebase app initialized');
+
+                    // Initialize Firestore with settings for Safari
+                    db = firebase.firestore();
+                    db.settings({
+                        cacheSizeBytes: firebase.firestore.CACHE_SIZE_UNLIMITED
+                    });
+                    debugLog('Firestore settings configured for Safari');
+                } else {
+                    db = firebase.firestore();
+                    debugLog('Using existing Firestore instance');
+                }
+
+                // Test database connection
+                db.collection('categories').get()
+                    .then(() => {
+                        debugLog('Database connection verified');
+                        // Hide initialization status and show login container
+                        document.getElementById('initStatus').style.display = 'none';
+                        document.getElementById('loginContainer').style.display = 'flex';
+                    })
+                    .catch(error => {
+                        debugLog('Database connection error:', error.message);
+                        showError('Database connection failed: ' + error.message);
+                    });
+
+                // Auth state observer
+                firebase.auth().onAuthStateChanged(function(user) {
+                    debugLog('Auth state changed:', user ? 'User signed in' : 'User signed out');
+                    if (user) {
+                        debugLog('User signed in:', user.email);
+                        // User is signed in
+                        document.getElementById('mainContent').style.display = 'block';
+                        document.getElementById('loginContainer').style.display = 'none';
+                        document.getElementById('userEmail').textContent = user.email;
+                        
+                        // Initialize categories
+                        loadCategories().catch(error => {
+                            console.error('Error loading categories:', error);
+                            showError('Error loading categories: ' + error.message);
+                        });
+                    } else {
+                        debugLog('User signed out');
+                        // User is signed out
+                        document.getElementById('mainContent').style.display = 'none';
+                        document.getElementById('loginContainer').style.display = 'flex';
+                    }
+                });
+
+            } catch (error) {
+                console.error('Initialization error:', error);
+                debugLog('Initialization error: ' + error.message);
+                
+                // Hide initialization status and show error
+                document.getElementById('initStatus').style.display = 'none';
+                document.getElementById('initError').textContent = 'Failed to initialize: ' + error.message;
+                document.getElementById('initError').style.display = 'block';
+                
+                showError('Initialization failed: ' + error.message);
+            }
+        });
+
+        // Helper functions for UI feedback
+        function showError(message) {
+            const errorToast = new bootstrap.Toast(document.getElementById('errorToast'));
+            document.getElementById('errorToastMessage').textContent = message;
+            errorToast.show();
+        }
+
+        function showSuccess(message) {
+            const successToast = new bootstrap.Toast(document.getElementById('successToast'));
+            document.getElementById('successToastMessage').textContent = message;
+            successToast.show();
+        }
+
+        // Debug Panel Functions
+        let debugEnabled = true;
+        const maxDebugEntries = 50;
+        let debugEntries = [];
+
+        function toggleDebug() {
+            const panel = document.getElementById('debugPanel');
+            panel.classList.toggle('show');
+        }
+
+        function debugLog(message, data = null) {
+            const timestamp = new Date().toLocaleTimeString();
+            let logMessage = `[${timestamp}] ${message}`;
+            if (data) {
+                logMessage += ': ' + JSON.stringify(data);
+            }
+            
+            debugEntries.unshift(logMessage);
+            if (debugEntries.length > maxDebugEntries) {
+                debugEntries.pop();
+            }
+
+            const panel = document.getElementById('debugPanel');
+            if (panel) {
+                panel.innerHTML = debugEntries.map(entry => `<div class="debug-entry">${entry}</div>`).join('');
+            }
+
+            // Also update login status if relevant
+            if (message.toLowerCase().includes('error') || 
+                message.toLowerCase().includes('failed') ||
+                message.toLowerCase().includes('success') ||
+                message.toLowerCase().includes('authenticated')) {
+                updateLoginStatus(message, message.toLowerCase().includes('error') || message.toLowerCase().includes('failed') ? 'error' : 'success');
+            }
+        }
+
+        function updateLoginStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('loginStatus');
+            if (statusDiv) {
+                statusDiv.textContent = message;
+                statusDiv.className = 'alert';
+                statusDiv.classList.add(`alert-${type === 'error' ? 'danger' : type === 'success' ? 'success' : 'info'}`);
+                statusDiv.style.display = 'block';
+            }
+        }
+
+        // Make functions globally available
+        window.toggleDebug = toggleDebug;
+        window.debugLog = debugLog;
+        window.showError = showError;
+        window.showSuccess = showSuccess;
+        window.db = db;
+    </script>
+    <!-- Bootstrap and other dependencies -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .category-card {
+            border: 1px solid #ddd;
+            padding: 20px;
+            margin: 15px 0;
+            border-radius: 12px;
+            background: white;
+            transition: all 0.3s ease;
+        }
+        .category-card:hover {
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            transform: translateY(-2px);
+        }
+        .category-image {
+            width: 60px;
+            height: 60px;
+            object-fit: cover;
+            border-radius: 8px;
+            margin-right: 15px;
+        }
+        .order-number {
+            font-size: 24px;
+            font-weight: bold;
+            color: #666;
+            min-width: 40px;
+            text-align: center;
+        }
+        .drag-handle {
+            cursor: move;
+            padding: 10px;
+            color: #999;
+            font-size: 20px;
+        }
+        .subcategory-list {
+            margin-left: 30px;
+            padding-left: 15px;
+            border-left: 3px solid #e9ecef;
+            margin-top: 10px;
+        }
+        .subcategory-card {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+        .warning {
+            color: #dc3545;
+            font-weight: bold;
+        }
+        .success {
+            color: #198754;
+            font-weight: bold;
+        }
+        #loginContainer {
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        }
+        #mainContent {
+            display: none;
+            min-height: 100vh;
+            background-color: #f8f9fa;
+        }
+        .stats-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .stats-number {
+            font-size: 32px;
+            font-weight: bold;
+            color: #0d6efd;
+        }
+        .loading-spinner {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 1000;
+        }
+        .btn-icon {
+            padding: 0.375rem 0.75rem;
+        }
+        .btn-icon i {
+            margin-right: 5px;
+        }
+        .help-text {
+            font-size: 0.875rem;
+            color: #6c757d;
+            margin-top: 0.25rem;
+        }
+        .stats-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            transition: all 0.3s ease;
+        }
+        .stats-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .stats-number {
+            font-size: 32px;
+            font-weight: bold;
+            color: #0d6efd;
+            margin: 10px 0;
+        }
+        .card {
+            border-radius: 12px;
+            border: none;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            transition: all 0.3s ease;
+        }
+        .card:hover {
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .card-header {
+            background: none;
+            border-bottom: 1px solid #eee;
+            padding: 1rem;
+        }
+        .card-title {
+            margin-bottom: 0;
+            color: #333;
+        }
+        .card-title i {
+            margin-right: 8px;
+            color: #0d6efd;
+        }
+        .list-group-item {
+            border: none;
+            border-bottom: 1px solid #eee;
+            padding: 1rem;
+        }
+        .list-group-item:last-child {
+            border-bottom: none;
+        }
+        .nav-link {
+            padding: 0.8rem 1rem;
+            color: rgba(255,255,255,0.8) !important;
+            transition: all 0.3s ease;
+        }
+        .nav-link:hover {
+            color: white !important;
+            transform: translateX(5px);
+        }
+        .nav-link i {
+            margin-right: 8px;
+        }
+        .navbar {
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        #mainContent {
+            background-color: #f8f9fa;
+            min-height: 100vh;
+            padding-bottom: 2rem;
+        }
+        .btn-outline-primary {
+            border-width: 2px;
+        }
+        .btn-outline-primary:hover {
+            transform: translateY(-1px);
+        }
+        .system-alert {
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+        .system-alert.warning {
+            background-color: #fff3cd;
+            border: 1px solid #ffeeba;
+            color: #856404;
+        }
+        .system-alert.success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .activity-item {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        .activity-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #e9ecef;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+        }
+        .activity-content {
+            flex: 1;
+        }
+        .activity-time {
+            color: #6c757d;
+            font-size: 0.875rem;
+        }
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+        #debugPanel {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0, 0, 0, 0.8);
+            color: #00ff00;
+            font-family: monospace;
+            padding: 10px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 9999;
+            font-size: 12px;
+            display: none;
+        }
+
+        #debugPanel.show {
+            display: block;
+        }
+
+        .debug-entry {
+            margin: 2px 0;
+            border-bottom: 1px solid #333;
+            padding: 2px 0;
+        }
+
+        .debug-toggle {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            z-index: 10000;
+        }
+
+        #loginStatus {
+            margin-bottom: 15px;
+            padding: 10px;
+            border-radius: 5px;
+            display: none;
+        }
+
+        #loginStatus.error {
+            background-color: #ffebee;
+            color: #c62828;
+            border: 1px solid #ef9a9a;
+        }
+
+        #loginStatus.success {
+            background-color: #e8f5e9;
+            color: #2e7d32;
+            border: 1px solid #a5d6a7;
+        }
+
+        #loginStatus.info {
+            background-color: #e3f2fd;
+            color: #1565c0;
+            border: 1px solid #90caf9;
+        }
+
+        /* Add immediate visual feedback styles */
+        .init-status {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 2rem;
+            border-radius: 10px;
+            text-align: center;
+            z-index: 9999;
+            min-width: 300px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .init-status .spinner-border {
+            width: 3rem;
+            height: 3rem;
+        }
+
+        .text-light-50 {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        #loginContainer {
+            display: none; /* Hide initially until Firebase is ready */
+        }
+
+        #initError {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #ff4444;
+            color: white;
+            padding: 15px;
+            border-radius: 5px;
+            text-align: center;
+            z-index: 9999;
+            display: none;
+        }
+
+        /* Toast Styles */
+        .toast-container {
+            z-index: 9999;
+        }
+
+        /* Loading Overlay */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+
+        .loading-spinner {
+            background: white;
+            padding: 2rem;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        /* Error Boundary */
+        .error-boundary {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 9999;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Operation Status */
+        .operation-status {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: white;
+            padding: 1rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            z-index: 9998;
+            max-width: 300px;
+        }
+
+        .status-content {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .status-icon {
+            font-size: 1.5rem;
+            color: #007bff;
+        }
+
+        .status-message {
+            flex: 1;
+            font-weight: 500;
+        }
+
+        .status-details {
+            font-size: 0.875rem;
+            color: #6c757d;
+            margin-top: 5px;
+        }
+
+        /* Button Loading State */
+        .btn.loading {
+            position: relative;
+            pointer-events: none;
+            opacity: 0.8;
+        }
+
+        .btn.loading::after {
+            content: '';
+            position: absolute;
+            width: 1rem;
+            height: 1rem;
+            border: 2px solid transparent;
+            border-top-color: currentColor;
+            border-radius: 50%;
+            animation: button-loading-spinner 1s ease infinite;
+            right: 0.5rem;
+            top: calc(50% - 0.5rem);
+        }
+
+        @keyframes button-loading-spinner {
+            from {
+                transform: rotate(0turn);
+            }
+            to {
+                transform: rotate(1turn);
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Add initialization status -->
+    <div id="initStatus" class="init-status">
+        <div class="spinner-border text-light mb-3" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        <div class="text-light">Initializing YayoNay Admin Panel...</div>
+        <small class="text-light-50 mt-2">Please wait while we set things up...</small>
+    </div>
+
+    <!-- Add error display -->
+    <div id="initError" class="alert alert-danger" style="display: none; position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 9999;"></div>
+
+    <!-- Loading Spinner -->
+    <div class="loading-spinner">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+    </div>
+
+    <!-- Add Debug Panel -->
+    <div id="debugPanel"></div>
+    <button class="debug-toggle" onclick="toggleDebug()">Toggle Debug</button>
+
+    <!-- Login Container -->
+    <div id="loginContainer" style="display: none;">
+        <div class="card shadow" style="width: 350px;">
+            <div class="card-body p-4">
+                <h4 class="card-title text-center mb-4">YayoNay Admin Panel</h4>
+                <div id="loginStatus" class="alert" style="display: none;"></div>
+                <form id="loginForm" class="needs-validation" novalidate>
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="email" required 
+                               placeholder="Enter your email">
+                        <div class="invalid-feedback">
+                            Please enter a valid email address.
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Password</label>
+                        <input type="password" class="form-control" id="password" required 
+                               placeholder="Enter your password">
+                        <div class="invalid-feedback">
+                            Please enter your password.
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-sign-in-alt me-2"></i> Login
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div id="mainContent">
+        <!-- Navigation -->
+        <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+            <div class="container">
+                <a class="navbar-brand" href="#">
+                    <i class="fas fa-tools me-2"></i>YayoNay Admin
+                </a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <ul class="navbar-nav me-auto">
+                        <li class="nav-item">
+                            <a class="nav-link" href="#" onclick="showDashboard(); return false;">
+                                <i class="fas fa-home"></i> Dashboard
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#" onclick="showCategories(); return false;">
+                                <i class="fas fa-list"></i> Categories
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#" onclick="showSettings(); return false;">
+                                <i class="fas fa-cog"></i> Settings
+                            </a>
+                        </li>
+                    </ul>
+                    <div class="d-flex align-items-center">
+                        <span class="text-light me-3" id="userEmail"></span>
+                        <button class="btn btn-outline-light" onclick="logout()">
+                            <i class="fas fa-sign-out-alt"></i> Logout
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main Container -->
+        <div class="container py-4">
+            <!-- Dashboard Section -->
+            <div id="dashboardSection">
+                <div class="row mb-4">
+                    <div class="col">
+                        <h2><i class="fas fa-tachometer-alt"></i> Dashboard</h2>
+                    </div>
+                    <div class="col-auto">
+                        <button class="btn btn-success me-2" onclick="backupDatabase()">
+                            <i class="fas fa-download"></i> Backup Database
+                        </button>
+                        <button class="btn btn-primary" onclick="showDatabaseStats()">
+                            <i class="fas fa-chart-bar"></i> View Stats
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Quick Stats -->
+                <div class="row mb-4">
+                    <div class="col-md-3">
+                        <div class="stats-card">
+                            <h5><i class="fas fa-users"></i> Users</h5>
+                            <div class="stats-number" id="totalUsers">0</div>
+                            <small class="text-muted">Active in last 30 days</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stats-card">
+                            <h5><i class="fas fa-list"></i> Categories</h5>
+                            <div class="stats-number" id="totalCategories">0</div>
+                            <small class="text-muted">Total categories</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stats-card">
+                            <h5><i class="fas fa-layer-group"></i> Subcategories</h5>
+                            <div class="stats-number" id="totalSubcategories">0</div>
+                            <small class="text-muted">Total subcategories</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stats-card">
+                            <h5><i class="fas fa-chart-line"></i> Activity</h5>
+                            <div class="stats-number" id="totalVotes">0</div>
+                            <small class="text-muted">Total votes today</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <h4 class="mb-3">Quick Actions</h4>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <h5 class="card-title"><i class="fas fa-list-alt"></i> Categories</h5>
+                                <div class="d-grid gap-2">
+                                    <button class="btn btn-outline-primary btn-sm" onclick="showAddCategoryModal()">
+                                        <i class="fas fa-plus"></i> Add Category
+                                    </button>
+                                    <button class="btn btn-outline-primary btn-sm" onclick="showAddSubcategoryModal()">
+                                        <i class="fas fa-plus"></i> Add Subcategory
+                                    </button>
+                                    <button class="btn btn-outline-primary btn-sm" onclick="showCategories()">
+                                        <i class="fas fa-edit"></i> Manage Categories
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <h5 class="card-title"><i class="fas fa-question-circle"></i> Subquestions</h5>
+                                <div class="d-grid gap-2">
+                                    <button class="btn btn-outline-primary btn-sm" onclick="showAddSubquestionModal()">
+                                        <i class="fas fa-plus"></i> Add Subquestion
+                                    </button>
+                                    <button class="btn btn-outline-primary btn-sm" onclick="showSubquestionsList()">
+                                        <i class="fas fa-list"></i> View All
+                                    </button>
+                                    <button class="btn btn-outline-warning btn-sm" onclick="showBulkSubquestionUpload()">
+                                        <i class="fas fa-upload"></i> Bulk Upload
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <h5 class="card-title"><i class="fas fa-user-shield"></i> Users</h5>
+                                <div class="d-grid gap-2">
+                                    <button class="btn btn-outline-primary btn-sm" onclick="showUserStats()">
+                                        <i class="fas fa-chart-pie"></i> User Statistics
+                                    </button>
+                                    <button class="btn btn-outline-warning btn-sm" onclick="cleanupInactiveUsers()">
+                                        <i class="fas fa-user-minus"></i> Cleanup Inactive
+                                    </button>
+                                    <button class="btn btn-outline-primary btn-sm" onclick="showUserList()">
+                                        <i class="fas fa-users"></i> View All Users
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <h5 class="card-title"><i class="fas fa-database"></i> Database</h5>
+                                <div class="d-grid gap-2">
+                                    <button class="btn btn-outline-primary btn-sm" onclick="showContentStats()">
+                                        <i class="fas fa-chart-bar"></i> Content Stats
+                                    </button>
+                                    <button class="btn btn-outline-warning btn-sm" onclick="cleanupOrphanedContent()">
+                                        <i class="fas fa-broom"></i> Cleanup Data
+                                    </button>
+                                    <button class="btn btn-outline-info btn-sm" onclick="performMaintenance()">
+                                        <i class="fas fa-wrench"></i> Maintenance
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Activity -->
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0"><i class="fas fa-history"></i> Recent Activity</h5>
+                            </div>
+                            <div class="card-body">
+                                <div id="recentActivity" class="list-group list-group-flush">
+                                    <!-- Populated dynamically -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0"><i class="fas fa-exclamation-triangle"></i> System Alerts</h5>
+                            </div>
+                            <div class="card-body">
+                                <div id="systemAlerts" class="list-group list-group-flush">
+                                    <!-- Populated dynamically -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Categories Section -->
+            <div id="categoriesSection" style="display: none;">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2><i class="fas fa-list"></i> Categories</h2>
+                    <div>
+                        <button class="btn btn-success me-2" onclick="showAddCategoryModal()">
+                            <i class="fas fa-plus"></i> Add Category
+                        </button>
+                        <button class="btn btn-info" onclick="backupCategories()">
+                            <i class="fas fa-download"></i> Backup Data
+                        </button>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-body">
+                        <div id="categoryList" class="category-list"></div>
+                    </div>
+                </div>
+
+                <!-- Subcategories Section -->
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Subcategories</h5>
+                        <button class="btn btn-success" onclick="showAddSubcategoryModal()">
+                            <i class="fas fa-plus"></i> Add Subcategory
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div id="subcategoryList" class="subcategory-list"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Settings Section -->
+            <div id="settingsSection" style="display: none;">
+                <h2 class="mb-4">Settings</h2>
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="mb-3">Category Management</h5>
+                        <div class="mb-4">
+                            <button class="btn btn-secondary" onclick="compactOrders()">
+                                <i class="fas fa-sort-numeric-down"></i> Compact Order Numbers
+                            </button>
+                            <div class="help-text">
+                                Reorganizes category order numbers to eliminate gaps and ensure consistent spacing
+                            </div>
+                        </div>
+                        <h5 class="mb-3">Backup & Restore</h5>
+                        <div class="mb-4">
+                            <button class="btn btn-info me-2" onclick="backupCategories()">
+                                <i class="fas fa-download"></i> Create Backup
+                            </button>
+                            <div class="help-text">
+                                Creates a backup of all categories and their settings
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card mt-4">
+                    <div class="card-body">
+                        <h5 class="mb-3">Database Management</h5>
+                        <div class="mb-4">
+                            <button class="btn btn-warning me-2" onclick="cleanupDatabase()">
+                                <i class="fas fa-broom"></i> Cleanup Database
+                            </button>
+                            <button class="btn btn-danger me-2" onclick="validateData()">
+                                <i class="fas fa-check-circle"></i> Validate Data
+                            </button>
+                            <button class="btn btn-info" onclick="showDatabaseStats()">
+                                <i class="fas fa-chart-bar"></i> Database Stats
+                            </button>
+                            <div class="help-text">
+                                Tools for maintaining database integrity and performance
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card mt-4">
+                    <div class="card-body">
+                        <h5 class="mb-3">Advanced Database Management</h5>
+                        
+                        <!-- User Management -->
+                        <div class="mb-4">
+                            <h6><i class="fas fa-users"></i> User Management</h6>
+                            <button class="btn btn-primary me-2" onclick="showUserStats()">
+                                <i class="fas fa-chart-line"></i> User Statistics
+                            </button>
+                            <button class="btn btn-warning me-2" onclick="cleanupInactiveUsers()">
+                                <i class="fas fa-user-minus"></i> Cleanup Inactive Users
+                            </button>
+                            <div class="help-text">
+                                Analyze user activity and manage user data
+                            </div>
+                        </div>
+
+                        <!-- Content Management -->
+                        <div class="mb-4">
+                            <h6><i class="fas fa-database"></i> Content Management</h6>
+                            <button class="btn btn-info me-2" onclick="showContentStats()">
+                                <i class="fas fa-chart-bar"></i> Content Statistics
+                            </button>
+                            <button class="btn btn-danger me-2" onclick="cleanupOrphanedContent()">
+                                <i class="fas fa-trash"></i> Cleanup Orphaned Content
+                            </button>
+                            <div class="help-text">
+                                Analyze and manage content across the platform
+                            </div>
+                        </div>
+
+                        <!-- Database Maintenance -->
+                        <div class="mb-4">
+                            <h6><i class="fas fa-tools"></i> Database Maintenance</h6>
+                            <button class="btn btn-warning me-2" onclick="performMaintenance()">
+                                <i class="fas fa-wrench"></i> Perform Maintenance
+                            </button>
+                            <button class="btn btn-success me-2" onclick="exportDatabase()">
+                                <i class="fas fa-file-export"></i> Export Database
+                            </button>
+                            <button class="btn btn-primary" onclick="showImportModal()">
+                                <i class="fas fa-file-import"></i> Import Database
+                            </button>
+                            <div class="help-text">
+                                Maintain database health and backup/restore functionality
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add/Edit Category Modal -->
+        <div class="modal fade" id="categoryModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="modalTitle">Add New Category</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="categoryForm" class="needs-validation" novalidate>
+                            <input type="hidden" id="categoryId">
+                            <div class="mb-3">
+                                <label for="categoryName" class="form-label">Category Name</label>
+                                <input type="text" class="form-control" id="categoryName" required>
+                                <div class="invalid-feedback">Please enter a category name.</div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="categoryImage" class="form-label">Image URL</label>
+                                <input type="url" class="form-control" id="categoryImage">
+                                <div class="form-text">Leave empty for default image</div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="categoryOrder" class="form-label">Display Order</label>
+                                <input type="number" class="form-control" id="categoryOrder" required min="0">
+                                <div class="invalid-feedback">Please enter a valid order number.</div>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-primary" onclick="saveCategory()">
+                            <i class="fas fa-save"></i> Save Category
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add Subcategory Modal -->
+        <div class="modal fade" id="subcategoryModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="subcategoryModalTitle">Add New Subcategory</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="subcategoryForm">
+                            <input type="hidden" id="subcategoryId">
+                            <div class="mb-3">
+                                <label class="form-label">Parent Category</label>
+                                <select class="form-select" id="parentCategory" required>
+                                    <option value="">Select a parent category</option>
+                                </select>
+                                <div class="help-text">Choose the parent category for this subcategory</div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Subcategory Name</label>
+                                <input type="text" class="form-control" id="subcategoryName" required>
+                                <div class="help-text">Enter a descriptive name for the subcategory</div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Image URL</label>
+                                <input type="url" class="form-control" id="subcategoryImage">
+                                <div class="help-text">Provide a URL for the subcategory image (optional)</div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Display Order</label>
+                                <input type="number" class="form-control" id="subcategoryOrder" required>
+                                <div class="help-text">Lower numbers appear first in the list</div>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-primary" onclick="saveSubcategory()">
+                            <i class="fas fa-save"></i> Save Subcategory
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Database Stats Modal -->
+        <div class="modal fade" id="databaseStatsModal" tabindex="-1">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Database Statistics</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div id="databaseStats"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- User Stats Modal -->
+        <div class="modal fade" id="userStatsModal" tabindex="-1">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">User Statistics</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div id="userStats" class="row">
+                            <div class="col-md-6">
+                                <div class="stats-card">
+                                    <h6>Total Users</h6>
+                                    <div class="stats-number" id="totalUsers">0</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="stats-card">
+                                    <h6>Active Users (30 days)</h6>
+                                    <div class="stats-number" id="activeUsers">0</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="stats-card">
+                                    <h6>Total Votes</h6>
+                                    <div class="stats-number" id="totalVotes">0</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="stats-card">
+                                    <h6>Total Shares</h6>
+                                    <div class="stats-number" id="totalShares">0</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-4">
+                            <h6>Users by Country</h6>
+                            <div id="usersByCountry"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Content Stats Modal -->
+        <div class="modal fade" id="contentStatsModal" tabindex="-1">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Content Statistics</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="stats-card">
+                                    <h6>Total Topics</h6>
+                                    <div class="stats-number" id="topicsTotal">0</div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="stats-card">
+                                    <h6>Active Topics</h6>
+                                    <div class="stats-number" id="topicsActive">0</div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="stats-card">
+                                    <h6>Avg. Votes per Topic</h6>
+                                    <div class="stats-number" id="avgVotes">0</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-4">
+                            <h6>Most Popular Topics</h6>
+                            <div id="popularTopics" class="list-group"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Import Database Modal -->
+        <div class="modal fade" id="importModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Import Database</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            Warning: Importing data will overwrite existing records. Make sure to backup first.
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Import File (JSON)</label>
+                            <input type="file" class="form-control" id="importFile" accept=".json">
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-primary" onclick="importDatabase()">
+                            <i class="fas fa-file-import"></i> Import
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Subquestion Modal -->
+        <div class="modal fade" id="subquestionModal" tabindex="-1" aria-labelledby="subquestionModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="subquestionModalLabel">Manage Subquestion</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="subquestionForm" class="needs-validation" novalidate>
+                            <input type="hidden" id="subquestionId">
+                            
+                            <div class="mb-3">
+                                <label for="subquestionCategory" class="form-label">Category</label>
+                                <select class="form-select" id="subquestionCategory" required onchange="loadSubcategoriesForCategory(this.value)">
+                                    <option value="">Select a category</option>
+                                </select>
+                                <div class="invalid-feedback">Please select a category</div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="subquestionSubcategory" class="form-label">Subcategory</label>
+                                <select class="form-select" id="subquestionSubcategory" required>
+                                    <option value="">Select a subcategory</option>
+                                </select>
+                                <div class="invalid-feedback">Please select a subcategory</div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="subquestionText" class="form-label">Question</label>
+                                <input type="text" class="form-control" id="subquestionText" required>
+                                <div class="invalid-feedback">Please enter a question</div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="subquestionOrder" class="form-label">Display Order</label>
+                                <input type="number" class="form-control" id="subquestionOrder" required min="0">
+                                <div class="invalid-feedback">Please enter a valid order number (0 or greater)</div>
+                            </div>
+                            
+                            <div class="mb-3 form-check">
+                                <input type="checkbox" class="form-check-input" id="subquestionActive">
+                                <label class="form-check-label" for="subquestionActive">Active</label>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-primary" onclick="handleSaveSubquestion()">Save Subquestion</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bulk Subquestion Upload Modal -->
+        <div class="modal fade" id="bulkSubquestionModal" tabindex="-1">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Bulk Upload Subquestions</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="alert alert-info mb-4">
+                            <h6><i class="fas fa-info-circle me-2"></i>Instructions</h6>
+                            <p class="mb-2">Upload a CSV file with the following columns:</p>
+                            <ul class="mb-0">
+                                <li>category_id (required)</li>
+                                <li>subcategory_id (required)</li>
+                                <li>question_text (required)</li>
+                                <li>order (optional, defaults to 0)</li>
+                            </ul>
+                        </div>
+                        
+                        <form id="bulkUploadForm" class="needs-validation" novalidate>
+                            <div class="mb-4">
+                                <label class="form-label">CSV File</label>
+                                <div class="input-group">
+                                    <input type="file" class="form-control" id="bulkUploadFile" accept=".csv" required>
+                                    <button class="btn btn-outline-secondary" type="button" onclick="downloadTemplate()">
+                                        <i class="fas fa-download"></i> Download Template
+                                    </button>
+                                </div>
+                                <div class="form-text">Maximum file size: 5MB</div>
+                            </div>
+                            
+                            <div class="mb-4">
+                                <div class="form-check">
+                                    <input type="checkbox" class="form-check-input" id="skipFirstRow" checked>
+                                    <label class="form-check-label">Skip first row (headers)</label>
+                                </div>
+                            </div>
+
+                            <div class="upload-progress" style="display: none;">
+                                <div class="progress mb-2">
+                                    <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                                         role="progressbar" 
+                                         id="uploadProgress"
+                                         style="width: 0%">0%</div>
+                                </div>
+                                <div class="text-muted small" id="uploadStatus">Preparing upload...</div>
+                            </div>
+
+                            <div id="uploadResults" class="mt-4" style="display: none;">
+                                <h6>Upload Results</h6>
+                                <div class="table-responsive">
+                                    <table class="table table-sm">
+                                        <thead>
+                                            <tr>
+                                                <th>Status</th>
+                                                <th>Total Records</th>
+                                                <th>Successful</th>
+                                                <th>Failed</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td id="uploadResultStatus">-</td>
+                                                <td id="uploadResultTotal">0</td>
+                                                <td id="uploadResultSuccess">0</td>
+                                                <td id="uploadResultFailed">0</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div id="uploadErrors" class="alert alert-danger mt-3" style="display: none;">
+                                    <h6>Errors</h6>
+                                    <ul class="mb-0" id="errorList"></ul>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-primary" id="uploadButton" onclick="uploadBulkSubquestions()">
+                            <i class="fas fa-upload me-1"></i> Upload
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Subquestions List Modal -->
+        <div class="modal fade" id="subquestionsListModal" tabindex="-1">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Manage Subquestions</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="subquestionSearch" placeholder="Search subquestions...">
+                                <button class="btn btn-outline-secondary" type="button" onclick="searchSubquestions()">
+                                    <i class="fas fa-search"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Order</th>
+                                        <th>Category</th>
+                                        <th>Subcategory</th>
+                                        <th>Question</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Populated dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay" style="display: none;">
+        <div class="loading-spinner">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <div class="mt-2 text-primary" id="loadingMessage">Processing...</div>
+        </div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div class="toast-container position-fixed top-0 end-0 p-3">
+        <!-- Error Toast -->
+        <div id="errorToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header bg-danger text-white">
+                <i class="fas fa-exclamation-circle me-2"></i>
+                <strong class="me-auto">Error</strong>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+            <div class="toast-body" id="errorToastMessage"></div>
+        </div>
+        
+        <!-- Success Toast -->
+        <div id="successToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header bg-success text-white">
+                <i class="fas fa-check-circle me-2"></i>
+                <strong class="me-auto">Success</strong>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+            <div class="toast-body" id="successToastMessage"></div>
+        </div>
+    </div>
+
+    <!-- Operation Status -->
+    <div class="operation-status" style="display: none;">
+        <div class="status-content">
+            <div class="status-icon">
+                <i class="fas fa-spinner fa-spin"></i>
+            </div>
+            <div>
+                <div class="status-message"></div>
+                <div class="status-details"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add required script files -->
+    <script src="config.js"></script>
+    <script src="crud.js"></script>
+    <script src="manage_categories.js"></script>
+    
+    <!-- Loading Management Functions -->
+    <script>
+        // Loading Management Functions
+        function showLoading(message = 'Loading...') {
+            document.getElementById('loadingMessage').textContent = message;
+            document.getElementById('loadingOverlay').style.display = 'flex';
+        }
+
+        function hideLoading() {
+            document.getElementById('loadingOverlay').style.display = 'none';
+        }
+
+        // Operation Status Functions
+        function showOperationStatus(message, details = '') {
+            const statusDiv = document.querySelector('.operation-status');
+            const messageDiv = statusDiv.querySelector('.status-message');
+            const detailsDiv = statusDiv.querySelector('.status-details');
+            
+            messageDiv.textContent = message;
+            detailsDiv.textContent = details;
+            statusDiv.style.display = 'block';
+        }
+
+        function hideOperationStatus() {
+            const statusDiv = document.querySelector('.operation-status');
+            statusDiv.style.display = 'none';
+        }
+
+        // Function to populate parent categories dropdown
+        async function populateParentCategories() {
+            try {
+                const parentCategorySelect = document.getElementById('parentCategory');
+                if (!parentCategorySelect) {
+                    throw new Error('Parent category select element not found');
+                }
+
+                showLoading('Loading parent categories...');
+                const snapshot = await firebase.firestore().collection('categories').orderBy('order').get();
+                
+                // Clear existing options except the first one
+                parentCategorySelect.innerHTML = '<option value="">Select a parent category</option>';
+                
+                snapshot.forEach(doc => {
+                    const category = doc.data();
+                    const option = document.createElement('option');
+                    option.value = doc.id;
+                    option.textContent = category.name;
+                    parentCategorySelect.appendChild(option);
+                });
+                
+                hideLoading();
+            } catch (error) {
+                console.error('Error loading parent categories:', error);
+                showError('Failed to load parent categories: ' + error.message);
+                hideLoading();
+            }
+        }
+
+        // Update the showAddSubcategoryModal function to populate parent categories
+        function showAddSubcategoryModal() {
+            document.getElementById('subcategoryModalTitle').textContent = 'Add New Subcategory';
+            document.getElementById('subcategoryId').value = '';
+            document.getElementById('subcategoryForm').reset();
+            populateParentCategories(); // Add this line to populate parent categories
+            new bootstrap.Modal(document.getElementById('subcategoryModal')).show();
+        }
+
+        // Button Loading State Management
+        function setButtonLoading(button, isLoading) {
+            if (isLoading) {
+                button.classList.add('loading');
+                button.disabled = true;
+                const icon = button.querySelector('i');
+                if (icon) {
+                    icon.className = 'fas fa-spinner fa-spin';
+                }
+            } else {
+                button.classList.remove('loading');
+                button.disabled = false;
+                const icon = button.querySelector('i');
+                if (icon) {
+                    icon.className = icon.dataset.originalClass || 'fas fa-save';
+                }
+            }
+        }
+
+        // Form Validation Functions
+        function validateCategoryForm() {
+            const form = document.getElementById('categoryForm');
+            if (!form.checkValidity()) {
+                form.classList.add('was-validated');
+                showError('Please fill in all required fields correctly');
+                return false;
+            }
+            return true;
+        }
+
+        function validateSubcategoryForm() {
+            const form = document.getElementById('subcategoryForm');
+            if (!form.checkValidity()) {
+                form.classList.add('was-validated');
+                showError('Please fill in all required fields correctly');
+                return false;
+            }
+            return true;
+        }
+
+        // Error Boundary Management
+        function showErrorBoundary(message) {
+            const errorBoundary = document.getElementById('errorBoundary');
+            const errorMessage = document.getElementById('errorBoundaryMessage');
+            errorMessage.textContent = message;
+            errorBoundary.style.display = 'block';
+        }
+
+        function hideErrorBoundary() {
+            document.getElementById('errorBoundary').style.display = 'none';
+        }
+
+        // Enhanced Operation Handler
+        async function handleOperation(operation, successMessage) {
+            const button = event.target;
+            try {
+                setButtonLoading(button, true);
+                showLoading();
+                await operation();
+                showSuccess(successMessage);
+            } catch (error) {
+                console.error('Operation failed:', error);
+                showError(error.message || 'Operation failed');
+            } finally {
+                setButtonLoading(button, false);
+                hideLoading();
+            }
+        }
+
+        // Save button click handlers with loading states
+        async function handleSaveCategory() {
+            const button = event.target;
+            if (!validateCategoryForm()) return;
+
+            try {
+                setButtonLoading(button, true);
+                await saveCategory();
+            } finally {
+                setButtonLoading(button, false);
+            }
+        }
+
+        async function handleSaveSubquestion() {
+            const button = event.target;
+            if (!validateSubquestionForm()) return;
+
+            try {
+                setButtonLoading(button, true);
+                await saveSubquestion();
+            } finally {
+                setButtonLoading(button, false);
+            }
+        }
+
+        // Initialize tooltips and form validation
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize tooltips
+            const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl);
+            });
+
+            // Add loading state to buttons
+            document.querySelectorAll('button').forEach(button => {
+                const icon = button.querySelector('i');
+                if (icon) {
+                    icon.dataset.originalClass = icon.className;
+                }
+            });
+
+            // Initialize form validation
+            const forms = document.querySelectorAll('.needs-validation');
+            forms.forEach(form => {
+                form.addEventListener('submit', event => {
+                    if (!form.checkValidity()) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                    }
+                    form.classList.add('was-validated');
+                });
+            });
+        });
+    </script>
+
+    <!-- Update modal buttons to use loading state handlers -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Update category modal save button
+            const categoryModalSaveBtn = document.querySelector('#categoryModal .btn-primary');
+            if (categoryModalSaveBtn) {
+                categoryModalSaveBtn.onclick = handleSaveCategory;
+            }
+
+            // Update subcategory modal save button
+            const subcategoryModalSaveBtn = document.querySelector('#subcategoryModal .btn-primary');
+            if (subcategoryModalSaveBtn) {
+                subcategoryModalSaveBtn.onclick = handleSaveSubcategory;
+            }
+        });
+    </script>
+
+    <!-- Initialize Firebase -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const initStatus = document.getElementById('initStatus');
+            const loginContainer = document.getElementById('loginContainer');
+            const mainContent = document.getElementById('mainContent');
+            const loginForm = document.getElementById('loginForm');
+
+            // Debug Panel Functions
+            let debugEnabled = true;
+            const maxDebugEntries = 50;
+            let debugEntries = [];
+
+            function toggleDebug() {
+                const panel = document.getElementById('debugPanel');
+                panel.classList.toggle('show');
+            }
+
+            function debugLog(message, data = null) {
+                const timestamp = new Date().toLocaleTimeString();
+                let logMessage = `[${timestamp}] ${message}`;
+                if (data) {
+                    logMessage += ': ' + JSON.stringify(data);
+                }
+                
+                debugEntries.unshift(logMessage);
+                if (debugEntries.length > maxDebugEntries) {
+                    debugEntries.pop();
+                }
+
+                const panel = document.getElementById('debugPanel');
+                if (panel) {
+                    panel.innerHTML = debugEntries.map(entry => `<div class="debug-entry">${entry}</div>`).join('');
+                }
+
+                // Also update login status if relevant
+                if (message.toLowerCase().includes('error') || 
+                    message.toLowerCase().includes('failed') ||
+                    message.toLowerCase().includes('success') ||
+                    message.toLowerCase().includes('authenticated')) {
+                    updateLoginStatus(message, message.toLowerCase().includes('error') || message.toLowerCase().includes('failed') ? 'error' : 'success');
+                }
+            }
+
+            function updateLoginStatus(message, type = 'info') {
+                const statusDiv = document.getElementById('loginStatus');
+                if (statusDiv) {
+                    statusDiv.textContent = message;
+                    statusDiv.className = 'alert';
+                    statusDiv.classList.add(`alert-${type === 'error' ? 'danger' : type === 'success' ? 'success' : 'info'}`);
+                    statusDiv.style.display = 'block';
+                }
+            }
+
+            // Add login form handler
+            loginForm.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                const email = document.getElementById('email').value;
+                const password = document.getElementById('password').value;
+                
+                try {
+                    debugLog('Attempting login...');
+                    const userCredential = await firebase.auth().signInWithEmailAndPassword(email, password);
+                    debugLog('Login successful');
+                    showSuccess('Login successful!');
+                } catch (error) {
+                    console.error('Login error:', error);
+                    debugLog('Login error: ' + error.message);
+                    showError('Login failed: ' + error.message);
+                }
+            });
+
+            // Initialize Firebase with error handling
+            try {
+                debugLog('Starting Firebase initialization...');
+                
+                if (typeof firebase === 'undefined') {
+                    throw new Error('Firebase SDK failed to load');
+                }
+
+                // Initialize Firebase only if not already initialized
+                if (!firebase.apps.length) {
+                    firebase.initializeApp(firebaseConfig);
+                    debugLog('Firebase app initialized');
+
+                    // Initialize Firestore with settings for Safari
+                    db = firebase.firestore();
+                    db.settings({
+                        cacheSizeBytes: firebase.firestore.CACHE_SIZE_UNLIMITED
+                    });
+                    debugLog('Firestore settings configured for Safari');
+                } else {
+                    db = firebase.firestore();
+                    debugLog('Using existing Firestore instance');
+                }
+
+                // Test database connection
+                db.collection('categories').get()
+                    .then(() => {
+                        debugLog('Database connection verified');
+                        // Hide initialization status and show login container
+                        document.getElementById('initStatus').style.display = 'none';
+                        document.getElementById('loginContainer').style.display = 'flex';
+                    })
+                    .catch(error => {
+                        debugLog('Database connection error:', error.message);
+                        showError('Database connection failed: ' + error.message);
+                    });
+
+                const auth = firebase.auth();
+                debugLog('Firebase initialized successfully');
+                
+                // Auth state observer
+                auth.onAuthStateChanged(function(user) {
+                    debugLog('Auth state changed:', user ? 'User signed in' : 'User signed out');
+                    if (user) {
+                        debugLog('User signed in:', user.email);
+                        // User is signed in
+                        mainContent.style.display = 'block';
+                        loginContainer.style.display = 'none';
+                        document.getElementById('userEmail').textContent = user.email;
+                        
+                        // Initialize categories
+                        loadCategories().catch(error => {
+                            console.error('Error loading categories:', error);
+                            showError('Error loading categories: ' + error.message);
+                        });
+
+                        // Set up CRUD event listeners
+                        document.getElementById('addCategoryBtn')?.addEventListener('click', showAddCategoryModal);
+                        document.getElementById('addSubcategoryBtn')?.addEventListener('click', showAddSubcategoryModal);
+                        
+                        // Category form submission
+                        document.getElementById('categoryForm')?.addEventListener('submit', function(e) {
+                            e.preventDefault();
+                            saveCategory();
+                        });
+
+                        // Subcategory form submission
+                        document.getElementById('subcategoryForm')?.addEventListener('submit', function(e) {
+                            e.preventDefault();
+                            saveSubcategory();
+                        });
+
+                    } else {
+                        debugLog('User signed out');
+                        // User is signed out
+                        mainContent.style.display = 'none';
+                        loginContainer.style.display = 'flex';
+                    }
+                });
+
+            } catch (error) {
+                console.error('Initialization error:', error);
+                debugLog('Initialization error: ' + error.message);
+                
+                // Hide initialization status and show error
+                document.getElementById('initStatus').style.display = 'none';
+                document.getElementById('initError').textContent = 'Failed to initialize: ' + error.message;
+                document.getElementById('initError').style.display = 'block';
+                
+                showError('Initialization failed: ' + error.message);
+            }
+        });
+    </script>
+
+    <script>
+        // Navigation Functions
+        function showDashboard() {
+            document.getElementById('dashboardSection').style.display = 'block';
+            document.getElementById('categoriesSection').style.display = 'none';
+            document.getElementById('settingsSection').style.display = 'none';
+            
+            // Update active nav item
+            document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
+            document.querySelector('.nav-link[onclick*="showDashboard"]').classList.add('active');
+        }
+
+        function showCategories() {
+            document.getElementById('dashboardSection').style.display = 'none';
+            document.getElementById('categoriesSection').style.display = 'block';
+            document.getElementById('settingsSection').style.display = 'none';
+            
+            // Update active nav item
+            document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
+            document.querySelector('.nav-link[onclick*="showCategories"]').classList.add('active');
+            
+            // Load categories when showing the section
+            loadCategories().catch(error => {
+                console.error('Error loading categories:', error);
+                showError('Error loading categories: ' + error.message);
+            });
+        }
+
+        function showSettings() {
+            document.getElementById('dashboardSection').style.display = 'none';
+            document.getElementById('categoriesSection').style.display = 'none';
+            document.getElementById('settingsSection').style.display = 'block';
+            
+            // Update active nav item
+            document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
+            document.querySelector('.nav-link[onclick*="showSettings"]').classList.add('active');
+        }
+    </script>
+
+    <!-- Add Error Boundary -->
+    <div id="errorBoundary" class="error-boundary alert alert-danger" style="display: none;">
+        <h4 class="alert-heading">
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            Something went wrong
+        </h4>
+        <p id="errorBoundaryMessage">An unexpected error occurred.</p>
+        <hr>
+        <p class="mb-0">
+            <button class="btn btn-outline-danger" onclick="window.location.reload()">
+                <i class="fas fa-sync-alt me-1"></i>
+                Reload Page
+            </button>
+        </p>
+    </div>
+</body>
+</html> 
